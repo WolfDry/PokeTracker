@@ -62,17 +62,19 @@ CSV utilisés : `versions`, `version_groups`, `version_names`, `generations`, `r
 
 Chaque phase se termine par une vérification concrète avant de passer à la suivante.
 
-### Phase 0 — Squelette ✔
+### Phase 0 — Squelette ✅ (13 sept. 2026)
 
 - Init Next.js + TypeScript + Tailwind + Prisma + Postgres (Docker Compose en local ou Neon)
 - Layout de base, navigation, thème
 - ✔ L'app démarre, la base répond
 
-### Phase 1 — Fondations données
+### Phase 1 — Fondations données ✅ (13 sept. 2026)
 
 - Schéma Prisma de référence (§2.3)
 - Script ETL complet + import des sprites
 - ✔ Route 101 dans Rubis affiche Zigzaton 2-3 / 45 %, Chenipotte, Medhyèna, comme le site de référence ; Pokédex de Paldea = 400 entrées
+- Résultat : 1 025 espèces, 1 351 formes, 1 104 lieux, 117 127 rencontres, 2 684 sprites ; import complet en ~15 s
+- Libellés FR courts des méthodes de rencontre et noms des versions japonaises maintenus dans `scripts/import/labels.ts`
 
 ### Phase 2 — Pokédex par jeu
 

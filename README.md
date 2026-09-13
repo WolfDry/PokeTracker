@@ -47,11 +47,19 @@ npm run dev
 
 Vérifie que la base répond : <http://localhost:3000/api/health>
 
-### 5. Importer les données de référence (phase 1, à venir)
+### 5. Importer les données de référence
 
 ```bash
 npm run import:data
 ```
+
+Le script télécharge les CSV du repo PokeAPI (cache dans `data/cache/`), remplit la base
+en une transaction (~15 s sur Neon), affiche une vérification (Route 101 dans Rubis, Pokédex
+de Paldea, couverture par jeu) puis télécharge les sprites dans `public/sprites/pokemon/`.
+
+Options : `-- --refresh` (re-télécharger les CSV après une mise à jour PokeAPI),
+`-- --skip-sprites`, `-- --sprites-only`. Relançable sans risque : les captures et chasses
+des utilisateurs sont conservées.
 
 ## Scripts
 
@@ -63,6 +71,7 @@ npm run import:data
 | `npm run db:migrate` | Crée/applique une migration en dev |
 | `npm run db:deploy` | Applique les migrations en prod |
 | `npm run db:studio` | Interface Prisma Studio |
+| `npm run import:data` | Import des données PokeAPI + sprites |
 
 ## Structure
 
@@ -75,4 +84,7 @@ src/lib/prisma.ts      # client Prisma (singleton)
 src/lib/auth.ts        # Better Auth côté serveur
 src/lib/auth-client.ts # Better Auth côté client
 src/generated/prisma   # client Prisma généré (ignoré par git)
+scripts/import/        # ETL : CSV PokeAPI → base + sprites
+public/sprites/        # sprites 96×96 (normal + shiny), téléchargés par l'import
+data/cache/            # CSV téléchargés (ignoré par git)
 ```
