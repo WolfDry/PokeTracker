@@ -5,7 +5,7 @@ Compagnon d'aventure Pokémon : Pokédex par jeu, rencontres par jeu × lieu, su
 ## 1. Décisions
 
 | Sujet | Décision | Pourquoi |
-|---|---|---|
+| --- | --- | --- |
 | Stack | **Next.js (App Router) + TypeScript + Prisma + PostgreSQL + Tailwind** | Un seul projet, SSR pour les pages de référence, API intégrée pour le suivi utilisateur |
 | Auth | **Better Auth** (email + mot de passe) | Inscription/connexion par mot de passe prête à l'emploi, s'intègre à Prisma |
 | Hébergement | En ligne (Vercel + Postgres managé type Neon, ou VPS Docker) | Postgres dès le départ, pas de migration à prévoir |
@@ -19,7 +19,7 @@ Compagnon d'aventure Pokémon : Pokédex par jeu, rencontres par jeu × lieu, su
 ### 2.1 Couverture PokeAPI mesurée (sept. 2026)
 
 | Données | État |
-|---|---|
+| --- | --- |
 | Pokédex de tous les jeux (36 dex, Kanto → Paldea/Kitakami/Myrtille, Hisui, Illumis) | ✅ complet |
 | Rencontres Gen 1–5 (Rouge → Noir 2/Blanc 2) | ✅ complet |
 | Rencontres Épée/Bouclier + Isolarmure + Couronneige | ✅ complet |
@@ -62,49 +62,58 @@ CSV utilisés : `versions`, `version_groups`, `version_names`, `generations`, `r
 
 Chaque phase se termine par une vérification concrète avant de passer à la suivante.
 
-### Phase 0 — Squelette
+### Phase 0 — Squelette ✔
+
 - Init Next.js + TypeScript + Tailwind + Prisma + Postgres (Docker Compose en local ou Neon)
 - Layout de base, navigation, thème
 - ✔ L'app démarre, la base répond
 
 ### Phase 1 — Fondations données
+
 - Schéma Prisma de référence (§2.3)
 - Script ETL complet + import des sprites
 - ✔ Route 101 dans Rubis affiche Zigzaton 2-3 / 45 %, Chenipotte, Medhyèna, comme le site de référence ; Pokédex de Paldea = 400 entrées
 
 ### Phase 2 — Pokédex par jeu
+
 - Liste des jeux (par génération) → Pokédex du jeu (grille avec sprites, numéro régional, types)
 - Fiche Pokémon : types, jeux où il est disponible, lieux de rencontre
 - ✔ Tous les dex `is_main_series` navigables
 
 ### Phase 3 — Recherche
+
 - Barre de recherche unifiée : Pokémon (FR/EN), jeu, lieu
 - Index en base (`pg_trgm` ou simple `ILIKE` accent-insensible)
 - ✔ « salam » trouve Salamèche, « route 1 » liste les Route 1 de chaque région
 
 ### Phase 4 — Rencontres jeu × lieu (feature clé)
+
 - Page : sélection jeu → lieu → tableau par sous-zone : Pokémon | Méthode | Niveaux | Taux | Conditions
 - Filtres : masquer les cannes, filtrer par méthode, par version d'un même groupe
 - Message clair pour les jeux sans données
 - ✔ Comparable au site de référence sur Gen 3 ; fonctionne sur SwSh
 
 ### Phase 5 — Authentification
+
 - Better Auth : inscription, connexion, déconnexion, session
 - Pages protégées, toutes les données de référence restent publiques
 - ✔ Deux comptes ne voient pas les données l'un de l'autre
 
 ### Phase 6 — Suivi des captures
+
 - Depuis le Pokédex d'un jeu : cocher « attrapé » (par jeu)
 - Vue « Mes jeux » : % de complétion par dex, liste des manquants avec où les trouver
 - ✔ Un même Pokémon coché dans deux jeux apparaît dans les deux
 
 ### Phase 7 — Shiny
+
 - Compteur de chasse : +1 / −1 / saisie directe, incrément clavier, plusieurs chasses en parallèle
 - Liste des chasses en cours (par jeu), clôture → devient un `ShinyCapture`
 - Galerie des shinies attrapés, ajout manuel sans chasse
 - ✔ Une chasse en cours dans deux jeux pour la même espèce fonctionne
 
 ### Phase 8 — Finitions & déploiement
+
 - Responsive mobile (usage console-en-main)
 - Déploiement (Vercel + Postgres managé, ou Docker sur VPS), variables d'env, seed en CI
 - ✔ URL publique fonctionnelle
