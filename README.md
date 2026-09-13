@@ -103,6 +103,43 @@ les shinies. Le compteur est sauvegardé en valeur absolue après un court déla
 `src/components/use-hunt-counter.ts`) et, si l'onglet passe en arrière-plan avant, via un beacon vers
 `POST /api/shiny/count`. Les données sont dans `src/lib/data/shiny.ts` (sans cache).
 
+## Déploiement (Vercel + Neon)
+
+L'app tourne sur n'importe quelle plateforme Node (`npm run build` puis `npm start`), mais le chemin
+prévu est Vercel avec une base Neon.
+
+1. **Base de production** : un projet (ou une branche) Neon dédié, distinct de celui du dev.
+   Récupérer l'URL *pooled* (hôte `-pooler`) et l'URL *directe*.
+2. **Migrer et remplir la base avant le premier build** : `next build` pré-rend les Pokédex à partir
+   de la base, elle doit donc déjà contenir les données. Depuis ton poste, avec les URLs de prod :
+
+   ```bash
+   DIRECT_DATABASE_URL="postgresql://…" npm run db:deploy
+   DIRECT_DATABASE_URL="postgresql://…" npm run import:data -- --skip-sprites
+   ```
+
+   (sous PowerShell : `$env:DIRECT_DATABASE_URL="postgresql://…"; npm run db:deploy`). Les sprites
+   sont versionnés dans `public/sprites`, inutile de les retélécharger.
+3. **Vercel** : importer le dépôt GitHub. Next.js est détecté ; le script `vercel-build`
+   (`prisma migrate deploy && next build`) remplace `build`, donc les migrations suivantes
+   s'appliquent à chaque déploiement. Choisir une région de fonctions proche de la base Neon.
+4. **Variables d'environnement** (Production ; Preview si tu veux des prévisualisations connectées) :
+   `DATABASE_URL` (pooled), `DIRECT_DATABASE_URL` (directe), `BETTER_AUTH_SECRET`,
+   `BETTER_AUTH_URL` (l'URL publique, `https://…`), `REVALIDATE_SECRET`. Sur les prévisualisations,
+   `BETTER_AUTH_URL` peut être omis : l'app retombe sur l'URL fournie par Vercel.
+5. **Déployer**, puis vérifier `https://…/api/health` et créer un compte.
+
+**Mettre à jour les données** ensuite : le workflow GitHub « Import des données » (onglet Actions →
+Run workflow) relance l'import sur la base de prod puis appelle `POST /api/revalidate`. Il attend les
+secrets `DIRECT_DATABASE_URL` et `REVALIDATE_SECRET`, et la variable `APP_URL` (URL publique).
+En local, l'équivalent est :
+
+```bash
+curl -X POST https://…/api/revalidate -H "Authorization: Bearer $REVALIDATE_SECRET"
+```
+
+Le workflow « CI » (lint + types) tourne à chaque push ; le build complet est fait par Vercel.
+
 ## Scripts
 
 | Commande | Rôle |
@@ -118,6 +155,7 @@ les shinies. Le compteur est sauvegardé en valeur absolue après un court déla
 ## Structure
 
 ```
+.github/workflows/     # CI (lint + types) et import des données en prod (manuel)
 prisma/schema.prisma   # schéma : données de référence + données utilisateur + auth
 prisma7.config.ts      # config Prisma (URL directe pour les migrations)
 src/app/               # routes (App Router)

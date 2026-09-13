@@ -131,12 +131,13 @@ Chaque phase se termine par une vérification concrète avant de passer à la su
 - Données utilisateur dans `src/lib/data/shiny.ts` (sans cache, chaque écriture filtrée sur `userId`)
 - ✔ Deux chasses Pikachu en parallèle (Rouge 251, Jaune 40) listées sous leur jeu avec des compteurs indépendants ; 5 clics rapides = 1 requête ; beacon vérifié en base ; clôture à 254 rencontres (le +1 fait juste avant l'envoi est pris en compte) → galerie
 
-### Phase 8 — Finitions & déploiement
+### Phase 8 — Finitions & déploiement ✅ (14 sept. 2026, mise en ligne à faire par toi)
 
-- Responsive mobile (usage console-en-main)
-- Déploiement (Vercel + Postgres managé, ou Docker sur VPS), variables d'env, seed en CI
-- ~~Route protégée `/api/revalidate`~~ livrée en phase 4 ; documenter l'appel dans le déploiement
-- ✔ URL publique fonctionnelle
+- Responsive mobile : en-tête compact (navigation sur une seconde ligne défilable, section courante en évidence, recherche réduite à un bouton vers `/recherche`, déconnexion depuis « Mon compte ») ; tableau des rencontres sans colonne Méthode sur petit écran (la méthode passe sous le nom), première colonne figée au défilement horizontal ; cases « attrapé » plus grandes au doigt ; raccourcis clavier du compteur masqués sur mobile
+- `usePathname` dans l'en-tête suspend au pré-rendu des routes à paramètre inconnu → `NavLinks` sous `<Suspense>` avec une version sans section active en repli
+- Déploiement Vercel + Neon documenté dans le README : `vercel-build` (`prisma migrate deploy && next build`), variables d'env, base à migrer et remplir avant le premier build (les Pokédex sont pré-rendus), `BETTER_AUTH_URL` avec repli sur `VERCEL_URL` pour les prévisualisations
+- GitHub Actions : `ci.yml` (lint + types à chaque push) et `import-data.yml` (import PokeAPI sur la base de prod à la demande, puis `POST /api/revalidate` avec `REVALIDATE_SECRET`)
+- ✔ URL publique : à valider après la mise en ligne (comptes Vercel/Neon et secrets à créer de ton côté)
 
 ## 4. Plus tard (hors v1)
 

@@ -3,7 +3,12 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { prisma } from "@/lib/prisma";
 
+// URL publique de l'app : BETTER_AUTH_URL en production ; sur un déploiement de prévisualisation
+// Vercel (URL différente à chaque fois), on retombe sur l'URL fournie par la plateforme.
+const baseURL = process.env.BETTER_AUTH_URL ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+
 export const auth = betterAuth({
+  baseURL,
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   emailAndPassword: {
     enabled: true,

@@ -69,7 +69,7 @@ export function CaptureChecklist({ versionId, entries, captured, coverageNote }:
                   onClick={() => captures.toggle(entry.species.id)}
                   aria-pressed={caught}
                   aria-label={`${caught ? "Retirer" : "Marquer"} ${entry.species.nameFr} ${caught ? "des captures" : "comme attrapé"}`}
-                  className={`mt-3 flex size-6 shrink-0 items-center justify-center rounded-full border text-xs transition-colors ${
+                  className={`mt-2.5 flex size-7 shrink-0 items-center justify-center rounded-full border text-xs sm:mt-3 sm:size-6 transition-colors ${
                     caught ? "border-emerald-500 bg-emerald-500 text-white" : "border-border bg-background text-transparent hover:border-emerald-500 hover:text-emerald-500"
                   }`}
                 >

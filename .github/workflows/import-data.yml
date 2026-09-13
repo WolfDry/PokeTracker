@@ -1,0 +1,38 @@
+# Import (ou mise à jour) des données de référence PokeAPI dans la base de production,
+# puis invalidation du cache de l'app. À lancer à la main depuis l'onglet Actions.
+#
+# Secrets attendus : DIRECT_DATABASE_URL (URL directe Neon, sans -pooler), REVALIDATE_SECRET.
+# Variable attendue : APP_URL (ex. https://poketracker.vercel.app).
+#
+# Les sprites sont versionnés dans public/sprites : ici on saute leur téléchargement.
+# Si PokeAPI ajoute des Pokémon, relancer `npm run import:data` en local et committer les sprites.
+name: Import des données
+
+on:
+  workflow_dispatch:
+    inputs:
+      refresh:
+        description: "Re-télécharger les CSV PokeAPI (mise à jour des données)"
+        type: boolean
+        default: true
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Import
+        env:
+          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+        run: npm run import:data -- --skip-sprites ${{ inputs.refresh && '--refresh' || '' }}
+      - name: Invalidation du cache
+        if: vars.APP_URL != ''
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
+        run: curl --fail -X POST "$APP_URL/api/revalidate" -H "Authorization: Bearer $REVALIDATE_SECRET"

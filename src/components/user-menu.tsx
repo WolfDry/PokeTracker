@@ -15,11 +15,12 @@ export async function UserMenu() {
     );
   }
   return (
-    <div className="flex items-center gap-2">
-      <Link href="/compte" className="max-w-40 truncate text-sm font-medium hover:text-accent" title="Mon compte">
+    <div className="flex min-w-0 items-center gap-2">
+      <Link href="/compte" className="max-w-28 truncate text-sm font-medium hover:text-accent sm:max-w-40" title="Mon compte">
         {user.name}
       </Link>
-      <form action={signOutAction}>
+      {/* Sur mobile, la déconnexion se fait depuis « Mon compte ». */}
+      <form action={signOutAction} className="hidden sm:block">
         <button type="submit" className={buttonClass}>
           Déconnexion
         </button>

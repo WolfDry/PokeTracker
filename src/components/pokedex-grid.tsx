@@ -99,7 +99,7 @@ export function PokedexGrid({ entries, versionId, captured, loginNext }: Props) 
                     aria-pressed={caught}
                     aria-label={`${caught ? "Retirer" : "Marquer"} ${entry.species.nameFr} ${caught ? "des captures" : "comme attrapé"}`}
                     title={caught ? "Attrapé — cliquer pour retirer" : "Marquer comme attrapé"}
-                    className={`absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full border text-xs transition-colors ${
+                    className={`absolute top-1.5 right-1.5 flex size-7 items-center justify-center rounded-full border text-xs sm:size-6 transition-colors ${
                       caught
                         ? "border-emerald-500 bg-emerald-500 text-white"
                         : "border-border bg-background text-transparent hover:border-emerald-500 hover:text-emerald-500"

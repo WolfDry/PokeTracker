@@ -220,11 +220,15 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
     .sort((a, b) => a.methodId - b.methodId)
     .map((r) => `${methodName(r.methodId)} ${r.rate}`);
 
+  const cell = "px-2 py-1.5 sm:px-3";
+  const stickyCell = `${cell} sticky left-0 z-10`;
+  const methodCell = `${cell} hidden whitespace-nowrap sm:table-cell`;
+
   const rateCells = (byVersion: (string | null)[]) =>
     visibleVersions.map((index) => {
       const rate = byVersion[index];
       return (
-        <td key={versions[index].id} className={`px-3 py-1.5 text-right tabular-nums ${rate === null ? "text-muted" : ""}`}>
+        <td key={versions[index].id} className={`${cell} text-right whitespace-nowrap tabular-nums ${rate === null ? "text-muted" : ""}`}>
           {rate ?? "—"}
         </td>
       );
@@ -234,7 +238,7 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
     const present = visibleVersions.map((index) => row.byVersion[index]).filter((v) => v !== null);
     const levels = [...new Set(present.map(([, min, max]) => formatLevels(min, max)))];
     return (
-      <td className="px-3 py-1.5 whitespace-nowrap tabular-nums">
+      <td className={`${cell} whitespace-nowrap tabular-nums`}>
         {levels.length === 1
           ? levels[0]
           : // Niveaux différents selon la version : on les détaille.
@@ -252,7 +256,7 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
   };
 
   const conditionCell = (row: EncounterRow) => (
-    <td className="px-3 py-1.5 text-xs">
+    <td className={`${cell} text-xs`}>
       {conditionParts(row).map((part, i) => (
         <span key={part[0].id} className={part.every((c) => c.isDefault) ? "text-muted" : ""}>
           {i > 0 && <span className="text-muted"> · </span>}
@@ -262,8 +266,9 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
     </td>
   );
 
-  const pokemonCell = (pokemonId: number, label: string, formName: string | null, extra?: ReactNode) => (
-    <td className="px-3 py-1.5">
+  // Première colonne figée (défilement horizontal sur mobile) ; la méthode y passe sous le nom sur petit écran.
+  const pokemonCell = (pokemonId: number, label: string, formName: string | null, method: string, extra?: ReactNode) => (
+    <td className={`${stickyCell} bg-card`}>
       <span className="flex items-center gap-2">
         {extra}
         <Link href={`/pokemon/${pokemons[pokemonId].speciesId}`} className="flex items-center gap-2 hover:text-accent" onClick={(e) => e.stopPropagation()}>
@@ -271,6 +276,7 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
           <span>
             <span className="font-medium">{label}</span>
             {formName && <span className="block text-xs text-muted">{formName}</span>}
+            <span className="block text-xs text-muted sm:hidden">{method}</span>
           </span>
         </Link>
       </span>
@@ -288,15 +294,15 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
         <table className="w-full text-sm">
           <thead className="bg-background/60 text-left text-xs uppercase tracking-wide text-muted">
             <tr>
-              <th className="px-3 py-2 font-medium">Pokémon</th>
-              <th className="px-3 py-2 font-medium">Méthode</th>
-              <th className="px-3 py-2 font-medium">Niveaux</th>
+              <th className="sticky left-0 z-10 bg-card px-2 py-2 font-medium sm:px-3">Pokémon</th>
+              <th className="hidden px-3 py-2 font-medium sm:table-cell">Méthode</th>
+              <th className="px-2 py-2 font-medium sm:px-3">Niveaux</th>
               {visibleVersions.map((index) => (
-                <th key={versions[index].id} className={`px-3 py-2 text-right font-medium ${index === 0 ? "text-foreground" : ""}`}>
+                <th key={versions[index].id} className={`px-2 py-2 text-right font-medium sm:px-3 ${index === 0 ? "text-foreground" : ""}`}>
                   {visibleVersions.length > 1 ? versions[index].nameFr : "Taux"}
                 </th>
               ))}
-              {showConditions && <th className="px-3 py-2 font-medium">Conditions</th>}
+              {showConditions && <th className="px-2 py-2 font-medium sm:px-3">Conditions</th>}
             </tr>
           </thead>
           <tbody>
@@ -308,8 +314,8 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
               if (group.rows.length === 1) {
                 return (
                   <tr key={group.speciesId} className="border-t border-border align-middle">
-                    {pokemonCell(first.row.pokemonId, species.nameFr, species.isDefault ? null : species.formNameFr)}
-                    <td className="px-3 py-1.5 whitespace-nowrap">{methodName(first.row.methodId)}</td>
+                    {pokemonCell(first.row.pokemonId, species.nameFr, species.isDefault ? null : species.formNameFr, methodName(first.row.methodId))}
+                    <td className={methodCell}>{methodName(first.row.methodId)}</td>
                     {levelCell(first.row)}
                     {rateCells(first.row.byVersion.map((v) => (v ? `${v[0]} %` : null)))}
                     {showConditions && conditionCell(first.row)}
@@ -323,6 +329,7 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
               const forms = new Set(rows.map((row) => row.pokemonId));
               const sharedForm = forms.size === 1 && !species.isDefault ? species.formNameFr : null;
               const methodNames = [...new Set(rows.map((row) => methodName(row.methodId)))];
+              const methodSummary = methodNames.length <= 2 ? methodNames.join(", ") : `${methodNames.length} méthodes`;
               const present = rows.flatMap((row) => visibleVersions.map((index) => row.byVersion[index]).filter((v) => v !== null));
               const summaryRates = versions.map((_, index) => formatRates(rows.map((row) => row.byVersion[index]?.[0]).filter((r) => r !== undefined)));
 
@@ -336,6 +343,7 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
                       first.row.pokemonId,
                       species.nameFr,
                       sharedForm,
+                      methodSummary,
                       <button
                         type="button"
                         aria-expanded={open}
@@ -349,24 +357,24 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
                         {open ? "▾" : "▸"}
                       </button>,
                     )}
-                    <td className="px-3 py-1.5">
-                      {methodNames.length <= 2 ? methodNames.join(", ") : `${methodNames.length} méthodes`}
+                    <td className={`${cell} hidden sm:table-cell`}>
+                      {methodSummary}
                       <span className="block text-xs text-muted">
                         {rows.length} rencontres{forms.size > 1 ? ` · ${forms.size} formes` : ""}
                       </span>
                     </td>
-                    <td className="px-3 py-1.5 whitespace-nowrap tabular-nums">
+                    <td className={`${cell} whitespace-nowrap tabular-nums`}>
                       {present.length > 0 ? formatLevels(Math.min(...present.map((v) => v[1])), Math.max(...present.map((v) => v[2]))) : "—"}
                     </td>
                     {rateCells(summaryRates)}
-                    {showConditions && <td className="px-3 py-1.5 text-xs text-muted">{open ? "" : "Voir le détail"}</td>}
+                    {showConditions && <td className={`${cell} text-xs text-muted`}>{open ? "" : "Voir le détail"}</td>}
                   </tr>
                   {open &&
                     group.rows.map(({ row, key }) => {
                       const pokemon = pokemons[row.pokemonId];
                       return (
                         <tr key={key} className="border-t border-border/50 bg-background/40 align-middle">
-                          <td className="py-1.5 pr-3 pl-12 text-xs text-muted">
+                          <td className="sticky left-0 z-10 bg-card py-1.5 pr-2 pl-8 text-xs text-muted sm:pr-3 sm:pl-12">
                             {forms.size > 1 ? (
                               <span className="flex items-center gap-2 text-foreground">
                                 <PokemonSprite pokemonId={row.pokemonId} fallbackId={pokemon.speciesId} alt="" size={28} className="shrink-0" />
@@ -375,8 +383,9 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
                             ) : (
                               <span aria-hidden>↳</span>
                             )}
+                            <span className="block text-foreground sm:hidden">{methodName(row.methodId)}</span>
                           </td>
-                          <td className="px-3 py-1.5 whitespace-nowrap">{methodName(row.methodId)}</td>
+                          <td className={methodCell}>{methodName(row.methodId)}</td>
                           {levelCell(row)}
                           {rateCells(row.byVersion.map((v) => (v ? `${v[0]} %` : null)))}
                           {showConditions && conditionCell(row)}
