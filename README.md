@@ -78,6 +78,16 @@ référence sont mises en cache 30 jours (`cacheLife("max")`, tag `reference`) ;
 `npm run import:data`, appeler `POST /api/revalidate` (voir ci-dessus) pour rafraîchir le cache ;
 en dev, le cache `use cache` survit aux modifications de la base, la route est donc utile aussi.
 
+La session utilisateur se lit à la requête (`src/lib/session.ts`) : tout composant qui l'utilise
+est rendu dans un `<Suspense>` (menu de l'en-tête, pages protégées) pour que le reste de la page
+reste dans la coquille statique. Les données propres à un utilisateur ne passent jamais par `use cache`.
+
+## Authentification
+
+Better Auth (e-mail + mot de passe), formulaires en Server Actions (`src/lib/auth-actions.ts`),
+cookies posés par le plugin `nextCookies`. Routes : `/inscription`, `/connexion` (`?next=` pour
+revenir sur la page demandée), `/compte` (pseudo, déconnexion), pages protégées via `requireUser()`.
+
 ## Scripts
 
 | Commande | Rôle |
@@ -102,7 +112,8 @@ src/lib/search.ts      # normalisation et classement de la recherche
 src/lib/encounters.ts  # types du tableau des rencontres + fusion des conditions
 src/lib/prisma.ts      # client Prisma (singleton)
 src/lib/auth.ts        # Better Auth côté serveur
-src/lib/auth-client.ts # Better Auth côté client
+src/lib/auth-actions.ts# Server Actions : inscription, connexion, déconnexion, pseudo
+src/lib/session.ts     # utilisateur courant (`getCurrentUser`, `requireUser`)
 src/generated/prisma   # client Prisma généré (ignoré par git)
 scripts/import/        # ETL : CSV PokeAPI → base + sprites
 public/sprites/        # sprites 96×96 (normal + shiny), téléchargés par l'import

@@ -102,11 +102,13 @@ Chaque phase se termine par une vérification concrète avant de passer à la su
 - `POST /api/revalidate` (prévu en phase 8) livré dès maintenant : indispensable après un import, y compris en dev
 - ✔ Route 101 / Route 119 identiques au site de référence ; Épée/Bouclier (Prairie Entre-Ponts, antres Dynamax) et HGSS (heure, radio, essaims) OK
 
-### Phase 5 — Authentification
+### Phase 5 — Authentification ✅ (13 sept. 2026)
 
-- Better Auth : inscription, connexion, déconnexion, session
-- Pages protégées, toutes les données de référence restent publiques
-- ✔ Deux comptes ne voient pas les données l'un de l'autre
+- Better Auth (e-mail + mot de passe) piloté par des Server Actions (`src/lib/auth-actions.ts`) : `/inscription`, `/connexion?next=`, déconnexion depuis l'en-tête, `/compte` (e-mail, date d'inscription, modification du pseudo, compteurs captures / chasses / shinies)
+- Validation Zod et messages d'erreur en français (codes Better Auth traduits) ; les formulaires fonctionnent sans JavaScript
+- `src/lib/session.ts` : `getCurrentUser()` (dédupliqué par requête, cookies posés pendant une action pris en compte) et `requireUser(next)` qui redirige vers la connexion ; `/captures` et `/shiny` protégées, toutes les données de référence restent publiques
+- Cache Components : la session se lit dans un `<Suspense>` (menu de l'en-tête, pages protégées), toutes les pages restent en pré-rendu partiel
+- ✔ Deux comptes ne voient pas les données l'un de l'autre (capture ajoutée à l'un, compteur à 0 chez l'autre) ; mauvais mot de passe, e-mail déjà pris et mots de passe différents affichent l'erreur sans perdre la saisie
 
 ### Phase 6 — Suivi des captures
 

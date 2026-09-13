@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { SearchForm } from "@/components/search-form";
+import { UserMenu, UserMenuFallback } from "@/components/user-menu";
 
 const links = [
   { href: "/jeux", label: "Pokédex" },
@@ -28,9 +30,10 @@ export function SiteHeader() {
         </nav>
         <div className="ml-auto flex items-center gap-3">
           <SearchForm />
-          <Link href="/connexion" className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-background">
-            Connexion
-          </Link>
+          {/* La session se lit à la requête : le reste de l'en-tête reste dans la coquille statique. */}
+          <Suspense fallback={<UserMenuFallback />}>
+            <UserMenu />
+          </Suspense>
         </div>
       </div>
     </header>
