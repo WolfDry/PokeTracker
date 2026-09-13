@@ -7,6 +7,7 @@ import { SpeciesCaptureChips } from "@/components/species-capture-chips";
 import { TypeBadge } from "@/components/type-badge";
 import { getSpeciesCaptures } from "@/lib/data/captures";
 import { isDlcVersion } from "@/lib/data/filters";
+import { getShinies, getSpeciesHunts } from "@/lib/data/shiny";
 import { getSpeciesById, getSpeciesEncounters } from "@/lib/data/species";
 import { getCurrentUser } from "@/lib/session";
 
@@ -44,6 +45,53 @@ async function MyCaptures({ speciesId, versions }: { speciesId: number; versions
   if (unique.length === 0) return <p className="text-sm text-muted">Ce Pokémon n&apos;est dans aucun Pokédex régional.</p>;
   const captures = await getSpeciesCaptures(user.id, speciesId);
   return <SpeciesCaptureChips speciesId={speciesId} versions={unique} captured={captures.map((c) => c.id)} />;
+}
+
+const numberFr = new Intl.NumberFormat("fr-FR");
+const dateFr = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" });
+
+/** Chasses en cours et shinies obtenus pour cette espèce, avec les raccourcis vers les formulaires. */
+async function MyShinies({ speciesId }: { speciesId: number }) {
+  const user = await getCurrentUser();
+  if (!user) return null;
+  const [hunts, shinies] = await Promise.all([getSpeciesHunts(user.id, speciesId), getShinies(user.id, speciesId)]);
+  return (
+    <section className="space-y-2 text-sm">
+      <h2 className="text-lg font-medium">Shiny</h2>
+      {hunts.length > 0 && (
+        <ul className="space-y-1">
+          {hunts.map((hunt) => (
+            <li key={hunt.id}>
+              Chasse en cours dans {hunt.version.nameFr} : <span className="font-medium tabular-nums">{numberFr.format(hunt.count)}</span> rencontres
+              {hunt.method && ` (${hunt.method})`} ·{" "}
+              <Link href={`/shiny/chasse/${hunt.id}`} className="underline hover:text-accent">
+                Ouvrir le compteur
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      {shinies.length > 0 && (
+        <ul className="space-y-1">
+          {shinies.map((shiny) => (
+            <li key={shiny.id}>
+              ✨ Attrapé dans {shiny.version.nameFr} le {dateFr.format(shiny.caughtAt)}
+              {shiny.encounters !== null && ` après ${numberFr.format(shiny.encounters)} rencontres`}
+              {shiny.nickname && ` — « ${shiny.nickname} »`}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="flex flex-wrap gap-x-3 text-muted">
+        <Link href={`/shiny/nouvelle?espece=${speciesId}`} className="underline hover:text-foreground">
+          Lancer une chasse shiny
+        </Link>
+        <Link href={`/shiny/ajouter?espece=${speciesId}`} className="underline hover:text-foreground">
+          Ajouter un shiny
+        </Link>
+      </p>
+    </section>
+  );
 }
 
 export default async function SpeciesPage({ params }: PageProps<"/pokemon/[id]">) {
@@ -146,6 +194,11 @@ export default async function SpeciesPage({ params }: PageProps<"/pokemon/[id]">
           <MyCaptures speciesId={species.id} versions={species.pokedexes.flatMap((p) => p.versions)} />
         </Suspense>
       </section>
+
+      {/* Chasses shiny et shinies de l'espèce : rien à afficher sans compte. */}
+      <Suspense fallback={null}>
+        <MyShinies speciesId={species.id} />
+      </Suspense>
 
       <section className="space-y-3">
         <h2 className="text-lg font-medium">Dans les Pokédex</h2>

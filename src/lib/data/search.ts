@@ -69,13 +69,17 @@ export async function getSearchIndex() {
 
 const LIMITS = { species: 24, versions: 12, locations: 30 };
 
+function normalizeQuery(rawQuery: string) {
+  const query = normalize(rawQuery);
+  // "025" doit trouver le n° 25.
+  return /^\d+$/.test(query) ? String(Number(query)) : query;
+}
+
 export async function searchAll(rawQuery: string) {
   cacheLife("days");
   cacheTag("reference");
 
-  let query = normalize(rawQuery);
-  // "025" doit trouver le n° 25.
-  if (/^\d+$/.test(query)) query = String(Number(query));
+  const query = normalizeQuery(rawQuery);
   if (query.length === 0) return null;
 
   const index = await getSearchIndex();
@@ -85,4 +89,21 @@ export async function searchAll(rawQuery: string) {
     versions: rank(index.versions, query, (v) => [v.nameFr, v.slug], LIMITS.versions),
     locations: rank(index.locations, query, (l) => [l.nameFr, l.nameEn], LIMITS.locations),
   };
+}
+
+export type SpeciesPick = { id: number; nameFr: string; pokemonId: number };
+
+/** Espèces seules, pour les champs de sélection d'un Pokémon (nouvelle chasse, ajout d'un shiny). */
+export async function searchSpecies(rawQuery: string, limit = 8): Promise<SpeciesPick[]> {
+  cacheLife("days");
+  cacheTag("reference");
+
+  const query = normalizeQuery(rawQuery);
+  if (query.length === 0) return [];
+  const index = await getSearchIndex();
+  return rank(index.species, query, (s) => [s.nameFr, s.nameEn, String(s.id)], limit).results.map((s) => ({
+    id: s.id,
+    nameFr: s.nameFr,
+    pokemonId: s.pokemonId,
+  }));
 }

@@ -120,12 +120,16 @@ Chaque phase se termine par une vérification concrète avant de passer à la su
 - Données utilisateur dans `src/lib/data/captures.ts`, lues à la requête (jamais `use cache`) ; index « espèce → lieux » par jeu en cache (`getVersionSpeciesLocations`)
 - ✔ Pikachu coché dans Rouge (grille) et dans Jaune (fiche) apparaît dans les deux blocs de `/captures` ; Carapuce coché depuis la liste des manquants disparaît de la liste et le compteur passe à 4 / 151 ; persistance vérifiée en base
 
-### Phase 7 — Shiny
+### Phase 7 — Shiny ✅ (14 sept. 2026)
 
-- Compteur de chasse : +1 / −1 / saisie directe, incrément clavier, plusieurs chasses en parallèle
-- Liste des chasses en cours (par jeu), clôture → devient un `ShinyCapture`
-- Galerie des shinies attrapés, ajout manuel sans chasse
-- ✔ Une chasse en cours dans deux jeux pour la même espèce fonctionne
+- `/shiny` : chasses en cours regroupées par jeu (carte avec +1 rapide), chasses en pause (Reprendre / Supprimer), aperçu des derniers shinies
+- `/shiny/nouvelle` (`?espece=&jeu=` pour présélectionner depuis une fiche) : Pokémon (recherche avec suggestions, `searchSpeciesAction`), jeu, méthode libre (suggestions), rencontres déjà faites
+- `/shiny/chasse/[id]` : compteur −1 / +1, saisie directe, clavier (+ / Espace / ↑ et − / ↓), pause, suppression ; « Shiny trouvé ! » → formulaire (surnom, date, note) qui clôture la chasse en `ShinyCapture` avec le compte affiché
+- Sauvegarde du compteur : valeur absolue envoyée après 600 ms sans clic (`setHuntCountAction`, une requête à la fois) ; si l'onglet passe en arrière-plan avant, `navigator.sendBeacon` vers `POST /api/shiny/count` (même origine, session vérifiée). En cas d'échec le compte local est conservé et on propose de réessayer
+- `/shiny/galerie` : shinies par jeu (surnom, méthode, rencontres, date, note), suppression avec confirmation ; `/shiny/ajouter` pour un shiny obtenu sans chasse
+- Fiche Pokémon : section « Shiny » (chasses en cours, shinies obtenus, liens Lancer une chasse / Ajouter un shiny)
+- Données utilisateur dans `src/lib/data/shiny.ts` (sans cache, chaque écriture filtrée sur `userId`)
+- ✔ Deux chasses Pikachu en parallèle (Rouge 251, Jaune 40) listées sous leur jeu avec des compteurs indépendants ; 5 clics rapides = 1 requête ; beacon vérifié en base ; clôture à 254 rencontres (le +1 fait juste avant l'envoi est pris en compte) → galerie
 
 ### Phase 8 — Finitions & déploiement
 

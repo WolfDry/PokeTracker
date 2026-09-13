@@ -95,6 +95,14 @@ Case « attrapé » par jeu sur le Pokédex (`/jeux/[jeu]`), la fiche Pokémon e
 Server Action `toggleCaptureAction` + UI optimiste (`src/components/use-captures.ts`). Les « versions »
 DLC de PokeAPI (Isolarmure, Couronneige…) sont rattachées à leur jeu de base (`DLC_BASE_VERSION`).
 
+## Chasses shiny
+
+`/shiny` liste les chasses en cours par jeu ; `/shiny/chasse/[id]` est le compteur (−1 / +1, saisie directe,
+clavier), « Shiny trouvé ! » clôture la chasse en `ShinyCapture` ; `/shiny/galerie` et `/shiny/ajouter` pour
+les shinies. Le compteur est sauvegardé en valeur absolue après un court délai (`setHuntCountAction`,
+`src/components/use-hunt-counter.ts`) et, si l'onglet passe en arrière-plan avant, via un beacon vers
+`POST /api/shiny/count`. Les données sont dans `src/lib/data/shiny.ts` (sans cache).
+
 ## Scripts
 
 | Commande | Rôle |
@@ -114,13 +122,14 @@ prisma/schema.prisma   # schéma : données de référence + données utilisateu
 prisma7.config.ts      # config Prisma (URL directe pour les migrations)
 src/app/               # routes (App Router)
 src/components/        # composants UI
-src/lib/data/          # accès aux données de référence (`use cache`, tag `reference`) ; captures.ts = données utilisateur, sans cache
+src/lib/data/          # accès aux données de référence (`use cache`, tag `reference`) ; captures.ts et shiny.ts = données utilisateur, sans cache
 src/lib/search.ts      # normalisation et classement de la recherche
 src/lib/encounters.ts  # types du tableau des rencontres + fusion des conditions
 src/lib/prisma.ts      # client Prisma (singleton)
 src/lib/auth.ts        # Better Auth côté serveur
 src/lib/auth-actions.ts# Server Actions : inscription, connexion, déconnexion, pseudo
 src/lib/capture-actions.ts # Server Action : cocher / décocher une capture
+src/lib/shiny-actions.ts # Server Actions : chasses shiny, compteur, galerie
 src/lib/session.ts     # utilisateur courant (`getCurrentUser`, `requireUser`)
 src/generated/prisma   # client Prisma généré (ignoré par git)
 scripts/import/        # ETL : CSV PokeAPI → base + sprites

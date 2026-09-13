@@ -1,7 +1,7 @@
 "use cache";
 
 import { cacheLife, cacheTag } from "next/cache";
-import { isHiddenVersion } from "@/lib/data/filters";
+import { isDlcVersion, isHiddenVersion } from "@/lib/data/filters";
 import { prisma } from "@/lib/prisma";
 
 // Données de référence : elles ne changent qu'à l'import, on les cache au maximum.
@@ -102,4 +102,15 @@ export async function getVersionSlugs() {
   cacheTag("reference");
   const versions = await prisma.version.findMany({ select: { slug: true } });
   return versions.map((v) => v.slug);
+}
+
+/** Jeux proposés dans les formulaires (chasse shiny, ajout d'un shiny) : par génération, sans les extensions. */
+export async function getGameOptions() {
+  cacheLife("max");
+  cacheTag("reference");
+
+  const generations = await getGenerationsWithGames();
+  return generations
+    .map((g) => ({ id: g.id, nameFr: g.nameFr, versions: g.versions.filter((v) => !isDlcVersion(v.slug)).map(({ id, slug, nameFr }) => ({ id, slug, nameFr })) }))
+    .filter((g) => g.versions.length > 0);
 }
