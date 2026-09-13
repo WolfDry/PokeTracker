@@ -61,6 +61,13 @@ Options : `-- --refresh` (re-télécharger les CSV après une mise à jour PokeA
 `-- --skip-sprites`, `-- --sprites-only`. Relançable sans risque : les captures et chasses
 des utilisateurs sont conservées.
 
+## Cache
+
+L'app utilise les Cache Components de Next (`cacheComponents: true`). Les données de
+référence sont mises en cache 30 jours (`cacheLife("max")`, tag `reference`) ; les pages
+`/jeux` et `/jeux/[version]` sont pré-rendues au build. Après un `npm run import:data`,
+redéployer (ou, plus tard, appeler la route de revalidation) pour rafraîchir le cache.
+
 ## Scripts
 
 | Commande | Rôle |
@@ -80,6 +87,7 @@ prisma/schema.prisma   # schéma : données de référence + données utilisateu
 prisma7.config.ts      # config Prisma (URL directe pour les migrations)
 src/app/               # routes (App Router)
 src/components/        # composants UI
+src/lib/data/          # accès aux données de référence (`use cache`, tag `reference`)
 src/lib/prisma.ts      # client Prisma (singleton)
 src/lib/auth.ts        # Better Auth côté serveur
 src/lib/auth-client.ts # Better Auth côté client

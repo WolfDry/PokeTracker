@@ -42,6 +42,12 @@ export const int = (value: string | undefined): number | null =>
 
 export const bool = (value: string | undefined) => value === "1";
 
+/** "hoenn-pokecenter" → "Hoenn pokecenter" : repli lisible quand aucun nom n'existe. */
+export const humanize = (slug: string) => {
+  const text = slug.replace(/-/g, " ");
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
+
 const LANG = { fr: "5", en: "9" } as const;
 
 /**

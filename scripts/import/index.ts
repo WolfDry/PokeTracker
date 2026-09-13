@@ -13,7 +13,7 @@
 import "dotenv/config";
 import type pg from "pg";
 import { coverageFor } from "./coverage";
-import { bool, int, loadCsv, localized, uniqueBy, type Row } from "./csv";
+import { bool, humanize, int, loadCsv, localized, uniqueBy, type Row } from "./csv";
 import { createPool, insertRows, type Rows } from "./db";
 import { METHOD_LABELS_FR, VERSION_LABELS_FR } from "./labels";
 import { downloadSprites } from "./sprites";
@@ -186,8 +186,8 @@ function transform(csv: Csv) {
     id: Number(l.id),
     slug: l.identifier,
     regionId: int(l.region_id),
-    nameFr: locationNames.fr(l.id, l.identifier),
-    nameEn: locationNames.en(l.id, l.identifier),
+    nameFr: locationNames.fr(l.id, humanize(l.identifier)),
+    nameEn: locationNames.en(l.id, humanize(l.identifier)),
   }));
   const areaNames = localized(csv.location_area_prose, "location_area_id");
   const locationAreas: Rows = csv.location_areas.map((a) => ({

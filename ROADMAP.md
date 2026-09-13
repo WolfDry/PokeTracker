@@ -76,11 +76,13 @@ Chaque phase se termine par une vérification concrète avant de passer à la su
 - Résultat : 1 025 espèces, 1 351 formes, 1 104 lieux, 117 127 rencontres, 2 684 sprites ; import complet en ~15 s
 - Libellés FR courts des méthodes de rencontre et noms des versions japonaises maintenus dans `scripts/import/labels.ts`
 
-### Phase 2 — Pokédex par jeu
+### Phase 2 — Pokédex par jeu ✅ (13 sept. 2026)
 
 - Liste des jeux (par génération) → Pokédex du jeu (grille avec sprites, numéro régional, types)
 - Fiche Pokémon : types, jeux où il est disponible, lieux de rencontre
 - ✔ Tous les dex `is_main_series` navigables
+- Routes : `/jeux`, `/jeux/[version]`, `/jeux/[version]/[dex]`, `/pokemon/[id]` ; versions japonaises masquées, Colosseum/XD affichent le dex national
+- Cache Components activé (`cacheComponents: true`) : les fonctions de `src/lib/data/*` sont en `use cache` + `cacheTag("reference")`, à invalider après un import (voir phase 8)
 
 ### Phase 3 — Recherche
 
@@ -118,6 +120,7 @@ Chaque phase se termine par une vérification concrète avant de passer à la su
 
 - Responsive mobile (usage console-en-main)
 - Déploiement (Vercel + Postgres managé, ou Docker sur VPS), variables d'env, seed en CI
+- Route protégée `/api/revalidate` appelant `revalidateTag("reference")` après un `npm run import:data` (sinon : redéployer)
 - ✔ URL publique fonctionnelle
 
 ## 4. Plus tard (hors v1)
