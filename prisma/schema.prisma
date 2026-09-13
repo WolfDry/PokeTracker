@@ -1,0 +1,462 @@
+// Schéma PokeTracker
+//
+// Deux familles de tables :
+//  - Données de référence (Generation → Encounter) : lecture seule, remplies par
+//    `npm run import:data` à partir des CSV de PokeAPI. Les ids sont ceux de PokeAPI.
+//  - Données utilisateur (User → ShinyCapture) : gérées par l'application.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Référence : jeux, régions, générations
+// ---------------------------------------------------------------------------
+
+model Generation {
+  id     Int    @id
+  slug   String @unique
+  nameFr String
+  nameEn String
+
+  regions       Region[]
+  versionGroups VersionGroup[]
+  species       Species[]
+}
+
+model Region {
+  id           Int    @id
+  slug         String @unique
+  nameFr       String
+  nameEn       String
+  generationId Int?
+
+  generation Generation? @relation(fields: [generationId], references: [id])
+  locations  Location[]
+  pokedexes  Pokedex[]
+}
+
+/// Groupe de versions jumelles (ex. Rouge/Bleu, Épée/Bouclier).
+model VersionGroup {
+  id           Int    @id
+  slug         String @unique
+  generationId Int
+  order        Int
+
+  generation Generation            @relation(fields: [generationId], references: [id])
+  versions   Version[]
+  pokedexes  PokedexVersionGroup[]
+  regions    VersionGroupRegion[]
+}
+
+model VersionGroupRegion {
+  versionGroupId Int
+  regionId       Int
+
+  versionGroup VersionGroup @relation(fields: [versionGroupId], references: [id])
+
+  @@id([versionGroupId, regionId])
+}
+
+/// Un jeu précis (Rouge, Bleu, Épée, …).
+model Version {
+  id             Int    @id
+  slug           String @unique
+  versionGroupId Int
+  nameFr         String
+  nameEn         String
+
+  versionGroup  VersionGroup                @relation(fields: [versionGroupId], references: [id])
+  coverage      VersionCoverage?
+  encounters    Encounter[]
+  areaRates     LocationAreaEncounterRate[]
+  captures      Capture[]
+  shinyHunts    ShinyHunt[]
+  shinyCaptures ShinyCapture[]
+}
+
+enum CoverageStatus {
+  FULL
+  PARTIAL
+  NONE
+}
+
+/// Résumé de la couverture des données de rencontre par jeu, calculé à l'import.
+/// Permet d'afficher un message honnête plutôt qu'une page vide.
+model VersionCoverage {
+  versionId      Int            @id
+  status         CoverageStatus
+  encounterCount Int
+  areaCount      Int
+  source         String?
+  note           String?
+
+  version Version @relation(fields: [versionId], references: [id])
+}
+
+// ---------------------------------------------------------------------------
+// Référence : Pokédex et Pokémon
+// ---------------------------------------------------------------------------
+
+model Pokedex {
+  id            Int     @id
+  slug          String  @unique
+  isMainSeries  Boolean
+  regionId      Int?
+  nameFr        String
+  nameEn        String
+  descriptionFr String?
+
+  region        Region?               @relation(fields: [regionId], references: [id])
+  entries       PokedexEntry[]
+  versionGroups PokedexVersionGroup[]
+}
+
+model PokedexVersionGroup {
+  pokedexId      Int
+  versionGroupId Int
+
+  pokedex      Pokedex      @relation(fields: [pokedexId], references: [id])
+  versionGroup VersionGroup @relation(fields: [versionGroupId], references: [id])
+
+  @@id([pokedexId, versionGroupId])
+}
+
+model PokedexEntry {
+  pokedexId Int
+  speciesId Int
+  number    Int
+
+  pokedex Pokedex @relation(fields: [pokedexId], references: [id])
+  species Species @relation(fields: [speciesId], references: [id])
+
+  @@id([pokedexId, speciesId])
+  @@index([pokedexId, number])
+}
+
+model Type {
+  id     Int    @id
+  slug   String @unique
+  nameFr String
+  nameEn String
+
+  primaryOf   Pokemon[] @relation("PokemonType1")
+  secondaryOf Pokemon[] @relation("PokemonType2")
+}
+
+/// Espèce = entrée du Pokédex national (id = numéro national).
+model Species {
+  id               Int     @id
+  slug             String  @unique
+  nameFr           String
+  nameEn           String
+  genusFr          String?
+  generationId     Int
+  isLegendary      Boolean @default(false)
+  isMythical       Boolean @default(false)
+  isBaby           Boolean @default(false)
+  captureRate      Int?
+  /// Chaîne d'évolution PokeAPI, pour regrouper les familles plus tard.
+  evolutionChainId Int?
+
+  generation     Generation     @relation(fields: [generationId], references: [id])
+  pokemons       Pokemon[]
+  pokedexEntries PokedexEntry[]
+  captures       Capture[]
+  shinyHunts     ShinyHunt[]
+  shinyCaptures  ShinyCapture[]
+
+  @@index([nameFr])
+  @@index([nameEn])
+}
+
+/// Forme concrète d'une espèce (forme par défaut, formes régionales, Méga…).
+/// Les rencontres pointent vers une forme, pas vers une espèce.
+model Pokemon {
+  id         Int     @id
+  speciesId  Int
+  slug       String  @unique
+  isDefault  Boolean
+  formNameFr String?
+  type1Id    Int
+  type2Id    Int?
+  height     Int?
+  weight     Int?
+
+  species    Species     @relation(fields: [speciesId], references: [id])
+  type1      Type        @relation("PokemonType1", fields: [type1Id], references: [id])
+  type2      Type?       @relation("PokemonType2", fields: [type2Id], references: [id])
+  encounters Encounter[]
+
+  @@index([speciesId])
+}
+
+// ---------------------------------------------------------------------------
+// Référence : lieux et rencontres
+// ---------------------------------------------------------------------------
+
+/// Lieu (Route 101, Grotte Granite, Bourg Palette…).
+model Location {
+  id       Int    @id
+  slug     String @unique
+  regionId Int?
+  nameFr   String
+  nameEn   String
+
+  region Region?        @relation(fields: [regionId], references: [id])
+  areas  LocationArea[]
+
+  @@index([nameFr])
+  @@index([nameEn])
+}
+
+/// Sous-zone d'un lieu (1F, B1F, rive nord…). Un lieu simple a une seule zone sans nom.
+model LocationArea {
+  id         Int     @id
+  locationId Int
+  slug       String?
+  nameFr     String?
+  nameEn     String?
+
+  location   Location                    @relation(fields: [locationId], references: [id])
+  encounters Encounter[]
+  rates      LocationAreaEncounterRate[]
+
+  @@index([locationId])
+}
+
+/// Méthode de rencontre : hautes herbes, surf, canne, cascade…
+model EncounterMethod {
+  id     Int    @id
+  slug   String @unique
+  nameFr String
+  nameEn String
+  order  Int
+
+  encounters Encounter[]
+  areaRates  LocationAreaEncounterRate[]
+}
+
+/// Taux global de rencontre d'une méthode dans une zone pour un jeu
+/// (ex. "hautes herbes : 20 %" sur la Route 101 dans Rubis).
+model LocationAreaEncounterRate {
+  locationAreaId Int
+  methodId       Int
+  versionId      Int
+  rate           Int
+
+  locationArea LocationArea    @relation(fields: [locationAreaId], references: [id])
+  method       EncounterMethod @relation(fields: [methodId], references: [id])
+  version      Version         @relation(fields: [versionId], references: [id])
+
+  @@id([locationAreaId, methodId, versionId])
+}
+
+/// Condition de rencontre (heure, saison, essaim, Poké Radar…).
+model EncounterCondition {
+  id     Int    @id
+  slug   String @unique
+  nameFr String
+  nameEn String
+
+  values EncounterConditionValue[]
+}
+
+model EncounterConditionValue {
+  id          Int     @id
+  conditionId Int
+  slug        String  @unique
+  nameFr      String
+  nameEn      String
+  isDefault   Boolean
+
+  condition  EncounterCondition              @relation(fields: [conditionId], references: [id])
+  encounters EncounterConditionOnEncounter[]
+}
+
+/// Une ligne de rencontre : dans tel jeu, telle zone, tel Pokémon apparaît
+/// via telle méthode, à tel niveau, avec tel taux.
+model Encounter {
+  id             Int    @id @default(autoincrement())
+  /// Origine de la donnée ("pokeapi" en v1 ; d'autres sources plus tard).
+  source         String @default("pokeapi")
+  /// Identifiant dans la source (id de encounters.csv pour PokeAPI).
+  sourceRef      Int?
+  versionId      Int
+  locationAreaId Int
+  pokemonId      Int
+  methodId       Int
+  slot           Int?
+  /// Taux du slot en pourcentage.
+  rarity         Int
+  minLevel       Int
+  maxLevel       Int
+
+  version      Version                         @relation(fields: [versionId], references: [id])
+  locationArea LocationArea                    @relation(fields: [locationAreaId], references: [id])
+  pokemon      Pokemon                         @relation(fields: [pokemonId], references: [id])
+  method       EncounterMethod                 @relation(fields: [methodId], references: [id])
+  conditions   EncounterConditionOnEncounter[]
+
+  @@unique([source, sourceRef])
+  @@index([versionId, locationAreaId])
+  @@index([pokemonId, versionId])
+}
+
+model EncounterConditionOnEncounter {
+  encounterId      Int
+  conditionValueId Int
+
+  encounter      Encounter               @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  conditionValue EncounterConditionValue @relation(fields: [conditionValueId], references: [id])
+
+  @@id([encounterId, conditionValueId])
+}
+
+// ---------------------------------------------------------------------------
+// Utilisateur : captures et chasses shiny
+// ---------------------------------------------------------------------------
+
+/// Un Pokémon attrapé par un utilisateur dans un jeu donné.
+/// Le même Pokémon attrapé dans plusieurs jeux = plusieurs lignes.
+model Capture {
+  id        String   @id @default(cuid())
+  userId    String
+  speciesId Int
+  versionId Int
+  caughtAt  DateTime @default(now())
+  note      String?
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  species Species @relation(fields: [speciesId], references: [id])
+  version Version @relation(fields: [versionId], references: [id])
+
+  @@unique([userId, speciesId, versionId])
+  @@index([userId, versionId])
+}
+
+enum HuntStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+}
+
+/// Chasse shiny en cours (ou terminée) : un compteur par (utilisateur, espèce, jeu).
+model ShinyHunt {
+  id          String     @id @default(cuid())
+  userId      String
+  speciesId   Int
+  versionId   Int
+  count       Int        @default(0)
+  /// Méthode de chasse libre : "Masuda", "Chaîne", "Full odds", …
+  method      String?
+  status      HuntStatus @default(ACTIVE)
+  startedAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  completedAt DateTime?
+
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  species Species       @relation(fields: [speciesId], references: [id])
+  version Version       @relation(fields: [versionId], references: [id])
+  capture ShinyCapture?
+
+  @@index([userId, status])
+}
+
+/// Shiny obtenu, issu ou non d'une chasse (un shiny full-odds n'a pas de chasse).
+model ShinyCapture {
+  id         String   @id @default(cuid())
+  userId     String
+  speciesId  Int
+  versionId  Int
+  huntId     String?  @unique
+  /// Nombre de rencontres au moment de la capture, si connu.
+  encounters Int?
+  method     String?
+  nickname   String?
+  note       String?
+  caughtAt   DateTime @default(now())
+
+  user    User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  species Species    @relation(fields: [speciesId], references: [id])
+  version Version    @relation(fields: [versionId], references: [id])
+  hunt    ShinyHunt? @relation(fields: [huntId], references: [id])
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Auth (Better Auth) — modèles générés par `npx @better-auth/cli generate`
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  captures      Capture[]
+  shinyHunts    ShinyHunt[]
+  shinyCaptures ShinyCapture[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @default(now()) @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
