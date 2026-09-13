@@ -64,3 +64,29 @@ export async function getPokedexBySlug(slug: string) {
 
   return { id: pokedex.id, slug: pokedex.slug, nameFr: pokedex.nameFr, descriptionFr: pokedex.descriptionFr, entries };
 }
+
+export type VersionPokedexSummary = { id: number; slug: string; nameFr: string; speciesIds: number[] };
+
+/** Pokédex principaux d'un jeu avec les espèces qu'ils contiennent — le national si le jeu n'en a pas (Colosseum, XD). */
+export async function getVersionPokedexes(versionId: number): Promise<VersionPokedexSummary[]> {
+  cacheLife("max");
+  cacheTag("reference");
+
+  const select = { id: true, slug: true, nameFr: true, entries: { orderBy: { number: "asc" as const }, select: { speciesId: true } } };
+  const version = await prisma.version.findUnique({
+    where: { id: versionId },
+    select: {
+      versionGroup: {
+        select: { pokedexes: { orderBy: { pokedexId: "asc" }, select: { pokedex: { select: { ...select, isMainSeries: true } } } } },
+      },
+    },
+  });
+  if (!version) return [];
+
+  let pokedexes = version.versionGroup.pokedexes.map((p) => p.pokedex).filter((p) => p.isMainSeries);
+  if (pokedexes.length === 0) {
+    const national = await prisma.pokedex.findUnique({ where: { slug: "national" }, select: { ...select, isMainSeries: true } });
+    pokedexes = national ? [national] : [];
+  }
+  return pokedexes.map((p) => ({ id: p.id, slug: p.slug, nameFr: p.nameFr, speciesIds: p.entries.map((e) => e.speciesId) }));
+}

@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { PokemonSprite } from "@/components/pokemon-sprite";
+import { SpeciesCaptureChips } from "@/components/species-capture-chips";
 import { TypeBadge } from "@/components/type-badge";
+import { getSpeciesCaptures } from "@/lib/data/captures";
+import { isDlcVersion } from "@/lib/data/filters";
 import { getSpeciesById, getSpeciesEncounters } from "@/lib/data/species";
+import { getCurrentUser } from "@/lib/session";
 
 function parseId(raw: string) {
   const id = Number(raw);
@@ -19,6 +24,26 @@ export async function generateMetadata({ params }: PageProps<"/pokemon/[id]">): 
 
 function formatLevel(min: number, max: number) {
   return min === max ? `Niv. ${min}` : `Niv. ${min}-${max}`;
+}
+
+async function MyCaptures({ speciesId, versions }: { speciesId: number; versions: { id: number; slug: string; nameFr: string }[] }) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return (
+      <p className="text-sm text-muted">
+        <Link href={`/connexion?next=${encodeURIComponent(`/pokemon/${speciesId}`)}`} className="underline hover:text-foreground">
+          Connecte-toi
+        </Link>{" "}
+        pour noter dans quels jeux tu l&apos;as attrapé.
+      </p>
+    );
+  }
+  // Un jeu peut apparaître via plusieurs Pokédex (Épée : Galar + Isolarmure + Couronneige) : on dédoublonne,
+  // et les extensions sont suivies avec leur jeu de base.
+  const unique = [...new Map(versions.filter((v) => !isDlcVersion(v.slug)).map((v) => [v.id, v])).values()];
+  if (unique.length === 0) return <p className="text-sm text-muted">Ce Pokémon n&apos;est dans aucun Pokédex régional.</p>;
+  const captures = await getSpeciesCaptures(user.id, speciesId);
+  return <SpeciesCaptureChips speciesId={speciesId} versions={unique} captured={captures.map((c) => c.id)} />;
 }
 
 export default async function SpeciesPage({ params }: PageProps<"/pokemon/[id]">) {
@@ -113,6 +138,14 @@ export default async function SpeciesPage({ params }: PageProps<"/pokemon/[id]">
           </ul>
         </section>
       )}
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-medium">Mes captures</h2>
+        {/* Dépend de la session : streamé, le reste de la fiche reste en cache. */}
+        <Suspense fallback={<div aria-busy className="h-8 w-64 animate-pulse rounded-full bg-border" />}>
+          <MyCaptures speciesId={species.id} versions={species.pokedexes.flatMap((p) => p.versions)} />
+        </Suspense>
+      </section>
 
       <section className="space-y-3">
         <h2 className="text-lg font-medium">Dans les Pokédex</h2>

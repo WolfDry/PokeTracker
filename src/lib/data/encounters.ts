@@ -1,7 +1,7 @@
 "use cache";
 
 import { cacheLife, cacheTag } from "next/cache";
-import { HIDDEN_LOCATION_PREFIX, humanizeSlug, isHiddenLocation, isHiddenVersion } from "@/lib/data/filters";
+import { dlcVersionSlugs, HIDDEN_LOCATION_PREFIX, humanizeSlug, isHiddenLocation, isHiddenVersion } from "@/lib/data/filters";
 import { getVersionBySlug } from "@/lib/data/games";
 import {
   collapseConditionRows,
@@ -61,6 +61,79 @@ export async function getVersionLocations(versionSlug: string) {
     .sort((a, b) => b.locations.length - a.locations.length);
 
   return { version, groups, locationCount: rows.length };
+}
+
+export type SpeciesLocation = {
+  id: number;
+  slug: string;
+  nameFr: string;
+  /** Version qui porte la table de rencontre (le jeu de base, ou son extension pour un lieu de DLC). */
+  versionSlug: string;
+  methods: string[];
+  minLevel: number;
+  maxLevel: number;
+};
+
+/**
+ * Index « espèce → lieux » d'un jeu, pour lister les Pokémon manquants avec où les trouver.
+ * Toutes les formes confondues, extensions du jeu incluses (Épée ⊃ Isolarmure, Couronneige) ;
+ * méthodes dans l'ordre PokeAPI, niveaux min/max tous lieux.
+ */
+export async function getVersionSpeciesLocations(versionId: number): Promise<Record<number, SpeciesLocation[]>> {
+  cacheLife("max");
+  cacheTag("reference");
+
+  const version = await prisma.version.findUnique({ where: { id: versionId }, select: { slug: true } });
+  if (!version) return {};
+
+  const encounters = await prisma.encounter.findMany({
+    where: {
+      version: { slug: { in: [version.slug, ...dlcVersionSlugs(version.slug)] } },
+      locationArea: { location: { slug: { not: { startsWith: HIDDEN_LOCATION_PREFIX } } } },
+    },
+    select: {
+      minLevel: true,
+      maxLevel: true,
+      pokemon: { select: { speciesId: true } },
+      method: { select: { nameFr: true, order: true } },
+      version: { select: { slug: true } },
+      locationArea: { select: { location: { select: { id: true, slug: true, nameFr: true } } } },
+    },
+  });
+
+  type Acc = SpeciesLocation & { methodOrder: Map<string, number> };
+  const bySpecies = new Map<number, Map<number, Acc>>();
+  for (const e of encounters) {
+    const locations = bySpecies.get(e.pokemon.speciesId) ?? new Map<number, Acc>();
+    const location = e.locationArea.location;
+    const entry = locations.get(location.id) ?? {
+      ...location,
+      versionSlug: e.version.slug,
+      methods: [],
+      methodOrder: new Map(),
+      minLevel: e.minLevel,
+      maxLevel: e.maxLevel,
+    };
+    // Un lieu présent dans le jeu de base et une extension : on renvoie vers le jeu de base.
+    if (e.version.slug === version.slug) entry.versionSlug = version.slug;
+    entry.methodOrder.set(e.method.nameFr, e.method.order);
+    entry.minLevel = Math.min(entry.minLevel, e.minLevel);
+    entry.maxLevel = Math.max(entry.maxLevel, e.maxLevel);
+    locations.set(location.id, entry);
+    bySpecies.set(e.pokemon.speciesId, locations);
+  }
+
+  const collator = new Intl.Collator("fr", { numeric: true });
+  const index: Record<number, SpeciesLocation[]> = {};
+  for (const [speciesId, locations] of bySpecies) {
+    index[speciesId] = [...locations.values()]
+      .sort((a, b) => collator.compare(a.nameFr, b.nameFr))
+      .map(({ methodOrder, ...location }) => ({
+        ...location,
+        methods: [...methodOrder.entries()].sort((a, b) => a[1] - b[1]).map(([name]) => name),
+      }));
+  }
+  return index;
 }
 
 /**

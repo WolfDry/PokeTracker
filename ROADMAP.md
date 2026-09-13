@@ -110,11 +110,15 @@ Chaque phase se termine par une vérification concrète avant de passer à la su
 - Cache Components : la session se lit dans un `<Suspense>` (menu de l'en-tête, pages protégées), toutes les pages restent en pré-rendu partiel
 - ✔ Deux comptes ne voient pas les données l'un de l'autre (capture ajoutée à l'un, compteur à 0 chez l'autre) ; mauvais mot de passe, e-mail déjà pris et mots de passe différents affichent l'erreur sans perdre la saisie
 
-### Phase 6 — Suivi des captures
+### Phase 6 — Suivi des captures ✅ (13 sept. 2026)
 
-- Depuis le Pokédex d'un jeu : cocher « attrapé » (par jeu)
-- Vue « Mes jeux » : % de complétion par dex, liste des manquants avec où les trouver
-- ✔ Un même Pokémon coché dans deux jeux apparaît dans les deux
+- Pokédex d'un jeu (`/jeux/[jeu]`) : case « attrapé » sur chaque carte (Server Action `toggleCaptureAction`, UI optimiste avec retour arrière si le serveur refuse), barre d'avancement, filtres Tous / Attrapés / Manquants ; sans compte, invitation à se connecter. La grille est streamée dans un `<Suspense>` (elle dépend de la session), le reste de la page reste statique
+- `/captures` (« Mes jeux ») : un bloc par jeu commencé avec l'avancement de chaque Pokédex (Épée : Galar, Isolarmure, Couronneige), puis les autres jeux à commencer
+- `/captures/[jeu]?dex=` : liste des manquants avec où les trouver (3 premiers lieux, méthodes, niveaux, lien vers le tableau des rencontres), cochable sur place ; onglet Attrapés ; message honnête pour les jeux sans rencontres
+- Fiche Pokémon : puces « Mes captures » (un jeu par puce, cochable)
+- Les versions DLC de PokeAPI (Isolarmure, Couronneige, Masque Turquoise, Disque Indigo, Méga-Dimension — `DLC_BASE_VERSION`) sont rattachées à leur jeu de base : elles n'apparaissent pas comme des jeux à cocher, mais leurs lieux alimentent la liste des manquants du jeu de base
+- Données utilisateur dans `src/lib/data/captures.ts`, lues à la requête (jamais `use cache`) ; index « espèce → lieux » par jeu en cache (`getVersionSpeciesLocations`)
+- ✔ Pikachu coché dans Rouge (grille) et dans Jaune (fiche) apparaît dans les deux blocs de `/captures` ; Carapuce coché depuis la liste des manquants disparaît de la liste et le compteur passe à 4 / 151 ; persistance vérifiée en base
 
 ### Phase 7 — Shiny
 

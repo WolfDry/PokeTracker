@@ -88,6 +88,13 @@ Better Auth (e-mail + mot de passe), formulaires en Server Actions (`src/lib/aut
 cookies posés par le plugin `nextCookies`. Routes : `/inscription`, `/connexion` (`?next=` pour
 revenir sur la page demandée), `/compte` (pseudo, déconnexion), pages protégées via `requireUser()`.
 
+## Suivi des captures
+
+Case « attrapé » par jeu sur le Pokédex (`/jeux/[jeu]`), la fiche Pokémon et la liste des manquants
+(`/captures/[jeu]`, avec où les trouver) ; `/captures` résume l'avancement de chaque Pokédex.
+Server Action `toggleCaptureAction` + UI optimiste (`src/components/use-captures.ts`). Les « versions »
+DLC de PokeAPI (Isolarmure, Couronneige…) sont rattachées à leur jeu de base (`DLC_BASE_VERSION`).
+
 ## Scripts
 
 | Commande | Rôle |
@@ -107,12 +114,13 @@ prisma/schema.prisma   # schéma : données de référence + données utilisateu
 prisma7.config.ts      # config Prisma (URL directe pour les migrations)
 src/app/               # routes (App Router)
 src/components/        # composants UI
-src/lib/data/          # accès aux données de référence (`use cache`, tag `reference`)
+src/lib/data/          # accès aux données de référence (`use cache`, tag `reference`) ; captures.ts = données utilisateur, sans cache
 src/lib/search.ts      # normalisation et classement de la recherche
 src/lib/encounters.ts  # types du tableau des rencontres + fusion des conditions
 src/lib/prisma.ts      # client Prisma (singleton)
 src/lib/auth.ts        # Better Auth côté serveur
 src/lib/auth-actions.ts# Server Actions : inscription, connexion, déconnexion, pseudo
+src/lib/capture-actions.ts # Server Action : cocher / décocher une capture
 src/lib/session.ts     # utilisateur courant (`getCurrentUser`, `requireUser`)
 src/generated/prisma   # client Prisma généré (ignoré par git)
 scripts/import/        # ETL : CSV PokeAPI → base + sprites

@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { PokedexGrid } from "@/components/pokedex-grid";
+import { getCapturedSpeciesIds } from "@/lib/data/captures";
 import { getVersionBySlug } from "@/lib/data/games";
-import { getPokedexBySlug } from "@/lib/data/pokedex";
+import { getPokedexBySlug, type PokedexGridEntry } from "@/lib/data/pokedex";
+import { getCurrentUser } from "@/lib/session";
 
 type Props = {
   versionSlug: string;
@@ -94,8 +97,27 @@ export async function GamePokedex({ versionSlug, dexSlug }: Props) {
         {version.pokedexes.length === 0 && (
           <p className="text-sm text-muted">Ce jeu n&apos;a pas de Pokédex régional : Pokédex national affiché.</p>
         )}
-        <PokedexGrid entries={pokedex.entries} />
+        {/* Les captures dépendent de la session : la grille est streamée, le reste de la page reste statique. */}
+        <Suspense fallback={<GridSkeleton count={pokedex.entries.length} />}>
+          <GridWithCaptures versionId={version.id} entries={pokedex.entries} loginNext={dexSlug ? `/jeux/${version.slug}/${dexSlug}` : `/jeux/${version.slug}`} />
+        </Suspense>
       </section>
     </div>
+  );
+}
+
+async function GridWithCaptures({ versionId, entries, loginNext }: { versionId: number; entries: PokedexGridEntry[]; loginNext: string }) {
+  const user = await getCurrentUser();
+  const captured = user ? await getCapturedSpeciesIds(user.id, versionId) : null;
+  return <PokedexGrid entries={entries} versionId={versionId} captured={captured} loginNext={loginNext} />;
+}
+
+function GridSkeleton({ count }: { count: number }) {
+  return (
+    <ul aria-busy className="grid animate-pulse grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      {Array.from({ length: count }, (_, i) => (
+        <li key={i} className="h-[74px] rounded-lg border border-border bg-card" />
+      ))}
+    </ul>
   );
 }
