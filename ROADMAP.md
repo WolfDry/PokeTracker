@@ -84,11 +84,12 @@ Chaque phase se termine par une vérification concrète avant de passer à la su
 - Routes : `/jeux`, `/jeux/[version]`, `/jeux/[version]/[dex]`, `/pokemon/[id]` ; versions japonaises masquées, Colosseum/XD affichent le dex national
 - Cache Components activé (`cacheComponents: true`) : les fonctions de `src/lib/data/*` sont en `use cache` + `cacheTag("reference")`, à invalider après un import (voir phase 8)
 
-### Phase 3 — Recherche
+### Phase 3 — Recherche ✅ (13 sept. 2026)
 
 - Barre de recherche unifiée : Pokémon (FR/EN), jeu, lieu
-- Index en base (`pg_trgm` ou simple `ILIKE` accent-insensible)
+- Index en mémoire (≈ 2 200 libellés) chargé par une fonction `use cache`, normalisation accents/casse/apostrophes et classement en JS (`src/lib/search.ts`) — pas d'extension Postgres nécessaire
 - ✔ « salam » trouve Salamèche, « route 1 » liste les Route 1 de chaque région
+- Bonus : page lieu `/lieux/[slug]` (jeux où le lieu a des rencontres, nombre d'espèces) ; barre de recherche dans l'en-tête
 
 ### Phase 4 — Rencontres jeu × lieu (feature clé)
 

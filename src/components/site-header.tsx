@@ -1,9 +1,9 @@
 import Link from "next/link";
+import { SearchForm } from "@/components/search-form";
 
 const links = [
   { href: "/jeux", label: "Pokédex" },
   { href: "/rencontres", label: "Rencontres" },
-  { href: "/recherche", label: "Recherche" },
   { href: "/captures", label: "Mes captures" },
   { href: "/shiny", label: "Shiny" },
 ];
@@ -11,7 +11,7 @@ const links = [
 export function SiteHeader() {
   return (
     <header className="border-b border-border bg-card">
-      <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
         <Link href="/" className="flex items-center gap-2 font-semibold">
           <span
             aria-hidden
@@ -19,23 +19,19 @@ export function SiteHeader() {
           />
           PokeTracker
         </Link>
-        <nav className="flex flex-1 items-center gap-4 overflow-x-auto text-sm whitespace-nowrap">
+        <nav className="flex items-center gap-4 overflow-x-auto text-sm whitespace-nowrap">
           {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-muted transition-colors hover:text-foreground"
-            >
+            <Link key={link.href} href={link.href} className="text-muted transition-colors hover:text-foreground">
               {link.label}
             </Link>
           ))}
         </nav>
-        <Link
-          href="/connexion"
-          className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-background"
-        >
-          Connexion
-        </Link>
+        <div className="ml-auto flex items-center gap-3">
+          <SearchForm />
+          <Link href="/connexion" className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-background">
+            Connexion
+          </Link>
+        </div>
       </div>
     </header>
   );

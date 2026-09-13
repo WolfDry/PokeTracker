@@ -88,6 +88,7 @@ prisma7.config.ts      # config Prisma (URL directe pour les migrations)
 src/app/               # routes (App Router)
 src/components/        # composants UI
 src/lib/data/          # accès aux données de référence (`use cache`, tag `reference`)
+src/lib/search.ts      # normalisation et classement de la recherche
 src/lib/prisma.ts      # client Prisma (singleton)
 src/lib/auth.ts        # Better Auth côté serveur
 src/lib/auth-client.ts # Better Auth côté client
