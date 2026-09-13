@@ -1,7 +1,7 @@
 "use cache";
 
 import { cacheLife, cacheTag } from "next/cache";
-import { humanizeSlug, isHiddenVersion } from "@/lib/data/filters";
+import { HIDDEN_LOCATION_PREFIX, humanizeSlug, isHiddenVersion } from "@/lib/data/filters";
 import { prisma } from "@/lib/prisma";
 
 export type SpeciesEncounterSummary = {
@@ -113,7 +113,11 @@ export async function getSpeciesEncounters(speciesId: number): Promise<SpeciesEn
   cacheTag("reference");
 
   const encounters = await prisma.encounter.findMany({
-    where: { pokemon: { speciesId }, version: { slug: { not: { endsWith: "-japan" } } } },
+    where: {
+      pokemon: { speciesId },
+      version: { slug: { not: { endsWith: "-japan" } } },
+      locationArea: { location: { slug: { not: { startsWith: HIDDEN_LOCATION_PREFIX } } } },
+    },
     select: {
       minLevel: true,
       maxLevel: true,

@@ -1,7 +1,7 @@
 "use cache";
 
 import { cacheLife, cacheTag } from "next/cache";
-import { isHiddenVersion } from "@/lib/data/filters";
+import { isHiddenLocation, isHiddenVersion } from "@/lib/data/filters";
 import { prisma } from "@/lib/prisma";
 
 /** Un lieu et, pour chaque jeu où il a des rencontres, le nombre d'espèces qu'on y trouve. */
@@ -9,6 +9,7 @@ export async function getLocationBySlug(slug: string) {
   cacheLife("max");
   cacheTag("reference");
 
+  if (isHiddenLocation(slug)) return null;
   const location = await prisma.location.findUnique({
     where: { slug },
     select: {

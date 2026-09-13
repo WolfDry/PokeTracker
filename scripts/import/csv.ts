@@ -65,6 +65,8 @@ export function localized(rows: Row[], idKey: string, nameKey = "name") {
   }
   return {
     fr: (id: string, fallback: string) => fr.get(id) ?? en.get(id) ?? fallback,
+    /** Français uniquement, sans repli sur l'anglais. */
+    frOnly: (id: string) => fr.get(id),
     en: (id: string, fallback: string) => en.get(id) ?? fallback,
   };
 }

@@ -91,12 +91,16 @@ Chaque phase se termine par une vérification concrète avant de passer à la su
 - ✔ « salam » trouve Salamèche, « route 1 » liste les Route 1 de chaque région
 - Bonus : page lieu `/lieux/[slug]` (jeux où le lieu a des rencontres, nombre d'espèces) ; barre de recherche dans l'en-tête
 
-### Phase 4 — Rencontres jeu × lieu (feature clé)
+### Phase 4 — Rencontres jeu × lieu (feature clé) ✅ (13 sept. 2026)
 
-- Page : sélection jeu → lieu → tableau par sous-zone : Pokémon | Méthode | Niveaux | Taux | Conditions
-- Filtres : masquer les cannes, filtrer par méthode, par version d'un même groupe
-- Message clair pour les jeux sans données
-- ✔ Comparable au site de référence sur Gen 3 ; fonctionne sur SwSh
+- `/rencontres` (jeu) → `/rencontres/[jeu]` (lieux par région, filtre texte, nombre d'espèces) → `/rencontres/[jeu]/[lieu]` : tableau par sous-zone Pokémon | Méthode | Niveaux | Taux par version | Conditions
+- Taux = somme des slots d'un même Pokémon (Chenipotte 20 + 10 + 10 + 5 = 45 %) ; versions jumelles côte à côte (Rubis | Saphir), niveaux détaillés par version s'ils diffèrent ; fréquence globale de la zone (`LocationAreaEncounterRate`) affichée par méthode
+- Conditions fusionnées côté serveur (`collapseConditionRows`) : « matin + journée + nuit » à taux égal → sans condition, sinon « Le matin / La nuit » ; libellés français maintenus à la main pour les ~200 valeurs que PokeAPI ne traduit pas (météo, raids, échanges…)
+- Filtres client instantanés : versions du groupe / ce jeu seulement, méthodes, masquer les cannes ; sous-zones repliables (au-delà de 200 lignes, seule la principale est ouverte — Terres Sauvages)
+- Une ligne par espèce : si elle se trouve de plusieurs façons (méthodes, formes, conditions), ligne résumé (méthodes, plage de niveaux et de taux) dépliable en sous-lignes ; les noms de forme des formes par défaut (Bargantua « Motif Rouge ») n'apparaissent que dans ces sous-lignes
+- Jeux sans données : carte inactive sur `/rencontres`, message sur les pages ; lieux fictifs PokeAPI (`unknown-all-*`) masqués partout
+- `POST /api/revalidate` (prévu en phase 8) livré dès maintenant : indispensable après un import, y compris en dev
+- ✔ Route 101 / Route 119 identiques au site de référence ; Épée/Bouclier (Prairie Entre-Ponts, antres Dynamax) et HGSS (heure, radio, essaims) OK
 
 ### Phase 5 — Authentification
 
@@ -121,7 +125,7 @@ Chaque phase se termine par une vérification concrète avant de passer à la su
 
 - Responsive mobile (usage console-en-main)
 - Déploiement (Vercel + Postgres managé, ou Docker sur VPS), variables d'env, seed en CI
-- Route protégée `/api/revalidate` appelant `revalidateTag("reference")` après un `npm run import:data` (sinon : redéployer)
+- ~~Route protégée `/api/revalidate`~~ livrée en phase 4 ; documenter l'appel dans le déploiement
 - ✔ URL publique fonctionnelle
 
 ## 4. Plus tard (hors v1)

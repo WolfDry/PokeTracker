@@ -11,3 +11,10 @@ export function humanizeSlug(slug: string) {
   const text = slug.replace(/-/g, " ");
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
+
+/** Préfixe des lieux fictifs de PokeAPI (« Inconnu ; que des Rattata ») : tables de rencontre orphelines. */
+export const HIDDEN_LOCATION_PREFIX = "unknown-all-";
+
+export function isHiddenLocation(slug: string) {
+  return slug.startsWith(HIDDEN_LOCATION_PREFIX);
+}

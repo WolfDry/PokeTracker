@@ -1,6 +1,7 @@
 "use cache";
 
 import { cacheLife, cacheTag } from "next/cache";
+import { HIDDEN_LOCATION_PREFIX } from "@/lib/data/filters";
 import { getGenerationsWithGames } from "@/lib/data/games";
 import { prisma } from "@/lib/prisma";
 import { normalize, rank } from "@/lib/search";
@@ -35,6 +36,7 @@ export async function getSearchIndex() {
     }),
     getGenerationsWithGames(),
     prisma.location.findMany({
+      where: { slug: { not: { startsWith: HIDDEN_LOCATION_PREFIX } } },
       orderBy: { nameFr: "asc" },
       select: { id: true, slug: true, nameFr: true, nameEn: true, region: { select: { nameFr: true } } },
     }),

@@ -28,6 +28,7 @@ Puis renseigne dans `.env` :
 - `DIRECT_DATABASE_URL` : l'URL **directe** de Neon (sans `-pooler`), utilisée par Prisma Migrate et l'import.
 - `BETTER_AUTH_SECRET` : une chaîne aléatoire, par ex. `openssl rand -base64 32`.
 - `BETTER_AUTH_URL` : `http://localhost:3000` en dev.
+- `REVALIDATE_SECRET` : jeton exigé par `POST /api/revalidate` en production (facultatif en dev).
 
 ### 3. Base de données
 
@@ -61,12 +62,21 @@ Options : `-- --refresh` (re-télécharger les CSV après une mise à jour PokeA
 `-- --skip-sprites`, `-- --sprites-only`. Relançable sans risque : les captures et chasses
 des utilisateurs sont conservées.
 
+Après un import, vider le cache des données de référence :
+
+```bash
+curl -X POST http://localhost:3000/api/revalidate
+```
+
+(en production, avec `-H "Authorization: Bearer $REVALIDATE_SECRET"`).
+
 ## Cache
 
 L'app utilise les Cache Components de Next (`cacheComponents: true`). Les données de
 référence sont mises en cache 30 jours (`cacheLife("max")`, tag `reference`) ; les pages
-`/jeux` et `/jeux/[version]` sont pré-rendues au build. Après un `npm run import:data`,
-redéployer (ou, plus tard, appeler la route de revalidation) pour rafraîchir le cache.
+`/jeux`, `/jeux/[version]`, `/rencontres` et `/rencontres/[version]` sont pré-rendues au build. Après un
+`npm run import:data`, appeler `POST /api/revalidate` (voir ci-dessus) pour rafraîchir le cache ;
+en dev, le cache `use cache` survit aux modifications de la base, la route est donc utile aussi.
 
 ## Scripts
 
@@ -89,6 +99,7 @@ src/app/               # routes (App Router)
 src/components/        # composants UI
 src/lib/data/          # accès aux données de référence (`use cache`, tag `reference`)
 src/lib/search.ts      # normalisation et classement de la recherche
+src/lib/encounters.ts  # types du tableau des rencontres + fusion des conditions
 src/lib/prisma.ts      # client Prisma (singleton)
 src/lib/auth.ts        # Better Auth côté serveur
 src/lib/auth-client.ts # Better Auth côté client

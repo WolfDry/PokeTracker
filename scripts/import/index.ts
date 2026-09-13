@@ -15,7 +15,7 @@ import type pg from "pg";
 import { coverageFor } from "./coverage";
 import { bool, humanize, int, loadCsv, localized, uniqueBy, type Row } from "./csv";
 import { createPool, insertRows, type Rows } from "./db";
-import { METHOD_LABELS_FR, VERSION_LABELS_FR } from "./labels";
+import { conditionValueLabelFr, LOCATION_LABELS_FR, METHOD_LABELS_FR, VERSION_LABELS_FR } from "./labels";
 import { downloadSprites } from "./sprites";
 
 const args = new Set(process.argv.slice(2));
@@ -186,17 +186,27 @@ function transform(csv: Csv) {
     id: Number(l.id),
     slug: l.identifier,
     regionId: int(l.region_id),
-    nameFr: locationNames.fr(l.id, humanize(l.identifier)),
+    nameFr: LOCATION_LABELS_FR[l.identifier] ?? locationNames.fr(l.id, humanize(l.identifier)),
     nameEn: locationNames.en(l.id, humanize(l.identifier)),
   }));
   const areaNames = localized(csv.location_area_prose, "location_area_id");
-  const locationAreas: Rows = csv.location_areas.map((a) => ({
-    id: Number(a.id),
-    locationId: Number(a.location_id),
-    slug: a.identifier || null,
-    nameFr: areaNames.fr(a.id, "") || null,
-    nameEn: areaNames.en(a.id, "") || null,
-  }));
+  const locationById = new Map(locations.map((l) => [l.id as number, l]));
+  const locationAreas: Rows = csv.location_areas.map((a) => {
+    const location = locationById.get(Number(a.location_id));
+    const nameEn = areaNames.en(a.id, "") || null;
+    let nameFr = areaNames.frOnly(a.id) ?? null;
+    // Sans nom français, PokeAPI ne fournit que "<lieu EN> (Max Den A)" : on reconstruit à partir du lieu en français.
+    if (!nameFr && nameEn && location && nameEn.startsWith(location.nameEn as string)) {
+      nameFr = (location.nameFr as string) + nameEn.slice((location.nameEn as string).length).replace("Max Den", "Antre Dynamax");
+    }
+    return {
+      id: Number(a.id),
+      locationId: Number(a.location_id),
+      slug: a.identifier || null,
+      nameFr: nameFr ?? nameEn,
+      nameEn,
+    };
+  });
 
   const methodNames = localized(csv.encounter_method_prose, "encounter_method_id");
   const encounterMethods: Rows = csv.encounter_methods.map((m) => ({
@@ -214,11 +224,15 @@ function transform(csv: Csv) {
     nameEn: conditionNames.en(c.id, c.identifier),
   }));
   const conditionValueNames = localized(csv.encounter_condition_value_prose, "encounter_condition_value_id");
+  const speciesNameBySlug = new Map(species.map((s) => [s.slug as string, s.nameFr as string]));
   const encounterConditionValues: Rows = csv.encounter_condition_values.map((v) => ({
     id: Number(v.id),
     conditionId: Number(v.encounter_condition_id),
     slug: v.identifier,
-    nameFr: conditionValueNames.fr(v.id, v.identifier),
+    // Notre libellé, sinon celui de PokeAPI en français, sinon par motif, sinon l'anglais.
+    nameFr:
+      conditionValueLabelFr(v.identifier, conditionValueNames.frOnly(v.id), (slug) => speciesNameBySlug.get(slug)) ??
+      conditionValueNames.en(v.id, v.identifier),
     nameEn: conditionValueNames.en(v.id, v.identifier),
     isDefault: bool(v.is_default),
   }));
