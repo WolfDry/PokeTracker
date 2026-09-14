@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type ReactNode, useMemo, useState } from "react";
 import { CheckIcon, ChevronDownIcon, MapIcon, SearchIcon } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
@@ -42,6 +43,7 @@ export function PokedexExplorer({ page, game, dex, entries, extras, captured, lo
   const [status, setStatus] = useState<Status>("all");
   const [type, setType] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const router = useRouter();
 
   const caughtCount = signedIn ? entries.filter((e) => captures.captured.has(e.species.id)).length : 0;
 
@@ -159,20 +161,35 @@ export function PokedexExplorer({ page, game, dex, entries, extras, captured, lo
       <div className="sticky top-16 z-10 -mx-10 hidden items-center gap-6 border-b border-line bg-page/90 px-10 py-3 backdrop-blur sm:flex">
         {searchField}
         {page.games.length > 0 && (
-          <nav className="flex flex-wrap items-center gap-1.5" aria-label="Jeu">
-            <span className="t-caption mr-1">Jeu</span>
-            {gameChips}
-          </nav>
+          <ToolbarSelect
+            label="Jeu"
+            value={game?.slug ?? ""}
+            onChange={(slug) => {
+              const target = page.games.find((g) => g.slug === slug);
+              if (target) router.push(gameHref(target));
+            }}
+            options={page.games.map((g) => ({ value: g.slug, label: g.nameFr }))}
+            placeholder={game ? undefined : "Choisir un jeu"}
+          />
         )}
         {page.dexes.length > 1 && (
-          <nav className="flex flex-wrap items-center gap-1.5" aria-label="Pokédex">
-            <span className="t-caption mr-1">Pokédex</span>
-            {dexChips}
-          </nav>
+          <ToolbarSelect
+            label="Pokédex"
+            value={dex.slug}
+            onChange={(slug) => router.push(dexHref({ slug }))}
+            options={page.dexes.map((d) => ({ value: d.slug, label: `${d.nameFr} · ${d.entryCount}` }))}
+          />
         )}
         <div className="ml-auto flex items-center gap-1.5" role="group" aria-label="Filtrer">
           {statusChips}
-          <TypeSelect types={types} value={type} onChange={setType} />
+          <ToolbarSelect
+            label="Type"
+            value={type ?? ""}
+            onChange={(slug) => setType(slug || null)}
+            options={types.map((t) => ({ value: t.slug, label: t.nameFr }))}
+            placeholder="Tous"
+            highlight={type !== null}
+          />
         </div>
       </div>
 
@@ -274,19 +291,33 @@ function FilterSection({ label, children }: { label: string; children: ReactNode
   );
 }
 
-function TypeSelect({ types, value, onChange }: { types: { slug: string; nameFr: string }[]; value: string | null; onChange: (v: string | null) => void }) {
+type ToolbarSelectProps = {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  /** Première option, vide (« Tous les types ») ; sans elle, une valeur est toujours choisie. */
+  placeholder?: string;
+  /** Chip encre pleine quand un filtre est actif. */
+  highlight?: boolean;
+};
+
+/** Menu déroulant habillé en chip, précédé de son étiquette : « JEU  [Rouge Feu ▾] ». */
+function ToolbarSelect({ label, value, onChange, options, placeholder, highlight = false }: ToolbarSelectProps) {
   return (
-    <label className="relative">
-      <span className="sr-only">Type</span>
-      <select value={value ?? ""} onChange={(e) => onChange(e.target.value || null)} className={`${chip(value !== null)} appearance-none pr-7`}>
-        <option value="">Type</option>
-        {types.map((t) => (
-          <option key={t.slug} value={t.slug}>
-            {t.nameFr}
-          </option>
-        ))}
-      </select>
-      <ChevronDownIcon size={12} className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2" />
+    <label className="inline-flex items-center gap-2">
+      <span className="t-caption">{label}</span>
+      <span className="relative inline-flex">
+        <select value={value} onChange={(e) => onChange(e.target.value)} className={`${chip(highlight)} appearance-none pr-7 ${highlight ? "" : "text-ink"}`}>
+          {placeholder !== undefined && <option value="">{placeholder}</option>}
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <ChevronDownIcon size={12} className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2" />
+      </span>
     </label>
   );
 }

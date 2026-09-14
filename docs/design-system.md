@@ -84,7 +84,7 @@ Composants React de structure : `PageHeader` (légende, titre display, intro, ac
 
 ### Page Pokédex (`PokedexExplorer`)
 
-Cartes « affiche » : le sprite (160 px, 112 sur mobile) au centre d'une carte bordée, le numéro en filigrane Surface 2 en haut à gauche, la case « attrapé » en haut à droite (cible 44 px), nom en gras puis `TypeDots`. Barre d'outils collante sous l'en-tête (`sm+`) : recherche, chips Jeu, chips Pokédex s'il y en a plusieurs, Tous / Attrapés / Manquants, sélecteur Type. Sur mobile : recherche + bouton « Filtres » (pastille = filtres actifs) qui ouvre un panneau `shadow-float` par-dessus la grille, rangé par sections (Jeu · Pokédex · Statut · Type), pied « Réinitialiser / Voir N Pokémon ».
+Cartes « affiche » : le sprite (160 px, 112 sur mobile) au centre d'une carte bordée, le numéro en filigrane Surface 2 en haut à gauche, la case « attrapé » en haut à droite (cible 44 px), nom en gras puis `TypeDots`. Barre d'outils collante sous l'en-tête (`sm+`) : recherche, sélecteurs Jeu et Pokédex (s'il y en a plusieurs) habillés en chip avec leur étiquette `t-caption`, Tous / Attrapés / Manquants, sélecteur Type. Sur mobile : recherche + bouton « Filtres » (pastille = filtres actifs) qui ouvre un panneau `shadow-float` par-dessus la grille, rangé par sections (Jeu · Pokédex · Statut · Type), pied « Réinitialiser / Voir N Pokémon ».
 
 ## Navigation
 
