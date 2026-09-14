@@ -6,6 +6,7 @@ import { PokemonSprite } from "@/components/pokemon-sprite";
 import { SearchForm } from "@/components/search-form";
 import { TypeBadge } from "@/components/type-badge";
 import { cardLink, dexNumber, spriteBox } from "@/components/ui";
+import { getPokedexHrefs } from "@/lib/data/pokedex-pages";
 import { searchAll } from "@/lib/data/search";
 
 export const metadata: Metadata = { title: "Recherche" };
@@ -25,7 +26,7 @@ export default function SearchPage({ searchParams }: PageProps<"/recherche">) {
 async function SearchResults({ searchParams }: { searchParams: PageProps<"/recherche">["searchParams"] }) {
   const { q } = await searchParams;
   const rawQuery = (Array.isArray(q) ? q[0] : q) ?? "";
-  const results = rawQuery ? await searchAll(rawQuery) : null;
+  const [results, pokedexHrefs] = await Promise.all([rawQuery ? searchAll(rawQuery) : null, getPokedexHrefs()]);
 
   return (
     <>
@@ -69,7 +70,7 @@ async function SearchResults({ searchParams }: { searchParams: PageProps<"/reche
             <ul className="flex flex-wrap gap-2">
               {results.versions.results.map((version) => (
                 <li key={version.id}>
-                  <Link href={`/jeux/${version.slug}`} className={`${cardLink} inline-flex items-baseline gap-2 rounded-md px-3.5 py-2.5`}>
+                  <Link href={pokedexHrefs[version.slug] ?? "/pokedex"} className={`${cardLink} inline-flex items-baseline gap-2 rounded-md px-3.5 py-2.5`}>
                     <span className="font-semibold">{version.nameFr}</span>
                     <span className="t-small text-ink-2">{version.generationNameFr}</span>
                   </Link>

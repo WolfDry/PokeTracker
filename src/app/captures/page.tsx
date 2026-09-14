@@ -9,6 +9,7 @@ import { card, chip, notice, textLink } from "@/components/ui";
 import { getUserGames } from "@/lib/data/captures";
 import { isDlcVersion } from "@/lib/data/filters";
 import { getGenerationsWithGames } from "@/lib/data/games";
+import { getPokedexHrefs } from "@/lib/data/pokedex-pages";
 import { requireUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Mes captures" };
@@ -28,7 +29,7 @@ const dateFr = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" });
 
 async function Games() {
   const user = await requireUser("/captures");
-  const [games, generations] = await Promise.all([getUserGames(user.id), getGenerationsWithGames()]);
+  const [games, generations, pokedexHrefs] = await Promise.all([getUserGames(user.id), getGenerationsWithGames(), getPokedexHrefs()]);
   const started = new Set(games.map((g) => g.version.id));
   // Les extensions (Isolarmure…) sont suivies avec leur jeu de base, pas comme un jeu à part.
   const others = generations
@@ -61,7 +62,7 @@ async function Games() {
                 <Link href={`/captures/${game.version.slug}`} className="inline-flex items-center gap-1 font-semibold hover:underline">
                   Manquants et où les trouver <ArrowRightIcon size={14} />
                 </Link>
-                <Link href={`/jeux/${game.version.slug}`} className={`${textLink} text-ink-2`}>
+                <Link href={pokedexHrefs[game.version.slug] ?? "/pokedex"} className={`${textLink} text-ink-2`}>
                   Cocher dans le Pokédex
                 </Link>
               </div>

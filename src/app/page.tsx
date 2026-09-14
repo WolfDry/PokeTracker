@@ -5,8 +5,8 @@ import { cardLink } from "@/components/ui";
 
 const features: { href: string; title: string; text: string; icon: ComponentType<{ size?: number }> }[] = [
   {
-    href: "/jeux",
-    title: "Pokédex par jeu",
+    href: "/pokedex",
+    title: "Pokédex par région",
     text: "Tous les Pokédex, de Rouge/Bleu à Écarlate/Violet, avec les Pokémon disponibles dans chaque jeu.",
     icon: PokedexIcon,
   },

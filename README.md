@@ -75,13 +75,23 @@ curl -X POST http://localhost:3000/api/revalidate
 
 L'app utilise les Cache Components de Next (`cacheComponents: true`). Les données de
 référence sont mises en cache 30 jours (`cacheLife("max")`, tag `reference`) ; les pages
-`/jeux`, `/jeux/[version]`, `/rencontres` et `/rencontres/[version]` sont pré-rendues au build. Après un
+`/pokedex`, `/pokedex/[pokedex]`, `/rencontres` et `/rencontres/[version]` sont pré-rendues au build. Après un
 `npm run import:data`, appeler `POST /api/revalidate` (voir ci-dessus) pour rafraîchir le cache ;
 en dev, le cache `use cache` survit aux modifications de la base, la route est donc utile aussi.
 
 La session utilisateur se lit à la requête (`src/lib/session.ts`) : tout composant qui l'utilise
 est rendu dans un `<Suspense>` (menu de l'en-tête, pages protégées) pour que le reste de la page
 reste dans la coquille statique. Les données propres à un utilisateur ne passent jamais par `use cache`.
+
+## Pokédex
+
+`/pokedex` liste un Pokédex par région : les Pokédex principaux de PokeAPI reliés par un même groupe
+de versions sont regroupés en une page (`src/lib/data/pokedex-pages.ts` : Galar + Isolarmure +
+Couronneige, Alola + ses îles…), le premier étant le principal. `/pokedex/[pokedex]?jeu=…&dex=…`
+affiche un Pokédex pour un jeu donné (les captures restent par jeu) ; les anciennes adresses
+`/jeux/…` redirigent. Les Pokémon obtenables dans un jeu hors de son Pokédex régional (Deoxys dans
+Rouge Feu…) n'existent pas chez PokeAPI : ils viennent d'une liste tenue à la main dans
+`src/lib/data/pokedex-extras.ts`, à compléter jeu par jeu.
 
 ## Authentification
 
@@ -91,7 +101,7 @@ revenir sur la page demandée), `/compte` (pseudo, déconnexion), pages protég�
 
 ## Suivi des captures
 
-Case « attrapé » par jeu sur le Pokédex (`/jeux/[jeu]`), la fiche Pokémon et la liste des manquants
+Case « attrapé » par jeu sur le Pokédex (`/pokedex/[pokedex]?jeu=…`), la fiche Pokémon et la liste des manquants
 (`/captures/[jeu]`, avec où les trouver) ; `/captures` résume l'avancement de chaque Pokédex.
 Server Action `toggleCaptureAction` + UI optimiste (`src/components/use-captures.ts`). Les « versions »
 DLC de PokeAPI (Isolarmure, Couronneige…) sont rattachées à leur jeu de base (`DLC_BASE_VERSION`).

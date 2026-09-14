@@ -6,13 +6,13 @@ import type { ComponentType } from "react";
 import { BallIcon, MapIcon, PokedexIcon, StarIcon } from "@/components/icons";
 
 export const navLinks: { href: string; label: string; icon: ComponentType<{ size?: number }> }[] = [
-  { href: "/jeux", label: "Pokédex", icon: PokedexIcon },
+  { href: "/pokedex", label: "Pokédex", icon: PokedexIcon },
   { href: "/rencontres", label: "Rencontres", icon: MapIcon },
   { href: "/captures", label: "Captures", icon: BallIcon },
   { href: "/shiny", label: "Shiny", icon: StarIcon },
 ];
 
-/** `/jeux/red` → section Pokédex active. */
+/** `/pokedex/kanto` → section Pokédex active. */
 export const isActive = (pathname: string | null, href: string) => pathname === href || Boolean(pathname?.startsWith(`${href}/`));
 
 function Links({ pathname }: { pathname: string | null }) {

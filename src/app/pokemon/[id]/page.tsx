@@ -11,6 +11,7 @@ import { TypeBadge } from "@/components/type-badge";
 import { card, dexNumber, ghostButton, secondaryButton, smallButton, spriteBox, textLink } from "@/components/ui";
 import { getSpeciesCaptures } from "@/lib/data/captures";
 import { isDlcVersion } from "@/lib/data/filters";
+import { getPokedexHrefs } from "@/lib/data/pokedex-pages";
 import { getShinies, getSpeciesHunts } from "@/lib/data/shiny";
 import { getSpeciesById, getSpeciesEncounters } from "@/lib/data/species";
 import { getCurrentUser } from "@/lib/session";
@@ -106,7 +107,7 @@ export default async function SpeciesPage({ params }: PageProps<"/pokemon/[id]">
   const speciesId = parseId(id);
   if (!speciesId) notFound();
 
-  const [species, encounters] = await Promise.all([getSpeciesById(speciesId), getSpeciesEncounters(speciesId)]);
+  const [species, encounters, pokedexHrefs] = await Promise.all([getSpeciesById(speciesId), getSpeciesEncounters(speciesId), getPokedexHrefs()]);
   if (!species) notFound();
 
   const flags = [species.isLegendary && "Légendaire", species.isMythical && "Fabuleux", species.isBaby && "Bébé"].filter(
@@ -233,7 +234,7 @@ export default async function SpeciesPage({ params }: PageProps<"/pokemon/[id]">
                       {pokedex.versions.map((version, index) => (
                         <span key={version.id}>
                           {index > 0 && ", "}
-                          <Link href={`/jeux/${version.slug}`} className={textLink}>
+                          <Link href={pokedexHrefs[version.slug] ?? "/pokedex"} className={textLink}>
                             {version.nameFr}
                           </Link>
                         </span>
@@ -258,7 +259,7 @@ export default async function SpeciesPage({ params }: PageProps<"/pokemon/[id]">
             {encounters.map((entry) => (
               <div key={entry.version.id} className={`${card} space-y-2 p-4`}>
                 <h3 className="font-semibold">
-                  <Link href={`/jeux/${entry.version.slug}`} className="hover:underline">
+                  <Link href={pokedexHrefs[entry.version.slug] ?? "/pokedex"} className="hover:underline">
                     {entry.version.nameFr}
                   </Link>
                 </h3>

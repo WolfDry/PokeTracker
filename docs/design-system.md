@@ -80,7 +80,11 @@ Manrope (Google Fonts, `--font-manrope`), une seule famille. Chiffres tabulaires
 | `checkCircle(checked)` | case ronde « attrapé » (encre pleine cochée, cercle vide sinon) |
 | `dexNumber(n, digits)` | « 001 » |
 
-Composants React de structure : `PageHeader` (légende, titre display, intro, actions), `SectionHeader`, `Breadcrumb`, `StatusBadge` (tons `neutral | success | shiny | danger`), `TypeBadge`, `ProgressBar`, `ThemeToggle`, `MobileTabBar`.
+Composants React de structure : `PageHeader` (légende, titre display, intro, actions), `SectionHeader`, `Breadcrumb`, `StatusBadge` (tons `neutral | success | shiny | danger`), `TypeBadge`, `TypeDots` (points de type + noms en retrait, sous un sprite dominant), `ProgressBar`, `ThemeToggle`, `MobileTabBar`.
+
+### Page Pokédex (`PokedexExplorer`)
+
+Cartes « affiche » : le sprite (160 px, 112 sur mobile) au centre d'une carte bordée, le numéro en filigrane Surface 2 en haut à gauche, la case « attrapé » en haut à droite (cible 44 px), nom en gras puis `TypeDots`. Barre d'outils collante sous l'en-tête (`sm+`) : recherche, chips Jeu, chips Pokédex s'il y en a plusieurs, Tous / Attrapés / Manquants, sélecteur Type. Sur mobile : recherche + bouton « Filtres » (pastille = filtres actifs) qui ouvre un panneau `shadow-float` par-dessus la grille, rangé par sections (Jeu · Pokédex · Statut · Type), pied « Réinitialiser / Voir N Pokémon ».
 
 ## Navigation
 
@@ -95,7 +99,7 @@ Inline SVG, trait 1.75, grille 20 (24 pour l'icône Pokédex), `currentColor`. P
 
 ```tsx
 <div className="space-y-8">
-  <Breadcrumb items={[{ href: "/jeux", label: "Pokédex" }, { label: version.nameFr }]} />
+  <Breadcrumb items={[{ href: "/pokedex", label: "Pokédex" }, { label: version.nameFr }]} />
   <PageHeader eyebrow="Génération I" title="Pokémon Rouge" intro="…" actions={<Link className={secondaryButton}>…</Link>} />
   <section className="space-y-4">
     <SectionHeader title="Formes" aside="3" />

@@ -10,6 +10,13 @@ import { toggleCaptureAction } from "@/lib/capture-actions";
 export function useCaptures(versionId: number, initial: number[]) {
   const [captured, setCaptured] = useState(() => new Set(initial));
   const [error, setError] = useState<string | null>(null);
+  // Changement de jeu sans remonter le composant : on repart des captures de ce jeu.
+  const [currentVersion, setCurrentVersion] = useState(versionId);
+  if (currentVersion !== versionId) {
+    setCurrentVersion(versionId);
+    setCaptured(new Set(initial));
+    setError(null);
+  }
   const [pending, startTransition] = useTransition();
 
   const setOne = (speciesId: number, value: boolean) =>

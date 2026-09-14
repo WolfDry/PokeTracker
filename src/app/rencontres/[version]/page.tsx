@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/page-header";
 import { notice, secondaryButton, textLink } from "@/components/ui";
 import { getVersionLocations } from "@/lib/data/encounters";
 import { getVersionBySlug, getVersionSlugs } from "@/lib/data/games";
+import { getPokedexHrefs } from "@/lib/data/pokedex-pages";
 
 export async function generateStaticParams() {
   const slugs = await getVersionSlugs();
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: PageProps<"/rencontres/[versi
 
 export default async function VersionEncountersPage({ params }: PageProps<"/rencontres/[version]">) {
   const { version: slug } = await params;
-  const data = await getVersionLocations(slug);
+  const [data, pokedexHrefs] = await Promise.all([getVersionLocations(slug), getPokedexHrefs()]);
   if (!data) notFound();
   const { version, groups, locationCount } = data;
   const coverage = version.coverage;
@@ -53,7 +54,7 @@ export default async function VersionEncountersPage({ params }: PageProps<"/renc
           </p>
         }
         actions={
-          <Link href={`/jeux/${version.slug}`} className={secondaryButton}>
+          <Link href={pokedexHrefs[version.slug] ?? "/pokedex"} className={secondaryButton}>
             <PokedexIcon size={18} /> Pokédex du jeu
           </Link>
         }

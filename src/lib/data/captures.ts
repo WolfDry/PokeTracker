@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getVersionPokedexes } from "@/lib/data/pokedex";
+import { getPokedexSpeciesIds, type PokedexPage } from "@/lib/data/pokedex-pages";
 import { prisma } from "@/lib/prisma";
 
 // Captures d'un utilisateur : données personnelles, lues à la requête — jamais en `use cache`
@@ -58,6 +59,38 @@ export async function getUserGames(userId: string): Promise<GameProgress[]> {
     }),
   );
   return games.sort((a, b) => (b.lastCaughtAt?.getTime() ?? 0) - (a.lastCaughtAt?.getTime() ?? 0));
+}
+
+export type PokedexPageProgress = { game: { id: number; slug: string; nameFr: string }; caught: number; total: number };
+
+/**
+ * Avancement affiché sur chaque carte de la liste des Pokédex : le jeu de la page où l'utilisateur
+ * a le plus coché (à défaut le premier), et ses captures dans le Pokédex principal.
+ */
+export async function getPokedexPagesProgress(userId: string, pages: PokedexPage[]): Promise<Record<string, PokedexPageProgress>> {
+  const captures = await prisma.capture.findMany({ where: { userId }, select: { speciesId: true, versionId: true } });
+  const byVersion = new Map<number, Set<number>>();
+  for (const c of captures) {
+    if (!byVersion.has(c.versionId)) byVersion.set(c.versionId, new Set());
+    byVersion.get(c.versionId)!.add(c.speciesId);
+  }
+
+  const progress: Record<string, PokedexPageProgress> = {};
+  await Promise.all(
+    pages
+      .filter((page) => page.games.length > 0)
+      .map(async (page) => {
+        const game = page.games.reduce((best, g) => ((byVersion.get(g.id)?.size ?? 0) > (byVersion.get(best.id)?.size ?? 0) ? g : best), page.games[0]);
+        const set = byVersion.get(game.id);
+        const speciesIds = await getPokedexSpeciesIds(page.dexes[0].id);
+        progress[page.slug] = {
+          game: { id: game.id, slug: game.slug, nameFr: game.nameFr },
+          caught: set ? speciesIds.filter((id) => set.has(id)).length : 0,
+          total: speciesIds.length,
+        };
+      }),
+  );
+  return progress;
 }
 
 /** Jeux où une espèce est cochée, pour la fiche Pokémon. */

@@ -9,3 +9,20 @@ export function TypeBadge({ type, size = "sm" }: { type: { slug: string; nameFr:
     </span>
   );
 }
+
+/** Types en points colorés suivis de leurs noms en retrait : « ● ● Plante · Poison », pour les cartes où le sprite domine. */
+export function TypeDots({ types }: { types: { slug: string; nameFr: string }[] }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {types.map((type) => (
+        <span
+          key={type.slug}
+          aria-hidden
+          className="size-2.5 shrink-0 rounded-full"
+          style={{ background: `var(--type-${type.slug}, var(--type-unknown))` }}
+        />
+      ))}
+      <span className="ml-0.5 t-small text-ink-3">{types.map((t) => t.nameFr).join(" · ")}</span>
+    </span>
+  );
+}

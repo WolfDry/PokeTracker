@@ -12,6 +12,7 @@ import { getCapturedSpeciesIds } from "@/lib/data/captures";
 import { getVersionSpeciesLocations, type SpeciesLocation } from "@/lib/data/encounters";
 import { getVersionBySlug } from "@/lib/data/games";
 import { getPokedexBySlug } from "@/lib/data/pokedex";
+import { getPokedexHrefs } from "@/lib/data/pokedex-pages";
 import { requireUser } from "@/lib/session";
 
 export async function generateMetadata({ params }: PageProps<"/captures/[version]">): Promise<Metadata> {
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: PageProps<"/captures/[version
 
 export default async function Page({ params, searchParams }: PageProps<"/captures/[version]">) {
   const { version: slug } = await params;
-  const version = await getVersionBySlug(slug);
+  const [version, pokedexHrefs] = await Promise.all([getVersionBySlug(slug), getPokedexHrefs()]);
   if (!version) notFound();
 
   // Même repli que le Pokédex du jeu : national pour Colosseum / XD.
@@ -37,7 +38,7 @@ export default async function Page({ params, searchParams }: PageProps<"/capture
         intro="Ce qu'il te manque dans ce jeu, et où le trouver."
         actions={
           <>
-            <Link href={`/jeux/${version.slug}`} className={secondaryButton}>
+            <Link href={pokedexHrefs[version.slug] ?? "/pokedex"} className={secondaryButton}>
               <PokedexIcon size={18} /> Pokédex du jeu
             </Link>
             {version.coverage?.status !== "NONE" && (

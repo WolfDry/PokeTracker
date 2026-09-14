@@ -6,6 +6,7 @@ import { PageHeader, SectionHeader } from "@/components/page-header";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { ShinyCard } from "@/components/shiny-card";
 import { notice, primaryButton, textLink } from "@/components/ui";
+import { getPokedexHrefs } from "@/lib/data/pokedex-pages";
 import { getShinies, type Shiny } from "@/lib/data/shiny";
 import { requireUser } from "@/lib/session";
 
@@ -34,7 +35,7 @@ export default function Page() {
 
 async function Gallery() {
   const user = await requireUser("/shiny/galerie");
-  const shinies = await getShinies(user.id);
+  const [shinies, pokedexHrefs] = await Promise.all([getShinies(user.id), getPokedexHrefs()]);
   if (shinies.length === 0) {
     return (
       <p className={notice}>
@@ -69,7 +70,7 @@ async function Gallery() {
         <section key={group.version.id} className="space-y-4">
           <SectionHeader
             title={
-              <Link href={`/jeux/${group.version.slug}`} className="hover:underline">
+              <Link href={pokedexHrefs[group.version.slug] ?? "/pokedex"} className="hover:underline">
                 {group.version.nameFr}
               </Link>
             }
