@@ -56,7 +56,8 @@ npm run import:data
 
 Le script télécharge les CSV du repo PokeAPI (cache dans `data/cache/`), remplit la base
 en une transaction (~15 s sur Neon), affiche une vérification (Route 101 dans Rubis, Pokédex
-de Paldea, couverture par jeu) puis télécharge les sprites dans `public/sprites/pokemon/`.
+de Paldea, couverture par jeu) puis télécharge les images des Pokémon dans `public/sprites/pokemon/` (rendu Pokémon HOME,
+ou illustration officielle à défaut, converties en WebP 256×256).
 
 Options : `-- --refresh` (re-télécharger les CSV après une mise à jour PokeAPI),
 `-- --skip-sprites`, `-- --sprites-only`. Relançable sans risque : les captures et chasses
@@ -171,6 +172,6 @@ src/lib/shiny-actions.ts # Server Actions : chasses shiny, compteur, galerie
 src/lib/session.ts     # utilisateur courant (`getCurrentUser`, `requireUser`)
 src/generated/prisma   # client Prisma généré (ignoré par git)
 scripts/import/        # ETL : CSV PokeAPI → base + sprites
-public/sprites/        # sprites 96×96 (normal + shiny), téléchargés par l'import
+public/sprites/        # images 256×256 WebP (normal + shiny), téléchargées par l'import
 data/cache/            # CSV téléchargés (ignoré par git)
 ```

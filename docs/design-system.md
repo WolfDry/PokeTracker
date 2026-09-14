@@ -8,7 +8,7 @@ Implémentation : tokens dans [`src/app/globals.css`](../src/app/globals.css), c
 
 ## Principes
 
-1. **Le sprite est la vedette.** Toujours dans une boîte Surface 2 (`spriteBox`), rendu net (`image-rendering: pixelated`), jamais étiré. L'interface autour reste neutre pour qu'il soit la seule couleur.
+1. **Le sprite est la vedette.** Toujours dans une boîte Surface 2 (`spriteBox`), jamais étiré (rendu Pokémon HOME ou illustration officielle, WebP 256×256). L'interface autour reste neutre pour qu'il soit la seule couleur.
 2. **Lignes plutôt qu'ombres.** Séparateurs fins, cartes bordées. L'ombre (`shadow-float`) est réservée aux menus et surcouches qui flottent réellement (suggestions du sélecteur de Pokémon).
 3. **Un seul accent : l'encre.** L'action principale est un bouton encre plein. Le vert, le rouge et l'or ne sont que des signaux (attrapé, supprimer, shiny), jamais des décorations.
 4. **Peu de composants, tous déclinés en clair et en sombre** par les mêmes variables : aucun composant ne doit connaître le thème.

@@ -132,9 +132,6 @@
     background: var(--ink);
     color: var(--on-ink);
   }
-  img[data-sprite] {
-    image-rendering: pixelated;
-  }
 }
 
 /* Échelle typographique */
