@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { Breadcrumb } from "@/components/breadcrumb";
+import { MapIcon } from "@/components/icons";
+import { PageHeader, SectionHeader } from "@/components/page-header";
 import { PokedexGrid } from "@/components/pokedex-grid";
+import { card, chip, chipCount, notice, secondaryButton, textLink } from "@/components/ui";
 import { getCapturedSpeciesIds } from "@/lib/data/captures";
 import { getVersionBySlug } from "@/lib/data/games";
 import { getPokedexBySlug, type PokedexGridEntry } from "@/lib/data/pokedex";
@@ -29,45 +33,41 @@ export async function GamePokedex({ versionSlug, dexSlug }: Props) {
   const coverage = version.coverage;
 
   return (
-    <div className="space-y-6">
-      <nav className="text-sm text-muted">
-        <Link href="/jeux" className="hover:text-foreground">
-          Pokédex par jeu
-        </Link>
-        <span className="mx-2">/</span>
-        <span className="text-foreground">{version.nameFr}</span>
-      </nav>
+    <div className="space-y-8">
+      <Breadcrumb items={[{ href: "/jeux", label: "Pokédex" }, { label: version.nameFr }]} />
 
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold">Pokémon {version.nameFr}</h1>
-        <p className="text-sm text-muted">
-          {version.generation.nameFr}
-          {version.siblings.length > 0 && (
-            <>
-              {" · "}
-              Version jumelle :{" "}
-              {version.siblings.map((sibling, index) => (
-                <span key={sibling.id}>
-                  {index > 0 && ", "}
-                  <Link href={`/jeux/${sibling.slug}`} className="underline hover:text-foreground">
-                    {sibling.nameFr}
-                  </Link>
-                </span>
-              ))}
-            </>
-          )}
-        </p>
-        {coverage?.status === "NONE" ? (
-          <p className="rounded-md border border-border bg-card px-3 py-2 text-sm text-muted">{coverage.note}</p>
-        ) : (
-          <p className="text-sm">
-            <Link href={`/rencontres/${version.slug}`} className="underline hover:text-accent">
-              Voir les lieux de rencontre
-            </Link>
-            {coverage?.status === "PARTIAL" && <span className="text-muted"> — {coverage.note}</span>}
+      <PageHeader
+        eyebrow={version.generation.nameFr}
+        title={`Pokémon ${version.nameFr}`}
+        intro={
+          <p className="t-small">
+            Pokédex {pokedex.nameFr} · {pokedex.entries.length} Pokémon
+            {version.siblings.length > 0 && (
+              <>
+                {" · "}Version jumelle :{" "}
+                {version.siblings.map((sibling, index) => (
+                  <span key={sibling.id}>
+                    {index > 0 && ", "}
+                    <Link href={`/jeux/${sibling.slug}`} className={textLink}>
+                      {sibling.nameFr}
+                    </Link>
+                  </span>
+                ))}
+              </>
+            )}
           </p>
-        )}
-      </header>
+        }
+        actions={
+          coverage?.status !== "NONE" && (
+            <Link href={`/rencontres/${version.slug}`} className={secondaryButton}>
+              <MapIcon size={18} /> Lieux de rencontre
+            </Link>
+          )
+        }
+      />
+
+      {coverage?.status === "NONE" && <p className={`${notice} t-small`}>{coverage.note}</p>}
+      {coverage?.status === "PARTIAL" && <p className={`${notice} t-small`}>{coverage.note}</p>}
 
       {pokedexes.length > 1 && (
         <nav className="flex flex-wrap gap-2" aria-label="Pokédex du jeu">
@@ -75,27 +75,17 @@ export async function GamePokedex({ versionSlug, dexSlug }: Props) {
             const href = index === 0 ? `/jeux/${version.slug}` : `/jeux/${version.slug}/${dex.slug}`;
             const active = dex.slug === current.slug;
             return (
-              <Link
-                key={dex.id}
-                href={href}
-                aria-current={active ? "page" : undefined}
-                className={`rounded-full border px-3 py-1 text-sm ${
-                  active ? "border-accent bg-accent text-accent-foreground" : "border-border bg-card hover:border-accent"
-                }`}
-              >
-                {dex.nameFr} <span className="opacity-70">({dex.entryCount})</span>
+              <Link key={dex.id} href={href} aria-current={active ? "page" : undefined} className={chip(active)}>
+                {dex.nameFr} <span className={chipCount(active)}>{dex.entryCount}</span>
               </Link>
             );
           })}
         </nav>
       )}
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-medium">
-          Pokédex {pokedex.nameFr} <span className="text-sm font-normal text-muted">{pokedex.entries.length} Pokémon</span>
-        </h2>
+      <section className="space-y-4">
         {version.pokedexes.length === 0 && (
-          <p className="text-sm text-muted">Ce jeu n&apos;a pas de Pokédex régional : Pokédex national affiché.</p>
+          <SectionHeader title="Pokédex national" aside="Ce jeu n'a pas de Pokédex régional." />
         )}
         {/* Les captures dépendent de la session : la grille est streamée, le reste de la page reste statique. */}
         <Suspense fallback={<GridSkeleton count={pokedex.entries.length} />}>
@@ -114,10 +104,13 @@ async function GridWithCaptures({ versionId, entries, loginNext }: { versionId: 
 
 function GridSkeleton({ count }: { count: number }) {
   return (
-    <ul aria-busy className="grid animate-pulse grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-      {Array.from({ length: count }, (_, i) => (
-        <li key={i} className="h-[74px] rounded-lg border border-border bg-card" />
-      ))}
-    </ul>
+    <div aria-busy className="animate-pulse space-y-5">
+      <div className={`${card} h-[118px]`} />
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: Math.min(count, 30) }, (_, i) => (
+          <li key={i} className={`${card} h-20`} />
+        ))}
+      </ul>
+    </div>
   );
 }

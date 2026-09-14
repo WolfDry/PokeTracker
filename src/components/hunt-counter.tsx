@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useId } from "react";
+import { ChevronRightIcon, MinusIcon, PlusIcon, StarIcon } from "@/components/icons";
 import { PokemonSprite } from "@/components/pokemon-sprite";
 import { CompleteHuntForm } from "@/components/shiny-forms";
+import { card, cardLink, input, secondaryButton, spriteBox, textLink } from "@/components/ui";
 import { useHuntCounter, type SaveStatus } from "@/components/use-hunt-counter";
 import type { Hunt } from "@/lib/data/shiny";
 
@@ -18,11 +20,11 @@ const STATUS_LABEL: Record<SaveStatus, string> = {
 
 function StatusLine({ status, error, retry }: { status: SaveStatus; error: string | null; retry: () => void }) {
   return (
-    <p role="status" className={`text-xs ${status === "error" ? "text-accent" : "text-muted"}`}>
+    <p role="status" className={`t-small ${status === "error" ? "text-danger" : "text-ink-3"}`}>
       {status === "error" ? (
         <>
           {error ?? STATUS_LABEL.error}{" "}
-          <button type="button" onClick={retry} className="underline hover:text-foreground">
+          <button type="button" onClick={retry} className={textLink}>
             Réessayer
           </button>
         </>
@@ -33,7 +35,7 @@ function StatusLine({ status, error, retry }: { status: SaveStatus; error: strin
   );
 }
 
-const roundButton = "flex items-center justify-center rounded-full border border-border bg-card font-medium transition-colors hover:border-accent active:bg-accent/15 disabled:opacity-40";
+const kbd = "inline-block min-w-[22px] rounded-[6px] border border-b-2 border-line-strong bg-surface px-1.5 text-center text-xs leading-5 text-ink-2";
 
 /**
  * Compteur principal d'une chasse : gros chiffre, −1 / +1, saisie directe, raccourcis clavier,
@@ -65,21 +67,38 @@ export function HuntCounter({ hunt }: { hunt: Hunt }) {
   }, [add]);
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-lg border border-border bg-card p-6">
-        <div className="flex items-center justify-center gap-4 sm:gap-8">
-          <button type="button" onClick={() => add(-1)} disabled={counter.count === 0} aria-label="Retirer une rencontre" className={`${roundButton} size-16 text-2xl`}>
-            −1
-          </button>
-          <output aria-live="off" className="min-w-40 text-center text-6xl font-semibold tabular-nums sm:text-7xl">
+    <div className="space-y-4">
+      <div className={`${card} flex flex-col items-center gap-6 px-5 pt-8 pb-6 sm:px-8`}>
+        <div className="flex flex-col items-center gap-1">
+          <output aria-live="off" className="t-counter block text-center">
             {numberFr.format(counter.count)}
           </output>
-          <button type="button" onClick={() => add(1)} aria-label="Ajouter une rencontre" className={`${roundButton} size-20 border-accent bg-accent text-3xl text-accent-foreground hover:opacity-90`}>
-            +1
+          <p className="t-small text-ink-2">rencontre{counter.count > 1 ? "s" : ""}</p>
+        </div>
+
+        {/* Le +1 est la cible principale : large, pleine encre ; le −1 reste rond et discret. */}
+        <div className="flex w-full items-center gap-4">
+          <button
+            type="button"
+            onClick={() => add(-1)}
+            disabled={counter.count === 0}
+            aria-label="Retirer une rencontre"
+            className={`${secondaryButton} size-16 shrink-0 rounded-full px-0`}
+          >
+            <MinusIcon size={22} />
+          </button>
+          <button
+            type="button"
+            onClick={() => add(1)}
+            aria-label="Ajouter une rencontre"
+            className="inline-flex h-20 flex-1 items-center justify-center gap-2 rounded-xl bg-ink text-lg font-semibold text-on-ink transition-opacity hover:opacity-90 active:opacity-80 sm:h-[88px]"
+          >
+            <PlusIcon size={22} /> Ajouter
           </button>
         </div>
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
-          <label htmlFor={inputId} className="flex items-center gap-2 text-muted">
+
+        <div className="flex w-full flex-wrap items-center justify-center gap-x-6 gap-y-2">
+          <label htmlFor={inputId} className="flex items-center gap-2 t-small text-ink-2">
             Saisir directement
             <input
               id={inputId}
@@ -90,23 +109,26 @@ export function HuntCounter({ hunt }: { hunt: Hunt }) {
               value={counter.count}
               onChange={(event) => counter.set(event.target.valueAsNumber || 0)}
               onFocus={(event) => event.target.select()}
-              className="w-28 rounded-md border border-border bg-background px-2 py-1 text-right tabular-nums text-foreground focus:border-accent focus:outline-none"
+              className={`${input} h-9 w-28 text-right`}
             />
           </label>
           <StatusLine status={counter.status} error={counter.error} retry={counter.retry} />
         </div>
-        <p className="mt-3 hidden text-center text-xs text-muted sm:block">
-          Clavier : <kbd className="rounded border border-border px-1">+</kbd>, <kbd className="rounded border border-border px-1">Espace</kbd> ou{" "}
-          <kbd className="rounded border border-border px-1">↑</kbd> pour +1 · <kbd className="rounded border border-border px-1">−</kbd> ou{" "}
-          <kbd className="rounded border border-border px-1">↓</kbd> pour −1
+        <p className="hidden text-center t-small text-ink-3 sm:block">
+          Clavier : <kbd className={kbd}>+</kbd>, <kbd className={kbd}>Espace</kbd> ou <kbd className={kbd}>↑</kbd> pour +1 · <kbd className={kbd}>−</kbd> ou{" "}
+          <kbd className={kbd}>↓</kbd> pour −1
         </p>
       </div>
 
-      <details className="group rounded-lg border border-emerald-500/50 bg-emerald-500/5">
-        <summary className="cursor-pointer list-none px-4 py-3 font-medium marker:hidden [&::-webkit-details-marker]:hidden">
-          <span className="mr-2 inline-block transition-transform group-open:rotate-90">▸</span>✨ Shiny trouvé !
+      <details className={`${card} group overflow-hidden`}>
+        <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-4 font-semibold marker:hidden [&::-webkit-details-marker]:hidden">
+          <span className="grid size-8 place-items-center rounded-full border border-shiny/60 text-shiny">
+            <StarIcon />
+          </span>
+          Shiny trouvé !
+          <ChevronRightIcon className="ml-auto text-ink-3 transition-transform group-open:rotate-90" />
         </summary>
-        <div className="border-t border-emerald-500/30 px-4 py-4">
+        <div className="border-t border-line px-5 py-5">
           <CompleteHuntForm huntId={hunt.id} count={counter.count} />
         </div>
       </details>
@@ -118,20 +140,25 @@ export function HuntCounter({ hunt }: { hunt: Hunt }) {
 export function HuntCard({ hunt }: { hunt: Hunt }) {
   const counter = useHuntCounter(hunt.id, hunt.count);
   return (
-    <li className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
-      <Link href={`/shiny/chasse/${hunt.id}`} className="shrink-0">
-        <PokemonSprite pokemonId={hunt.species.pokemonId} alt="" size={64} shiny />
+    <li className={`${cardLink} flex items-center gap-3 p-3`}>
+      <Link href={`/shiny/chasse/${hunt.id}`} className={`${spriteBox} size-14`}>
+        <PokemonSprite pokemonId={hunt.species.pokemonId} alt="" size={56} shiny />
       </Link>
       <div className="min-w-0 flex-1">
-        <Link href={`/shiny/chasse/${hunt.id}`} className="block truncate font-medium hover:text-accent">
+        <Link href={`/shiny/chasse/${hunt.id}`} className="block truncate font-semibold hover:underline">
           {hunt.species.nameFr}
         </Link>
-        <p className="truncate text-xs text-muted">{hunt.method ?? "Méthode non précisée"}</p>
+        <p className="truncate t-small text-ink-2">{hunt.method ?? "Méthode non précisée"}</p>
         <StatusLine status={counter.status} error={counter.error} retry={counter.retry} />
       </div>
-      <output className="text-2xl font-semibold tabular-nums">{numberFr.format(counter.count)}</output>
-      <button type="button" onClick={() => counter.add(1)} aria-label={`+1 pour ${hunt.species.nameFr}`} className={`${roundButton} size-12 text-lg`}>
-        +1
+      <output className="t-h1">{numberFr.format(counter.count)}</output>
+      <button
+        type="button"
+        onClick={() => counter.add(1)}
+        aria-label={`+1 pour ${hunt.species.nameFr}`}
+        className="grid size-12 shrink-0 place-items-center rounded-full bg-ink text-on-ink transition-opacity hover:opacity-90"
+      >
+        <PlusIcon size={20} />
       </button>
     </li>
   );

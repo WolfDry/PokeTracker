@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Breadcrumb } from "@/components/breadcrumb";
+import { PokedexIcon } from "@/components/icons";
 import { LocationPicker } from "@/components/location-picker";
+import { PageHeader } from "@/components/page-header";
+import { notice, secondaryButton, textLink } from "@/components/ui";
 import { getVersionLocations } from "@/lib/data/encounters";
 import { getVersionBySlug, getVersionSlugs } from "@/lib/data/games";
 
@@ -24,52 +28,44 @@ export default async function VersionEncountersPage({ params }: PageProps<"/renc
   const coverage = version.coverage;
 
   return (
-    <div className="space-y-6">
-      <nav className="text-sm text-muted">
-        <Link href="/rencontres" className="hover:text-foreground">
-          Rencontres
-        </Link>
-        <span className="mx-2">/</span>
-        <span className="text-foreground">{version.nameFr}</span>
-      </nav>
+    <div className="space-y-8">
+      <Breadcrumb items={[{ href: "/rencontres", label: "Rencontres" }, { label: version.nameFr }]} />
 
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold">Lieux de rencontre — {version.nameFr}</h1>
-        <p className="text-sm text-muted">
-          {version.generation.nameFr}
-          {version.siblings.length > 0 && (
-            <>
-              {" · "}
-              Version jumelle :{" "}
-              {version.siblings.map((sibling, index) => (
-                <span key={sibling.id}>
-                  {index > 0 && ", "}
-                  <Link href={`/rencontres/${sibling.slug}`} className="underline hover:text-foreground">
-                    {sibling.nameFr}
-                  </Link>
-                </span>
-              ))}
-            </>
-          )}
-          {" · "}
-          <Link href={`/jeux/${version.slug}`} className="underline hover:text-foreground">
-            Pokédex du jeu
+      <PageHeader
+        eyebrow={version.generation.nameFr}
+        title={`Lieux de ${version.nameFr}`}
+        intro={
+          <p className="t-small">
+            {locationCount > 0 && `${locationCount} lieu${locationCount > 1 ? "x" : ""} avec des rencontres`}
+            {version.siblings.length > 0 && (
+              <>
+                {locationCount > 0 && " · "}Version jumelle :{" "}
+                {version.siblings.map((sibling, index) => (
+                  <span key={sibling.id}>
+                    {index > 0 && ", "}
+                    <Link href={`/rencontres/${sibling.slug}`} className={textLink}>
+                      {sibling.nameFr}
+                    </Link>
+                  </span>
+                ))}
+              </>
+            )}
+          </p>
+        }
+        actions={
+          <Link href={`/jeux/${version.slug}`} className={secondaryButton}>
+            <PokedexIcon size={18} /> Pokédex du jeu
           </Link>
-        </p>
-        {coverage?.status === "PARTIAL" && (
-          <p className="rounded-md border border-border bg-card px-3 py-2 text-sm text-muted">{coverage.note}</p>
-        )}
-      </header>
+        }
+      />
+
+      {coverage?.status === "PARTIAL" && <p className={`${notice} t-small`}>{coverage.note}</p>}
 
       {locationCount === 0 ? (
-        <p className="rounded-md border border-border bg-card px-3 py-2 text-muted">
-          {coverage?.note ?? "Aucune donnée de rencontre pour ce jeu."}
-        </p>
+        <p className={notice}>{coverage?.note ?? "Aucune donnée de rencontre pour ce jeu."}</p>
       ) : (
         <>
-          <p className="text-sm text-muted">
-            {locationCount} lieu{locationCount > 1 ? "x" : ""} avec des rencontres. Les cadeaux, échanges et rencontres fixes sont inclus.
-          </p>
+          <p className="t-small text-ink-3">Les cadeaux, échanges et rencontres fixes sont inclus.</p>
           <LocationPicker versionSlug={version.slug} groups={groups} />
         </>
       )}

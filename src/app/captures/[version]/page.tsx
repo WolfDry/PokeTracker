@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { Breadcrumb } from "@/components/breadcrumb";
 import { CaptureChecklist, type ChecklistEntry } from "@/components/capture-checklist";
+import { MapIcon, PokedexIcon } from "@/components/icons";
+import { PageHeader, SectionHeader } from "@/components/page-header";
 import { PageSkeleton } from "@/components/page-skeleton";
+import { chip, secondaryButton } from "@/components/ui";
 import { getCapturedSpeciesIds } from "@/lib/data/captures";
 import { getVersionSpeciesLocations, type SpeciesLocation } from "@/lib/data/encounters";
 import { getVersionBySlug } from "@/lib/data/games";
@@ -25,31 +29,25 @@ export default async function Page({ params, searchParams }: PageProps<"/capture
   const pokedexes = version.pokedexes.length > 0 ? version.pokedexes : [{ id: 1, slug: "national", nameFr: "National", descriptionFr: null, entryCount: 0 }];
 
   return (
-    <div className="space-y-6">
-      <nav className="text-sm text-muted">
-        <Link href="/captures" className="hover:text-foreground">
-          Mes captures
-        </Link>
-        <span className="mx-2">/</span>
-        <span className="text-foreground">{version.nameFr}</span>
-      </nav>
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold">Mes captures — {version.nameFr}</h1>
-        <p className="text-sm text-muted">
-          {version.generation.nameFr} ·{" "}
-          <Link href={`/jeux/${version.slug}`} className="underline hover:text-foreground">
-            Pokédex du jeu
-          </Link>
-          {version.coverage?.status !== "NONE" && (
-            <>
-              {" · "}
-              <Link href={`/rencontres/${version.slug}`} className="underline hover:text-foreground">
-                Lieux de rencontre
+    <div className="space-y-8">
+      <Breadcrumb items={[{ href: "/captures", label: "Mes captures" }, { label: version.nameFr }]} />
+      <PageHeader
+        eyebrow={version.generation.nameFr}
+        title={version.nameFr}
+        intro="Ce qu'il te manque dans ce jeu, et où le trouver."
+        actions={
+          <>
+            <Link href={`/jeux/${version.slug}`} className={secondaryButton}>
+              <PokedexIcon size={18} /> Pokédex du jeu
+            </Link>
+            {version.coverage?.status !== "NONE" && (
+              <Link href={`/rencontres/${version.slug}`} className={secondaryButton}>
+                <MapIcon size={18} /> Lieux de rencontre
               </Link>
-            </>
-          )}
-        </p>
-      </header>
+            )}
+          </>
+        }
+      />
 
       {/* Le Pokédex choisi vient de `?dex=`, lu à la requête comme la session. */}
       <Suspense fallback={<PageSkeleton />}>
@@ -83,7 +81,7 @@ async function Checklist({ versionId, versionSlug, pokedexes, coverage, searchPa
   const coverageNote = coverage?.status === "FULL" ? null : (coverage?.note ?? "Lieux de rencontre indisponibles pour ce jeu.");
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {pokedexes.length > 1 && (
         <nav className="flex flex-wrap gap-2" aria-label="Pokédex du jeu">
           {pokedexes.map((p) => {
@@ -93,7 +91,7 @@ async function Checklist({ versionId, versionSlug, pokedexes, coverage, searchPa
                 key={p.id}
                 href={`/captures/${versionSlug}?dex=${p.slug}`}
                 aria-current={active ? "page" : undefined}
-                className={`rounded-full border px-3 py-1 text-sm ${active ? "border-accent bg-accent text-accent-foreground" : "border-border bg-card hover:border-accent"}`}
+                className={chip(active)}
               >
                 {p.nameFr}
               </Link>
@@ -101,9 +99,7 @@ async function Checklist({ versionId, versionSlug, pokedexes, coverage, searchPa
           })}
         </nav>
       )}
-      <h2 className="text-lg font-medium">
-        Pokédex {pokedex.nameFr} <span className="text-sm font-normal text-muted">{entries.length} Pokémon</span>
-      </h2>
+      <SectionHeader title={`Pokédex ${pokedex.nameFr}`} aside={`${entries.length} Pokémon`} />
       <CaptureChecklist versionId={versionId} entries={entries} captured={captured} coverageNote={coverageNote} />
     </div>
   );

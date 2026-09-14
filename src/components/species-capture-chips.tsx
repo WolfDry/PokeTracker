@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { CheckIcon } from "@/components/icons";
+import { chip } from "@/components/ui";
 import { toggleCaptureAction } from "@/lib/capture-actions";
 
 type Version = { id: number; slug: string; nameFr: string };
@@ -13,7 +15,7 @@ type Props = {
   captured: number[];
 };
 
-/** Fiche Pokémon : une puce par jeu, cliquable pour cocher / décocher la capture (optimiste). */
+/** Fiche Pokémon : une chip par jeu, cliquable pour cocher / décocher la capture (optimiste). */
 export function SpeciesCaptureChips({ speciesId, versions, captured }: Props) {
   const [set, setSet] = useState(() => new Set(captured));
   const [error, setError] = useState<string | null>(null);
@@ -47,15 +49,8 @@ export function SpeciesCaptureChips({ speciesId, versions, captured }: Props) {
           const caught = set.has(version.id);
           return (
             <li key={version.id}>
-              <button
-                type="button"
-                onClick={() => toggle(version.id)}
-                aria-pressed={caught}
-                className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                  caught ? "border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "border-border bg-card hover:border-emerald-500"
-                }`}
-              >
-                {caught ? "✓ " : ""}
+              <button type="button" onClick={() => toggle(version.id)} aria-pressed={caught} className={chip(caught)}>
+                {caught && <CheckIcon size={12} />}
                 {version.nameFr}
               </button>
             </li>
@@ -63,7 +58,7 @@ export function SpeciesCaptureChips({ speciesId, versions, captured }: Props) {
         })}
       </ul>
       {error && (
-        <p role="alert" className="text-sm text-accent">
+        <p role="alert" className="t-small text-danger">
           {error}
         </p>
       )}

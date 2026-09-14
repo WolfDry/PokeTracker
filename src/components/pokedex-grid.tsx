@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { CheckIcon } from "@/components/icons";
 import { PokemonSprite } from "@/components/pokemon-sprite";
 import { ProgressBar } from "@/components/progress-bar";
 import { TypeBadge } from "@/components/type-badge";
+import { card, cardLink, checkCircle, chip, chipCount, dexNumber, spriteBox, textLink } from "@/components/ui";
 import { useCaptures } from "@/components/use-captures";
 import type { PokedexGridEntry } from "@/lib/data/pokedex";
 
@@ -19,11 +21,6 @@ type Props = {
 
 type Filter = "all" | "caught" | "missing";
 
-const chip = (active: boolean) =>
-  `rounded-full border px-3 py-1 text-sm transition-colors ${
-    active ? "border-accent bg-accent text-accent-foreground" : "border-border bg-card hover:border-accent"
-  }`;
-
 /** Grille du Pokédex d'un jeu, avec la case « attrapé » par Pokémon quand on est connecté. */
 export function PokedexGrid({ entries, versionId, captured, loginNext }: Props) {
   const signedIn = captured !== null;
@@ -36,31 +33,33 @@ export function PokedexGrid({ entries, versionId, captured, loginNext }: Props) 
     return captures.captured.has(e.species.id) === (filter === "caught");
   });
 
+  const filters: { key: Filter; label: string; count: number }[] = [
+    { key: "all", label: "Tous", count: entries.length },
+    { key: "caught", label: "Attrapés", count: caughtCount },
+    { key: "missing", label: "Manquants", count: entries.length - caughtCount },
+  ];
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {signedIn ? (
-        <div className="space-y-3 rounded-lg border border-border bg-card p-3">
+        <div className={`${card} space-y-4 p-5`}>
           <ProgressBar caught={caughtCount} total={entries.length} label="Attrapés" />
           <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrer le Pokédex">
-            <button type="button" className={chip(filter === "all")} aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
-              Tous ({entries.length})
-            </button>
-            <button type="button" className={chip(filter === "caught")} aria-pressed={filter === "caught"} onClick={() => setFilter("caught")}>
-              Attrapés ({caughtCount})
-            </button>
-            <button type="button" className={chip(filter === "missing")} aria-pressed={filter === "missing"} onClick={() => setFilter("missing")}>
-              Manquants ({entries.length - caughtCount})
-            </button>
+            {filters.map((f) => (
+              <button key={f.key} type="button" className={chip(filter === f.key)} aria-pressed={filter === f.key} onClick={() => setFilter(f.key)}>
+                {f.label} <span className={chipCount(filter === f.key)}>{f.count}</span>
+              </button>
+            ))}
             {captures.error && (
-              <span role="alert" className="ml-auto text-sm text-accent">
+              <span role="alert" className="ml-auto t-small text-danger">
                 {captures.error}
               </span>
             )}
           </div>
         </div>
       ) : (
-        <p className="text-sm text-muted">
-          <Link href={`/connexion?next=${encodeURIComponent(loginNext)}`} className="underline hover:text-foreground">
+        <p className="t-small text-ink-2">
+          <Link href={`/connexion?next=${encodeURIComponent(loginNext)}`} className={textLink}>
             Connecte-toi
           </Link>{" "}
           pour cocher les Pokémon attrapés dans ce jeu.
@@ -68,24 +67,23 @@ export function PokedexGrid({ entries, versionId, captured, loginNext }: Props) 
       )}
 
       {shown.length === 0 ? (
-        <p className="text-muted">{filter === "caught" ? "Aucun Pokémon attrapé pour l'instant." : "Pokédex complet, bravo !"}</p>
+        <p className="text-ink-2">{filter === "caught" ? "Aucun Pokémon attrapé pour l'instant." : "Pokédex complet, bravo !"}</p>
       ) : (
-        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {shown.map((entry) => {
             const caught = captures.captured.has(entry.species.id);
             return (
-              <li
-                key={entry.species.id}
-                className={`relative flex items-center gap-2 rounded-lg border p-2 transition-colors ${
-                  caught ? "border-emerald-500/60 bg-emerald-500/10" : "border-border bg-card hover:border-accent"
-                }`}
-              >
-                <Link href={`/pokemon/${entry.species.id}`} className="flex min-w-0 flex-1 items-center gap-2">
-                  <PokemonSprite pokemonId={entry.species.pokemonId} alt={entry.species.nameFr} size={56} className="shrink-0" />
-                  <span className="min-w-0">
-                    <span className="block text-xs text-muted">N° {String(entry.number).padStart(3, "0")}</span>
-                    <span className="block truncate font-medium">{entry.species.nameFr}</span>
-                    <span className="mt-0.5 flex flex-wrap gap-1">
+              <li key={entry.species.id} className={`${cardLink} flex items-center gap-3 p-3`}>
+                <Link href={`/pokemon/${entry.species.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+                  <span className={`${spriteBox} size-14`}>
+                    <PokemonSprite pokemonId={entry.species.pokemonId} alt={entry.species.nameFr} size={56} />
+                  </span>
+                  <span className="min-w-0 flex-1 space-y-1">
+                    <span className="flex items-baseline gap-2">
+                      <span className="t-small text-ink-3">{dexNumber(entry.number)}</span>
+                      <span className="truncate font-semibold">{entry.species.nameFr}</span>
+                    </span>
+                    <span className="flex flex-wrap gap-1">
                       {entry.species.types.map((type) => (
                         <TypeBadge key={type.slug} type={type} />
                       ))}
@@ -99,13 +97,11 @@ export function PokedexGrid({ entries, versionId, captured, loginNext }: Props) 
                     aria-pressed={caught}
                     aria-label={`${caught ? "Retirer" : "Marquer"} ${entry.species.nameFr} ${caught ? "des captures" : "comme attrapé"}`}
                     title={caught ? "Attrapé — cliquer pour retirer" : "Marquer comme attrapé"}
-                    className={`absolute top-1.5 right-1.5 flex size-7 items-center justify-center rounded-full border text-xs sm:size-6 transition-colors ${
-                      caught
-                        ? "border-emerald-500 bg-emerald-500 text-white"
-                        : "border-border bg-background text-transparent hover:border-emerald-500 hover:text-emerald-500"
-                    }`}
+                    className="-m-2 grid size-11 place-items-center"
                   >
-                    ✓
+                    <span className={checkCircle(caught)}>
+                      <CheckIcon />
+                    </span>
                   </button>
                 )}
               </li>

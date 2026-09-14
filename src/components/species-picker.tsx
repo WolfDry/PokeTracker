@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState, useTransition } from "react";
 import { PokemonSprite } from "@/components/pokemon-sprite";
+import { dexNumber, fieldLabel, ghostButton, input, inputError, smallButton, spriteBox } from "@/components/ui";
 import type { SpeciesPick } from "@/lib/data/search";
 import { searchSpeciesAction } from "@/lib/shiny-actions";
 
@@ -78,19 +79,21 @@ export function SpeciesPicker({ label, initial = null, error, autoFocus }: Props
   const message = error ?? (query.trim() && !selected && open && hits.length === 0 ? "Aucun Pokémon ne correspond." : undefined);
 
   return (
-    <div className="space-y-1">
-      <label htmlFor={id} className="block text-sm font-medium">
+    <div className="space-y-1.5">
+      <label htmlFor={id} className={fieldLabel}>
         {label}
       </label>
       <input type="hidden" name="speciesId" value={selected?.id ?? ""} />
       {selected ? (
-        <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1">
-          <PokemonSprite pokemonId={selected.pokemonId} alt="" size={40} shiny />
-          <span className="flex-1">
-            <span className="mr-2 text-xs text-muted">N° {String(selected.id).padStart(4, "0")}</span>
+        <div className="flex items-center gap-3 rounded-md border border-line-strong bg-surface p-1.5 pr-2">
+          <span className={`${spriteBox} size-10 rounded-sm`}>
+            <PokemonSprite pokemonId={selected.pokemonId} alt="" size={40} shiny />
+          </span>
+          <span className="flex flex-1 items-baseline gap-2 font-semibold">
+            <span className="t-small font-normal text-ink-3">{dexNumber(selected.id, 4)}</span>
             {selected.nameFr}
           </span>
-          <button type="button" onClick={() => setSelected(null)} className="rounded px-2 py-1 text-sm text-muted hover:text-foreground">
+          <button type="button" onClick={() => setSelected(null)} className={`${ghostButton} ${smallButton}`}>
             Changer
           </button>
         </div>
@@ -113,10 +116,10 @@ export function SpeciesPicker({ label, initial = null, error, autoFocus }: Props
             aria-autocomplete="list"
             aria-invalid={error ? true : undefined}
             aria-describedby={message ? `${id}-message` : undefined}
-            className={`w-full rounded-md border bg-background px-3 py-2 focus:border-accent focus:outline-none ${error ? "border-accent" : "border-border"}`}
+            className={`${input} h-10 ${error ? inputError : ""}`}
           />
           {open && hits.length > 0 && (
-            <ul id={`${id}-list`} role="listbox" className="absolute z-10 mt-1 w-full overflow-hidden rounded-md border border-border bg-card shadow-lg">
+            <ul id={`${id}-list`} role="listbox" className="absolute z-10 mt-1.5 w-full overflow-hidden rounded-md border border-line bg-surface p-1 shadow-float">
               {hits.map((species, index) => (
                 <li key={species.id} role="option" aria-selected={index === active}>
                   <button
@@ -124,11 +127,11 @@ export function SpeciesPicker({ label, initial = null, error, autoFocus }: Props
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => choose(species)}
                     onMouseEnter={() => setActive(index)}
-                    className={`flex w-full items-center gap-2 px-2 py-1 text-left ${index === active ? "bg-accent/15" : ""}`}
+                    className={`flex w-full items-center gap-3 rounded-sm px-2 py-1.5 text-left ${index === active ? "bg-surface-2" : ""}`}
                   >
                     <PokemonSprite pokemonId={species.pokemonId} alt="" size={36} shiny />
-                    <span className="text-xs text-muted">N° {String(species.id).padStart(4, "0")}</span>
-                    <span>{species.nameFr}</span>
+                    <span className="t-small text-ink-3">{dexNumber(species.id, 4)}</span>
+                    <span className="font-medium">{species.nameFr}</span>
                   </button>
                 </li>
               ))}
@@ -137,7 +140,7 @@ export function SpeciesPicker({ label, initial = null, error, autoFocus }: Props
         </div>
       )}
       {message && (
-        <p id={`${id}-message`} className={`text-sm ${error ? "text-accent" : "text-muted"}`}>
+        <p id={`${id}-message`} className={`t-small ${error ? "text-danger" : "text-ink-2"}`}>
           {message}
         </p>
       )}

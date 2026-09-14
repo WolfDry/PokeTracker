@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useActionState, type ReactNode } from "react";
+import { fieldError, fieldLabel, input, inputError, inputHeight, largeButton, primaryButton, textLink } from "@/components/ui";
 import { signInAction, signUpAction, updateNameAction, type AuthField, type AuthFormState } from "@/lib/auth-actions";
 
 // Formulaires d'authentification : Server Actions + useActionState pour afficher les erreurs
 // sans perdre les valeurs saisies. Fonctionnent aussi sans JavaScript (soumission classique).
 
-const inputClass = "w-full rounded-md border border-border bg-background px-3 py-2 focus:border-accent focus:outline-none";
-const buttonClass =
-  "w-full rounded-md bg-accent px-4 py-2 font-medium text-accent-foreground transition-opacity disabled:cursor-wait disabled:opacity-60";
+const inputClass = `${input} ${inputHeight}`;
+const buttonClass = `${primaryButton} ${largeButton} w-full disabled:cursor-wait`;
 
 type FieldProps = {
   name: AuthField;
@@ -25,8 +25,8 @@ type FieldProps = {
 function Field({ name, label, type = "text", autoComplete, defaultValue, error, minLength, autoFocus }: FieldProps) {
   const id = `auth-${name}`;
   return (
-    <div className="space-y-1">
-      <label htmlFor={id} className="block text-sm font-medium">
+    <div className="space-y-1.5">
+      <label htmlFor={id} className={fieldLabel}>
         {label}
       </label>
       <input
@@ -40,10 +40,10 @@ function Field({ name, label, type = "text", autoComplete, defaultValue, error, 
         required
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${id}-error` : undefined}
-        className={`${inputClass} ${error ? "border-accent" : ""}`}
+        className={`${inputClass} ${error ? inputError : ""}`}
       />
       {error && (
-        <p id={`${id}-error`} className="text-sm text-accent">
+        <p id={`${id}-error`} className={fieldError}>
           {error}
         </p>
       )}
@@ -53,7 +53,7 @@ function Field({ name, label, type = "text", autoComplete, defaultValue, error, 
 
 function FormError({ children }: { children: ReactNode }) {
   return (
-    <p role="alert" className="rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-sm">
+    <p role="alert" className="rounded-md border border-danger/40 px-3 py-2 t-small text-danger">
       {children}
     </p>
   );
@@ -65,7 +65,7 @@ export function SignInForm({ next }: { next?: string }) {
   const [state, action, pending] = useActionState(signInAction, initialState);
   const query = next ? `?next=${encodeURIComponent(next)}` : "";
   return (
-    <form action={action} className="space-y-4" noValidate>
+    <form action={action} className="space-y-5" noValidate>
       {next && <input type="hidden" name="next" value={next} />}
       {state.error && <FormError>{state.error}</FormError>}
       <Field name="email" label="Adresse e-mail" type="email" autoComplete="email" defaultValue={state.values?.email} error={state.fieldErrors?.email} autoFocus />
@@ -73,9 +73,9 @@ export function SignInForm({ next }: { next?: string }) {
       <button type="submit" disabled={pending} className={buttonClass}>
         {pending ? "Connexion…" : "Se connecter"}
       </button>
-      <p className="text-center text-sm text-muted">
+      <p className="text-center t-small text-ink-2">
         Pas encore de compte ?{" "}
-        <Link href={`/inscription${query}`} className="underline hover:text-foreground">
+        <Link href={`/inscription${query}`} className={textLink}>
           Créer un compte
         </Link>
       </p>
@@ -87,7 +87,7 @@ export function SignUpForm({ next }: { next?: string }) {
   const [state, action, pending] = useActionState(signUpAction, initialState);
   const query = next ? `?next=${encodeURIComponent(next)}` : "";
   return (
-    <form action={action} className="space-y-4" noValidate>
+    <form action={action} className="space-y-5" noValidate>
       {next && <input type="hidden" name="next" value={next} />}
       {state.error && <FormError>{state.error}</FormError>}
       <Field name="name" label="Pseudo" autoComplete="nickname" defaultValue={state.values?.name} error={state.fieldErrors?.name} minLength={2} autoFocus />
@@ -97,9 +97,9 @@ export function SignUpForm({ next }: { next?: string }) {
       <button type="submit" disabled={pending} className={buttonClass}>
         {pending ? "Création…" : "Créer mon compte"}
       </button>
-      <p className="text-center text-sm text-muted">
+      <p className="text-center t-small text-ink-2">
         Déjà un compte ?{" "}
-        <Link href={`/connexion${query}`} className="underline hover:text-foreground">
+        <Link href={`/connexion${query}`} className={textLink}>
           Se connecter
         </Link>
       </p>
@@ -110,14 +110,14 @@ export function SignUpForm({ next }: { next?: string }) {
 export function UpdateNameForm({ currentName }: { currentName: string }) {
   const [state, action, pending] = useActionState(updateNameAction, initialState);
   return (
-    <form action={action} className="space-y-3" noValidate>
+    <form action={action} className="space-y-4" noValidate>
       {state.error && <FormError>{state.error}</FormError>}
       <Field name="name" label="Pseudo" autoComplete="nickname" defaultValue={state.values?.name ?? currentName} error={state.fieldErrors?.name} minLength={2} />
       <div className="flex items-center gap-3">
-        <button type="submit" disabled={pending} className="rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-accent-foreground disabled:opacity-60">
+        <button type="submit" disabled={pending} className={primaryButton}>
           {pending ? "Enregistrement…" : "Enregistrer"}
         </button>
-        {state.success && <span className="text-sm text-muted">Pseudo mis à jour.</span>}
+        {state.success && <span className="t-small text-success">Pseudo mis à jour.</span>}
       </div>
     </form>
   );

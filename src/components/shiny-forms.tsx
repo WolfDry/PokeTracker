@@ -2,6 +2,7 @@
 
 import { useActionState, useId, type ReactNode } from "react";
 import { SpeciesPicker } from "@/components/species-picker";
+import { fieldError, fieldHint, fieldLabel, input, inputError, largeButton, primaryButton } from "@/components/ui";
 import type { SpeciesPick } from "@/lib/data/search";
 import { HUNT_METHODS } from "@/lib/shiny";
 import { addShinyAction, completeHuntAction, createHuntAction, type ShinyField, type ShinyFormState } from "@/lib/shiny-actions";
@@ -13,9 +14,9 @@ export type GameOption = { id: number; nameFr: string; versions: { id: number; s
 
 export type ShinyFormInitial = { species?: SpeciesPick | null; versionId?: number };
 
-const inputClass = "w-full rounded-md border border-border bg-background px-3 py-2 focus:border-accent focus:outline-none";
-const submitClass =
-  "rounded-md bg-accent px-4 py-2 font-medium text-accent-foreground transition-opacity disabled:cursor-wait disabled:opacity-60";
+// Hauteur fixe sauf pour le textarea, qui pose la sienne.
+const inputClass = `${input} h-10 [&:is(textarea)]:h-auto [&:is(textarea)]:py-2`;
+const submitClass = `${primaryButton} ${largeButton} w-full disabled:cursor-wait sm:w-auto`;
 
 type FieldProps = {
   name: ShinyField;
@@ -29,18 +30,18 @@ function Field({ name, label, hint, error, children }: FieldProps) {
   const id = useId();
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   return (
-    <div className="space-y-1">
-      <label htmlFor={id} className="block text-sm font-medium">
+    <div className="space-y-1.5">
+      <label htmlFor={id} className={fieldLabel}>
         {label}
       </label>
-      {children({ id, name, className: `${inputClass} ${error ? "border-accent" : ""}`, "aria-invalid": error ? true : undefined, "aria-describedby": describedBy })}
+      {children({ id, name, className: `${inputClass} ${error ? inputError : ""}`, "aria-invalid": error ? true : undefined, "aria-describedby": describedBy })}
       {error ? (
-        <p id={`${id}-error`} className="text-sm text-accent">
+        <p id={`${id}-error`} className={fieldError}>
           {error}
         </p>
       ) : (
         hint && (
-          <p id={`${id}-hint`} className="text-xs text-muted">
+          <p id={`${id}-hint`} className={fieldHint}>
             {hint}
           </p>
         )
@@ -51,7 +52,7 @@ function Field({ name, label, hint, error, children }: FieldProps) {
 
 function FormError({ children }: { children: ReactNode }) {
   return (
-    <p role="alert" className="rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-sm">
+    <p role="alert" className="rounded-md border border-danger/40 px-3 py-2 t-small text-danger">
       {children}
     </p>
   );
@@ -104,7 +105,7 @@ export function NewHuntForm({ games, initial }: { games: GameOption[]; initial?:
   const [state, action, pending] = useActionState(createHuntAction, initialState);
   const versionId = state.values?.versionId ? Number(state.values.versionId) : initial?.versionId;
   return (
-    <form action={action} className="space-y-4" noValidate>
+    <form action={action} className="space-y-5" noValidate>
       {state.error && <FormError>{state.error}</FormError>}
       <SpeciesPicker label="Pokémon" initial={initial?.species} error={state.fieldErrors?.speciesId} autoFocus={!initial?.species} />
       <GameSelect games={games} defaultValue={versionId} error={state.fieldErrors?.versionId} />
@@ -123,7 +124,7 @@ export function AddShinyForm({ games, initial }: { games: GameOption[]; initial?
   const [state, action, pending] = useActionState(addShinyAction, initialState);
   const versionId = state.values?.versionId ? Number(state.values.versionId) : initial?.versionId;
   return (
-    <form action={action} className="space-y-4" noValidate>
+    <form action={action} className="space-y-5" noValidate>
       {state.error && <FormError>{state.error}</FormError>}
       <SpeciesPicker label="Pokémon" initial={initial?.species} error={state.fieldErrors?.speciesId} autoFocus={!initial?.species} />
       <GameSelect games={games} defaultValue={versionId} error={state.fieldErrors?.versionId} />
@@ -143,7 +144,7 @@ export function AddShinyForm({ games, initial }: { games: GameOption[]; initial?
 export function CompleteHuntForm({ huntId, count }: { huntId: string; count: number }) {
   const [state, action, pending] = useActionState(completeHuntAction, initialState);
   return (
-    <form action={action} className="space-y-4" noValidate>
+    <form action={action} className="space-y-5" noValidate>
       <input type="hidden" name="huntId" value={huntId} />
       <input type="hidden" name="count" value={count} />
       {state.error && <FormError>{state.error}</FormError>}

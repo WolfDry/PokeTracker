@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { Fragment, type ReactNode, useMemo, useState } from "react";
+import { ChevronDownIcon, ChevronRightIcon } from "@/components/icons";
 import { PokemonSprite } from "@/components/pokemon-sprite";
+import { card, chip, spriteBox } from "@/components/ui";
 import {
   formatLevels,
   ROD_METHOD_SLUGS,
@@ -20,11 +22,6 @@ type Props = {
 
 /** Au-delà de ce nombre de lignes, seule la première zone est dépliée au chargement (Terres Sauvages : 20 antres…). */
 const COLLAPSE_THRESHOLD = 200;
-
-const chip = (active: boolean) =>
-  `rounded-full border px-3 py-1 text-sm transition-colors ${
-    active ? "border-accent bg-accent text-accent-foreground" : "border-border bg-card hover:border-accent"
-  }`;
 
 type KeyedRow = { row: EncounterRow; key: number };
 /** Toutes les façons de trouver une espèce dans la zone (méthodes, formes, conditions), dans l'ordre du tri serveur. */
@@ -103,7 +100,7 @@ export function EncounterTable({ table, currentVersionName }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-3 rounded-lg border border-border bg-card p-3">
+      <div className={`${card} space-y-3 p-4`}>
         {hasTwins && (
           <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Versions affichées">
             <button type="button" className={chip(!onlyCurrent)} aria-pressed={!onlyCurrent} onClick={() => setOnlyCurrent(false)}>
@@ -135,8 +132,8 @@ export function EncounterTable({ table, currentVersionName }: Props) {
             </button>
           ))}
           {rodMethodIds.size > 0 && (
-            <label className="ml-auto flex cursor-pointer items-center gap-2 text-sm">
-              <input type="checkbox" checked={hideRods} onChange={(event) => setHideRods(event.target.checked)} className="accent-accent" />
+            <label className="ml-auto flex cursor-pointer items-center gap-2 t-small text-ink-2">
+              <input type="checkbox" checked={hideRods} onChange={(event) => setHideRods(event.target.checked)} className="size-4 accent-[var(--ink)]" />
               Masquer les cannes
             </label>
           )}
@@ -144,25 +141,25 @@ export function EncounterTable({ table, currentVersionName }: Props) {
       </div>
 
       {shownRows === 0 ? (
-        <p className="text-muted">Aucune rencontre avec ces filtres.</p>
+        <p className="text-ink-2">Aucune rencontre avec ces filtres.</p>
       ) : (
         filteredAreas.map((area) => {
           const open = openAreas.has(area.id);
           return (
             <section key={area.id} className="space-y-2">
               {areas.length > 1 && (
-                <h3 className="text-lg font-medium">
+                <h3 className="t-h2">
                   <button
                     type="button"
                     onClick={() => toggleArea(area.id)}
                     aria-expanded={open}
-                    className="inline-flex items-center gap-2 text-left hover:text-accent"
+                    className="inline-flex items-center gap-2 text-left hover:underline"
                   >
-                    <span aria-hidden className="text-sm text-muted">
-                      {open ? "▾" : "▸"}
+                    <span aria-hidden className="text-ink-3">
+                      {open ? <ChevronDownIcon /> : <ChevronRightIcon />}
                     </span>
                     {area.nameFr}
-                    <span className="text-sm font-normal text-muted">{area.groups.length} Pokémon</span>
+                    <span className="t-small font-normal text-ink-2">{area.groups.length} Pokémon</span>
                   </button>
                 </h3>
               )}
@@ -220,7 +217,7 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
     .sort((a, b) => a.methodId - b.methodId)
     .map((r) => `${methodName(r.methodId)} ${r.rate}`);
 
-  const cell = "px-2 py-1.5 sm:px-3";
+  const cell = "px-2 py-2.5 sm:px-3";
   const stickyCell = `${cell} sticky left-0 z-10`;
   const methodCell = `${cell} hidden whitespace-nowrap sm:table-cell`;
 
@@ -228,7 +225,7 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
     visibleVersions.map((index) => {
       const rate = byVersion[index];
       return (
-        <td key={versions[index].id} className={`${cell} text-right whitespace-nowrap tabular-nums ${rate === null ? "text-muted" : ""}`}>
+        <td key={versions[index].id} className={`${cell} text-right whitespace-nowrap tabular-nums ${rate === null ? "text-ink-2" : ""}`}>
           {rate ?? "—"}
         </td>
       );
@@ -246,7 +243,7 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
               const v = row.byVersion[index];
               return v ? (
                 <span key={versions[index].id} className="block">
-                  <span className="text-xs text-muted">{versions[index].nameFr} </span>
+                  <span className="text-xs text-ink-2">{versions[index].nameFr} </span>
                   {formatLevels(v[1], v[2])}
                 </span>
               ) : null;
@@ -258,8 +255,8 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
   const conditionCell = (row: EncounterRow) => (
     <td className={`${cell} text-xs`}>
       {conditionParts(row).map((part, i) => (
-        <span key={part[0].id} className={part.every((c) => c.isDefault) ? "text-muted" : ""}>
-          {i > 0 && <span className="text-muted"> · </span>}
+        <span key={part[0].id} className={part.every((c) => c.isDefault) ? "text-ink-2" : ""}>
+          {i > 0 && <span className="text-ink-2"> · </span>}
           {part.map((c) => c.nameFr).join(" / ")}
         </span>
       ))}
@@ -268,15 +265,17 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
 
   // Première colonne figée (défilement horizontal sur mobile) ; la méthode y passe sous le nom sur petit écran.
   const pokemonCell = (pokemonId: number, label: string, formName: string | null, method: string, extra?: ReactNode) => (
-    <td className={`${stickyCell} bg-card`}>
+    <td className={`${stickyCell} bg-surface`}>
       <span className="flex items-center gap-2">
         {extra}
-        <Link href={`/pokemon/${pokemons[pokemonId].speciesId}`} className="flex items-center gap-2 hover:text-accent" onClick={(e) => e.stopPropagation()}>
-          <PokemonSprite pokemonId={pokemonId} fallbackId={pokemons[pokemonId].speciesId} alt="" size={40} className="shrink-0" />
+        <Link href={`/pokemon/${pokemons[pokemonId].speciesId}`} className="flex items-center gap-2 hover:underline" onClick={(e) => e.stopPropagation()}>
+          <span className={`${spriteBox} size-10 rounded-sm`}>
+            <PokemonSprite pokemonId={pokemonId} fallbackId={pokemons[pokemonId].speciesId} alt="" size={40} />
+          </span>
           <span>
-            <span className="font-medium">{label}</span>
-            {formName && <span className="block text-xs text-muted">{formName}</span>}
-            <span className="block text-xs text-muted sm:hidden">{method}</span>
+            <span className="font-semibold">{label}</span>
+            {formName && <span className="block text-xs text-ink-2">{formName}</span>}
+            <span className="block text-xs text-ink-2 sm:hidden">{method}</span>
           </span>
         </Link>
       </span>
@@ -286,23 +285,23 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
   return (
     <>
       {areaRates.length > 0 && (
-        <p className="text-xs text-muted" title="Fréquence globale des rencontres par méthode, dans les données du jeu">
+        <p className="t-small text-ink-2" title="Fréquence globale des rencontres par méthode, dans les données du jeu">
           Fréquence : {areaRates.join(" · ")}
         </p>
       )}
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
+      <div className={`${card} overflow-x-auto`}>
         <table className="w-full text-sm">
-          <thead className="bg-background/60 text-left text-xs uppercase tracking-wide text-muted">
+          <thead className="text-left text-xs font-semibold tracking-[0.06em] text-ink-3 uppercase">
             <tr>
-              <th className="sticky left-0 z-10 bg-card px-2 py-2 font-medium sm:px-3">Pokémon</th>
-              <th className="hidden px-3 py-2 font-medium sm:table-cell">Méthode</th>
-              <th className="px-2 py-2 font-medium sm:px-3">Niveaux</th>
+              <th className="sticky left-0 z-10 bg-surface px-2 py-2.5 font-semibold sm:px-3">Pokémon</th>
+              <th className="hidden px-3 py-2.5 font-semibold sm:table-cell">Méthode</th>
+              <th className="px-2 py-2.5 font-semibold sm:px-3">Niveaux</th>
               {visibleVersions.map((index) => (
-                <th key={versions[index].id} className={`px-2 py-2 text-right font-medium sm:px-3 ${index === 0 ? "text-foreground" : ""}`}>
+                <th key={versions[index].id} className={`px-2 py-2.5 text-right font-semibold sm:px-3 ${index === 0 ? "text-ink" : ""}`}>
                   {visibleVersions.length > 1 ? versions[index].nameFr : "Taux"}
                 </th>
               ))}
-              {showConditions && <th className="px-2 py-2 font-medium sm:px-3">Conditions</th>}
+              {showConditions && <th className="px-2 py-2.5 font-semibold sm:px-3">Conditions</th>}
             </tr>
           </thead>
           <tbody>
@@ -313,7 +312,7 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
               // Une seule façon de le trouver : ligne simple, comme avant.
               if (group.rows.length === 1) {
                 return (
-                  <tr key={group.speciesId} className="border-t border-border align-middle">
+                  <tr key={group.speciesId} className="border-t border-line align-middle">
                     {pokemonCell(first.row.pokemonId, species.nameFr, species.isDefault ? null : species.formNameFr, methodName(first.row.methodId))}
                     <td className={methodCell}>{methodName(first.row.methodId)}</td>
                     {levelCell(first.row)}
@@ -336,7 +335,7 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
               return (
                 <Fragment key={group.speciesId}>
                   <tr
-                    className="cursor-pointer border-t border-border align-middle hover:bg-background/40"
+                    className="cursor-pointer border-t border-line align-middle transition-colors hover:bg-surface-2/60"
                     onClick={() => toggleGroup(group.speciesId)}
                   >
                     {pokemonCell(
@@ -348,18 +347,18 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
                         type="button"
                         aria-expanded={open}
                         aria-label={`${open ? "Replier" : "Déplier"} les ${rows.length} façons de trouver ${species.nameFr}`}
-                        className="w-4 shrink-0 text-sm text-muted"
+                        className="grid size-6 shrink-0 place-items-center rounded-sm text-ink-3 hover:bg-surface-2 hover:text-ink"
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleGroup(group.speciesId);
                         }}
                       >
-                        {open ? "▾" : "▸"}
+                        {open ? <ChevronDownIcon size={14} /> : <ChevronRightIcon size={14} />}
                       </button>,
                     )}
                     <td className={`${cell} hidden sm:table-cell`}>
                       {methodSummary}
-                      <span className="block text-xs text-muted">
+                      <span className="block text-xs text-ink-2">
                         {rows.length} rencontres{forms.size > 1 ? ` · ${forms.size} formes` : ""}
                       </span>
                     </td>
@@ -367,23 +366,23 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
                       {present.length > 0 ? formatLevels(Math.min(...present.map((v) => v[1])), Math.max(...present.map((v) => v[2]))) : "—"}
                     </td>
                     {rateCells(summaryRates)}
-                    {showConditions && <td className={`${cell} text-xs text-muted`}>{open ? "" : "Voir le détail"}</td>}
+                    {showConditions && <td className={`${cell} text-xs text-ink-2`}>{open ? "" : "Voir le détail"}</td>}
                   </tr>
                   {open &&
                     group.rows.map(({ row, key }) => {
                       const pokemon = pokemons[row.pokemonId];
                       return (
-                        <tr key={key} className="border-t border-border/50 bg-background/40 align-middle">
-                          <td className="sticky left-0 z-10 bg-card py-1.5 pr-2 pl-8 text-xs text-muted sm:pr-3 sm:pl-12">
+                        <tr key={key} className="border-t border-line bg-surface-2/50 align-middle">
+                          <td className="sticky left-0 z-10 bg-surface py-2 pr-2 pl-8 text-xs text-ink-2 sm:pr-3 sm:pl-12">
                             {forms.size > 1 ? (
-                              <span className="flex items-center gap-2 text-foreground">
+                              <span className="flex items-center gap-2 text-ink">
                                 <PokemonSprite pokemonId={row.pokemonId} fallbackId={pokemon.speciesId} alt="" size={28} className="shrink-0" />
                                 {pokemon.formNameFr ?? "Forme de base"}
                               </span>
                             ) : (
-                              <span aria-hidden>↳</span>
+                              <span aria-hidden className="text-ink-3">↳</span>
                             )}
-                            <span className="block text-foreground sm:hidden">{methodName(row.methodId)}</span>
+                            <span className="block text-ink sm:hidden">{methodName(row.methodId)}</span>
                           </td>
                           <td className={methodCell}>{methodName(row.methodId)}</td>
                           {levelCell(row)}

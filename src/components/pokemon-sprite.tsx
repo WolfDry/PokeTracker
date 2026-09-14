@@ -14,6 +14,7 @@ type Props = {
   className?: string;
 };
 
+/** Sprite 96×96 rendu net (pixel-art, cf. `img[data-sprite]` dans globals.css). */
 export function PokemonSprite({ pokemonId, fallbackId, alt, shiny = false, size = 96, className }: Props) {
   const [id, setId] = useState(pokemonId);
   return (
@@ -23,7 +24,8 @@ export function PokemonSprite({ pokemonId, fallbackId, alt, shiny = false, size 
       width={size}
       height={size}
       unoptimized
-      className={`[image-rendering:pixelated] ${className ?? ""}`}
+      data-sprite
+      className={className}
       onError={() => {
         if (fallbackId !== undefined && id !== fallbackId) setId(fallbackId);
       }}

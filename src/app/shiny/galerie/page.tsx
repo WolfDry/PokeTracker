@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { Breadcrumb } from "@/components/breadcrumb";
+import { PageHeader, SectionHeader } from "@/components/page-header";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { ShinyCard } from "@/components/shiny-card";
-import { accentButton } from "@/components/ui";
+import { notice, primaryButton, textLink } from "@/components/ui";
 import { getShinies, type Shiny } from "@/lib/data/shiny";
 import { requireUser } from "@/lib/session";
 
@@ -11,24 +13,18 @@ export const metadata: Metadata = { title: "Galerie shiny" };
 
 export default function Page() {
   return (
-    <div className="space-y-6">
-      <header className="space-y-1">
-        <nav className="text-sm text-muted">
-          <Link href="/shiny" className="hover:text-foreground">
-            Shiny
-          </Link>{" "}
-          › Galerie
-        </nav>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-semibold">Galerie shiny</h1>
-            <p className="text-muted">Tous tes shinies, jeu par jeu.</p>
-          </div>
-          <Link href="/shiny/ajouter" className={accentButton}>
+    <div className="space-y-8">
+      <Breadcrumb items={[{ href: "/shiny", label: "Shiny" }, { label: "Galerie" }]} />
+      <PageHeader
+        eyebrow="Collection"
+        title="Galerie shiny"
+        intro="Tous tes shinies, jeu par jeu."
+        actions={
+          <Link href="/shiny/ajouter" className={primaryButton}>
             Ajouter un shiny
           </Link>
-        </div>
-      </header>
+        }
+      />
       <Suspense fallback={<PageSkeleton />}>
         <Gallery />
       </Suspense>
@@ -41,13 +37,13 @@ async function Gallery() {
   const shinies = await getShinies(user.id);
   if (shinies.length === 0) {
     return (
-      <p className="rounded-lg border border-border bg-card p-4 text-muted">
+      <p className={notice}>
         Aucun shiny pour l&apos;instant. Termine une{" "}
-        <Link href="/shiny" className="underline hover:text-foreground">
+        <Link href="/shiny" className={textLink}>
           chasse
         </Link>{" "}
         ou{" "}
-        <Link href="/shiny/ajouter" className="underline hover:text-foreground">
+        <Link href="/shiny/ajouter" className={textLink}>
           ajoute un shiny
         </Link>{" "}
         obtenu autrement.
@@ -65,18 +61,20 @@ async function Gallery() {
   const groups = [...byGame.values()].sort((a, b) => a.version.id - b.version.id);
 
   return (
-    <div className="space-y-8">
-      <p className="text-sm text-muted">
+    <div className="space-y-10">
+      <p className="t-small text-ink-2">
         {shinies.length} shiny{shinies.length > 1 ? "s" : ""} dans {groups.length} jeu{groups.length > 1 ? "x" : ""}.
       </p>
       {groups.map((group) => (
-        <section key={group.version.id} className="space-y-3">
-          <h2 className="text-lg font-medium">
-            <Link href={`/jeux/${group.version.slug}`} className="hover:text-accent">
-              {group.version.nameFr}
-            </Link>{" "}
-            <span className="text-sm font-normal text-muted">({group.shinies.length})</span>
-          </h2>
+        <section key={group.version.id} className="space-y-4">
+          <SectionHeader
+            title={
+              <Link href={`/jeux/${group.version.slug}`} className="hover:underline">
+                {group.version.nameFr}
+              </Link>
+            }
+            aside={`${group.shinies.length}`}
+          />
           <ul className="grid gap-3 md:grid-cols-2">
             {group.shinies.map((shiny) => (
               <ShinyCard key={shiny.id} shiny={shiny} />

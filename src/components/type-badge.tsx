@@ -1,11 +1,10 @@
-import { typeColor } from "@/lib/type-colors";
+import type { CSSProperties } from "react";
 
+/** Badge de type : fond teinté, point plein, texte encre. La couleur vient de `--type-<slug>` (globals.css). */
 export function TypeBadge({ type, size = "sm" }: { type: { slug: string; nameFr: string }; size?: "sm" | "md" }) {
+  const style = { "--tc": `var(--type-${type.slug}, var(--type-unknown))` } as CSSProperties;
   return (
-    <span
-      className={`inline-block rounded font-medium text-white ${size === "sm" ? "px-1.5 py-px text-[11px]" : "px-2.5 py-0.5 text-sm"}`}
-      style={{ backgroundColor: typeColor(type.slug), textShadow: "0 1px 1px rgb(0 0 0 / 0.35)" }}
-    >
+    <span className={`type-badge ${size === "sm" ? "type-badge-sm" : ""}`} style={style}>
       {type.nameFr}
     </span>
   );

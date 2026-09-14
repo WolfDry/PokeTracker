@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { ArrowRightIcon } from "@/components/icons";
+import { PageHeader, SectionHeader } from "@/components/page-header";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { ProgressBar } from "@/components/progress-bar";
+import { card, chip, notice, textLink } from "@/components/ui";
 import { getUserGames } from "@/lib/data/captures";
 import { isDlcVersion } from "@/lib/data/filters";
 import { getGenerationsWithGames } from "@/lib/data/games";
@@ -12,11 +15,8 @@ export const metadata: Metadata = { title: "Mes captures" };
 
 export default function Page() {
   return (
-    <div className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold">Mes captures</h1>
-        <p className="text-muted">Avancement de tes Pokédex, jeu par jeu.</p>
-      </header>
+    <div className="space-y-10">
+      <PageHeader eyebrow="Mes jeux" title="Mes captures" intro="Avancement de tes Pokédex, jeu par jeu." />
       <Suspense fallback={<PageSkeleton />}>
         <Games />
       </Suspense>
@@ -38,20 +38,18 @@ async function Games() {
   return (
     <>
       {games.length === 0 ? (
-        <p className="rounded-lg border border-border bg-card p-4 text-muted">
-          Tu n&apos;as encore coché aucun Pokémon. Choisis un jeu ci-dessous, puis coche tes captures depuis son Pokédex.
-        </p>
+        <p className={notice}>Tu n&apos;as encore coché aucun Pokémon. Choisis un jeu ci-dessous, puis coche tes captures depuis son Pokédex.</p>
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2">
+        <ul className="grid gap-4 md:grid-cols-2">
           {games.map((game) => (
-            <li key={game.version.id} className="space-y-3 rounded-lg border border-border bg-card p-4">
+            <li key={game.version.id} className={`${card} space-y-4 p-5`}>
               <div className="flex items-baseline justify-between gap-3">
-                <h2 className="text-lg font-medium">
-                  <Link href={`/captures/${game.version.slug}`} className="hover:text-accent">
+                <h2 className="t-h2">
+                  <Link href={`/captures/${game.version.slug}`} className="hover:underline">
                     {game.version.nameFr}
                   </Link>
                 </h2>
-                <span className="text-xs text-muted">
+                <span className="t-small text-ink-3">
                   {game.generationName}
                   {game.lastCaughtAt && ` · ${dateFr.format(game.lastCaughtAt)}`}
                 </span>
@@ -59,11 +57,11 @@ async function Games() {
               {game.dexes.map((dex) => (
                 <ProgressBar key={dex.id} caught={dex.caught} total={dex.total} label={game.dexes.length > 1 ? `Pokédex ${dex.nameFr}` : "Pokédex"} />
               ))}
-              <div className="flex flex-wrap gap-3 text-sm">
-                <Link href={`/captures/${game.version.slug}`} className="underline hover:text-accent">
-                  Manquants et où les trouver
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 t-small">
+                <Link href={`/captures/${game.version.slug}`} className="inline-flex items-center gap-1 font-semibold hover:underline">
+                  Manquants et où les trouver <ArrowRightIcon size={14} />
                 </Link>
-                <Link href={`/jeux/${game.version.slug}`} className="text-muted underline hover:text-foreground">
+                <Link href={`/jeux/${game.version.slug}`} className={`${textLink} text-ink-2`}>
                   Cocher dans le Pokédex
                 </Link>
               </div>
@@ -73,18 +71,20 @@ async function Games() {
       )}
 
       {others.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-lg font-medium">{games.length === 0 ? "Choisir un jeu" : "Commencer un autre jeu"}</h2>
-          {others.map((generation) => (
-            <div key={generation.id} className="flex flex-wrap items-baseline gap-2 text-sm">
-              <span className="w-full text-xs text-muted sm:w-28">{generation.nameFr}</span>
-              {generation.versions.map((version) => (
-                <Link key={version.id} href={`/captures/${version.slug}`} className="rounded-full border border-border bg-card px-3 py-1 hover:border-accent">
-                  {version.nameFr}
-                </Link>
-              ))}
-            </div>
-          ))}
+        <section className="space-y-4">
+          <SectionHeader title={games.length === 0 ? "Choisir un jeu" : "Commencer un autre jeu"} />
+          <div className="space-y-3">
+            {others.map((generation) => (
+              <div key={generation.id} className="flex flex-wrap items-center gap-2">
+                <span className="w-full t-caption sm:w-32">{generation.nameFr}</span>
+                {generation.versions.map((version) => (
+                  <Link key={version.id} href={`/captures/${version.slug}`} className={chip(false)}>
+                    {version.nameFr}
+                  </Link>
+                ))}
+              </div>
+            ))}
+          </div>
         </section>
       )}
     </>

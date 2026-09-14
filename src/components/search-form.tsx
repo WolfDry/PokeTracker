@@ -1,4 +1,6 @@
 import Form from "next/form";
+import { SearchIcon } from "@/components/icons";
+import { input, largeButton, primaryButton } from "@/components/ui";
 
 type Props = { defaultValue?: string; autoFocus?: boolean; size?: "sm" | "lg" };
 
@@ -7,20 +9,21 @@ export function SearchForm({ defaultValue = "", autoFocus = false, size = "sm" }
   const large = size === "lg";
   return (
     <Form action="/recherche" role="search" className={`flex gap-2 ${large ? "w-full" : ""}`}>
-      <input
-        type="search"
-        name="q"
-        defaultValue={defaultValue}
-        placeholder="Pokémon, jeu ou lieu…"
-        aria-label="Rechercher un Pokémon, un jeu ou un lieu"
-        autoComplete="off"
-        autoFocus={autoFocus}
-        className={`rounded-md border border-border bg-background focus:border-accent focus:outline-none ${
-          large ? "w-full px-4 py-2.5 text-base" : "w-44 px-2.5 py-1 text-sm"
-        }`}
-      />
+      <div className={`relative ${large ? "flex-1" : ""}`}>
+        <SearchIcon size={16} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-3" />
+        <input
+          type="search"
+          name="q"
+          defaultValue={defaultValue}
+          placeholder="Pokémon, jeu ou lieu…"
+          aria-label="Rechercher un Pokémon, un jeu ou un lieu"
+          autoComplete="off"
+          autoFocus={autoFocus}
+          className={`${input} pl-9 ${large ? "h-12 text-base" : "h-9 w-60 rounded-full border-line bg-surface-2 text-sm"}`}
+        />
+      </div>
       {large && (
-        <button type="submit" className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground">
+        <button type="submit" className={`${primaryButton} ${largeButton}`}>
           Rechercher
         </button>
       )}
