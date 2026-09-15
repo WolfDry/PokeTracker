@@ -4,16 +4,15 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ArrowLeftIcon, ArrowRightIcon, StarIcon } from "@/components/icons";
 import { SectionHeader } from "@/components/page-header";
-import { PokemonSprite } from "@/components/pokemon-sprite";
 import { SpeciesCaptureChips } from "@/components/species-capture-chips";
+import { SpeciesFamily } from "@/components/species-family";
 import { StatusBadge } from "@/components/status-badge";
-import { TypeBadge } from "@/components/type-badge";
-import { card, dexNumber, ghostButton, secondaryButton, smallButton, spriteBox, textLink } from "@/components/ui";
+import { card, dexNumber, ghostButton, secondaryButton, smallButton, textLink } from "@/components/ui";
 import { getSpeciesCaptures } from "@/lib/data/captures";
 import { isDlcVersion } from "@/lib/data/filters";
 import { getPokedexHrefs } from "@/lib/data/pokedex-pages";
 import { getShinies, getSpeciesHunts } from "@/lib/data/shiny";
-import { getSpeciesById, getSpeciesEncounters } from "@/lib/data/species";
+import { getEvolutionFamily, getSpeciesById, getSpeciesEncounters } from "@/lib/data/species";
 import { getCurrentUser } from "@/lib/session";
 
 function parseId(raw: string) {
@@ -107,18 +106,23 @@ export default async function SpeciesPage({ params }: PageProps<"/pokemon/[id]">
   const speciesId = parseId(id);
   if (!speciesId) notFound();
 
-  const [species, encounters, pokedexHrefs] = await Promise.all([getSpeciesById(speciesId), getSpeciesEncounters(speciesId), getPokedexHrefs()]);
-  if (!species) notFound();
+  const [species, family, encounters, pokedexHrefs] = await Promise.all([
+    getSpeciesById(speciesId),
+    getEvolutionFamily(speciesId),
+    getSpeciesEncounters(speciesId),
+    getPokedexHrefs(),
+  ]);
+  if (!species || !family) notFound();
 
-  const flags = [species.isLegendary && "Légendaire", species.isMythical && "Fabuleux", species.isBaby && "Bébé"].filter(
-    (flag): flag is string => Boolean(flag),
-  );
-
-  const facts = [
-    species.defaultPokemon.height !== null && { label: "Taille", value: `${(species.defaultPokemon.height / 10).toLocaleString("fr-FR")} m` },
-    species.defaultPokemon.weight !== null && { label: "Poids", value: `${(species.defaultPokemon.weight / 10).toLocaleString("fr-FR")} kg` },
-    species.captureRate !== null && { label: "Taux de capture", value: String(species.captureRate) },
-  ].filter((f): f is { label: string; value: string } => Boolean(f));
+  // Jeux où l'espèce se rencontre sans figurer dans leur Pokédex régional (Celebi dans Rubis via le disque bonus
+  // de Colosseum…) : elle y est au Pokédex national. On les liste sous cette entrée pour rester cohérent avec
+  // « Où le trouver », et on les rend cochables dans « Mes captures ».
+  const dexVersionIds = new Set(species.pokedexes.flatMap((p) => p.versions.map((v) => v.id)));
+  const nationalOnlyVersions = encounters.map((e) => e.version).filter((v) => !dexVersionIds.has(v.id) && !isDlcVersion(v.slug));
+  const pokedexRows = [
+    ...species.pokedexes,
+    ...(nationalOnlyVersions.length > 0 ? [{ id: 0, slug: "national", nameFr: "National", number: species.id, versions: nationalOnlyVersions }] : []),
+  ];
 
   return (
     <div className="space-y-10">
@@ -135,74 +139,14 @@ export default async function SpeciesPage({ params }: PageProps<"/pokemon/[id]">
         </Link>
       </nav>
 
-      <header className="flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-8">
-        <div className="flex gap-3">
-          <span className={`${spriteBox} size-28 rounded-lg sm:size-32`}>
-            <PokemonSprite pokemonId={species.defaultPokemon.id} alt={species.nameFr} size={96} />
-          </span>
-          <span className={`${spriteBox} relative size-28 rounded-lg sm:size-32`}>
-            <PokemonSprite pokemonId={species.defaultPokemon.id} alt={`${species.nameFr} chromatique`} size={96} shiny />
-            <StarIcon size={14} className="absolute top-2.5 right-2.5 text-shiny" />
-          </span>
-        </div>
-        <div className="min-w-0 space-y-3">
-          <p className="t-caption">
-            N° {dexNumber(species.id, 4)} · {species.generation.nameFr}
-          </p>
-          <h1 className="t-display">{species.nameFr}</h1>
-          <p className="text-ink-2">
-            {species.nameEn}
-            {species.genusFr && ` · ${species.genusFr}`}
-          </p>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {species.defaultPokemon.types.map((type) => (
-              <TypeBadge key={type.slug} type={type} size="md" />
-            ))}
-            {flags.map((flag) => (
-              <StatusBadge key={flag}>{flag}</StatusBadge>
-            ))}
-          </div>
-          {facts.length > 0 && (
-            <dl className="flex flex-wrap gap-x-8 gap-y-2 pt-1">
-              {facts.map((fact) => (
-                <div key={fact.label}>
-                  <dt className="t-caption">{fact.label}</dt>
-                  <dd className="font-semibold">{fact.value}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-        </div>
-      </header>
-
-      {species.forms.length > 0 && (
-        <section className="space-y-4">
-          <SectionHeader title="Formes" />
-          <ul className="flex flex-wrap gap-3">
-            {species.forms.map((form) => (
-              <li key={form.id} className={`${card} flex items-center gap-3 p-2 pr-4`}>
-                <span className={`${spriteBox} size-12 rounded-sm`}>
-                  <PokemonSprite pokemonId={form.id} fallbackId={species.defaultPokemon.id} alt={form.formNameFr ?? form.slug} size={48} />
-                </span>
-                <div className="space-y-1">
-                  <div className="t-small font-semibold">{form.formNameFr ?? form.slug}</div>
-                  <div className="flex gap-1">
-                    {form.types.map((type) => (
-                      <TypeBadge key={type.slug} type={type} />
-                    ))}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {/* En-tête et arbre d'évolution : le stade ou la forme cliqué remplit l'en-tête. */}
+      <SpeciesFamily root={family} speciesId={species.id} />
 
       <section className="space-y-4">
         <SectionHeader title="Mes captures" />
         {/* Dépend de la session : streamé, le reste de la fiche reste en cache. */}
         <Suspense fallback={<div aria-busy className="h-8 w-64 animate-pulse rounded-full bg-surface-2" />}>
-          <MyCaptures speciesId={species.id} versions={species.pokedexes.flatMap((p) => p.versions)} />
+          <MyCaptures speciesId={species.id} versions={pokedexRows.flatMap((p) => p.versions)} />
         </Suspense>
       </section>
 
@@ -213,7 +157,7 @@ export default async function SpeciesPage({ params }: PageProps<"/pokemon/[id]">
 
       <section className="space-y-4">
         <SectionHeader title="Dans les Pokédex" />
-        {species.pokedexes.length === 0 ? (
+        {pokedexRows.length === 0 ? (
           <p className="t-small text-ink-2">Présent uniquement dans le Pokédex national.</p>
         ) : (
           <div className={`${card} overflow-x-auto`}>
@@ -226,10 +170,10 @@ export default async function SpeciesPage({ params }: PageProps<"/pokemon/[id]">
                 </tr>
               </thead>
               <tbody>
-                {species.pokedexes.map((pokedex) => (
+                {pokedexRows.map((pokedex) => (
                   <tr key={pokedex.id} className="border-t border-line">
                     <td className="px-4 py-2.5 font-medium">{pokedex.nameFr}</td>
-                    <td className="px-4 py-2.5 text-ink-2">{dexNumber(pokedex.number)}</td>
+                    <td className="px-4 py-2.5 text-ink-2">{dexNumber(pokedex.number, pokedex.slug === "national" ? 4 : 3)}</td>
                     <td className="px-4 py-2.5">
                       {pokedex.versions.map((version, index) => (
                         <span key={version.id}>

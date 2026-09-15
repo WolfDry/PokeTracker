@@ -15,6 +15,7 @@ import type pg from "pg";
 import { coverageFor } from "./coverage";
 import { bool, humanize, int, loadCsv, localized, uniqueBy, type Row } from "./csv";
 import { createPool, insertRows, type Rows } from "./db";
+import { evolutionConditionFr, formConditionFr } from "./evolutions";
 import { conditionValueLabelFr, LOCATION_LABELS_FR, METHOD_LABELS_FR, VERSION_LABELS_FR } from "./labels";
 import { downloadSprites } from "./sprites";
 
@@ -33,7 +34,8 @@ const CSV_FILES = [
   "versions", "version_names",
   "pokedexes", "pokedex_prose", "pokedex_version_groups", "pokemon_dex_numbers",
   "pokemon_species", "pokemon_species_names",
-  "pokemon", "pokemon_types", "pokemon_forms", "pokemon_form_names",
+  "pokemon", "pokemon_types", "pokemon_forms", "pokemon_form_names", "pokemon_stats", "stats",
+  "pokemon_evolution", "evolution_triggers", "evolution_trigger_prose", "items", "item_names", "move_names",
   "locations", "location_names",
   "location_areas", "location_area_prose",
   "encounter_methods", "encounter_method_prose",
@@ -148,6 +150,7 @@ function transform(csv: Csv) {
     isBaby: bool(s.is_baby),
     captureRate: int(s.capture_rate),
     evolutionChainId: int(s.evolution_chain_id),
+    evolvesFromSpeciesId: int(s.evolves_from_species_id),
   }));
 
   // Types par forme (slot 1 / slot 2).
@@ -159,25 +162,60 @@ function transform(csv: Csv) {
   }
   // Nom de forme FR : via la forme par défaut de chaque pokemon (pokemon_forms → pokemon_form_names).
   const formNames = localized(csv.pokemon_form_names, "pokemon_form_id", "form_name");
+  const fullFormNames = localized(csv.pokemon_form_names, "pokemon_form_id", "pokemon_name");
   const formNameByPokemon = new Map<string, string>();
+  const fullNameByPokemon = new Map<string, string>();
   for (const form of csv.pokemon_forms) {
     if (!bool(form.is_default)) continue;
     const name = formNames.fr(form.id, "");
     if (name) formNameByPokemon.set(form.pokemon_id, name);
+    const fullName = fullFormNames.frOnly(form.id);
+    if (fullName) fullNameByPokemon.set(form.pokemon_id, fullName);
   }
+  // Stats de base : une ligne par (pokemon, stat), les stats 1–6 sont PV, Atq, Déf, Atq. Spé., Déf. Spé., Vit.
+  const STAT_COLUMNS: Record<string, string> = {
+    hp: "hp", attack: "attack", defense: "defense",
+    "special-attack": "specialAttack", "special-defense": "specialDefense", speed: "speed",
+  };
+  const statSlugById = new Map(csv.stats.map((s) => [s.id, s.identifier]));
+  const statsByPokemon = new Map<string, Record<string, number>>();
+  for (const row of csv.pokemon_stats) {
+    const column = STAT_COLUMNS[statSlugById.get(row.stat_id) ?? ""];
+    if (!column) continue;
+    const entry = statsByPokemon.get(row.pokemon_id) ?? {};
+    entry[column] = Number(row.base_stat);
+    statsByPokemon.set(row.pokemon_id, entry);
+  }
+  const itemNames = localized(csv.item_names, "item_id");
+  const itemIdBySlug = new Map(csv.items.map((i) => [i.identifier, i.id]));
+  const itemFrBySlug = (slug: string) => {
+    const id = itemIdBySlug.get(slug);
+    return id ? itemNames.fr(id, slug) : undefined;
+  };
+  const speciesSlugById = new Map(csv.pokemon_species.map((s) => [s.id, s.identifier]));
   const pokemons: Rows = csv.pokemon.map((p) => {
     const pokemonTypes = typesByPokemon.get(p.id);
     if (!pokemonTypes?.[1]) throw new Error(`Pokémon ${p.identifier} (${p.id}) sans type`);
+    const isDefault = bool(p.is_default);
+    const stats = statsByPokemon.get(p.id) ?? {};
     return {
       id: Number(p.id),
       speciesId: Number(p.species_id),
       slug: p.identifier,
-      isDefault: bool(p.is_default),
+      isDefault,
+      nameFr: isDefault ? null : (fullNameByPokemon.get(p.id) ?? null),
       formNameFr: formNameByPokemon.get(p.id) ?? null,
+      formConditionFr: isDefault ? null : formConditionFr(p.identifier, speciesSlugById.get(p.species_id) ?? "", itemFrBySlug),
       type1Id: pokemonTypes[1],
       type2Id: pokemonTypes[2] ?? null,
       height: int(p.height),
       weight: int(p.weight),
+      hp: stats.hp ?? null,
+      attack: stats.attack ?? null,
+      defense: stats.defense ?? null,
+      specialAttack: stats.specialAttack ?? null,
+      specialDefense: stats.specialDefense ?? null,
+      speed: stats.speed ?? null,
     };
   });
 
@@ -207,6 +245,30 @@ function transform(csv: Csv) {
       nameEn,
     };
   });
+
+  // Conditions d'évolution en français, une ligne par façon d'obtenir l'espèce.
+  const triggerSlugById = new Map(csv.evolution_triggers.map((t) => [t.id, t.identifier]));
+  const triggerNames = localized(csv.evolution_trigger_prose, "evolution_trigger_id");
+  const moveNames = localized(csv.move_names, "move_id");
+  const speciesNameById = new Map(species.map((s) => [String(s.id), s.nameFr as string]));
+  const typeNameById = new Map(types.map((t) => [String(t.id), t.nameFr as string]));
+  const locationNameById = new Map(locations.map((l) => [String(l.id), l.nameFr as string]));
+  const evolutionLookups = {
+    triggerSlug: (id: string) => triggerSlugById.get(id) ?? "other",
+    triggerFr: (id: string) => triggerNames.fr(id, "Autre"),
+    itemFr: (id: string) => itemNames.fr(id, "Objet"),
+    moveFr: (id: string) => moveNames.fr(id, "une capacité"),
+    typeFr: (id: string) => typeNameById.get(id) ?? "",
+    speciesFr: (id: string) => speciesNameById.get(id) ?? "",
+    locationFr: (id: string) => locationNameById.get(id) ?? "",
+  };
+  const evolutions: Rows = csv.pokemon_evolution.map((e) => ({
+    id: Number(e.id),
+    evolvedSpeciesId: Number(e.evolved_species_id),
+    triggerSlug: evolutionLookups.triggerSlug(e.evolution_trigger_id),
+    conditionFr: evolutionConditionFr(e, evolutionLookups),
+    isDefault: e.is_default === undefined || bool(e.is_default),
+  }));
 
   const methodNames = localized(csv.encounter_method_prose, "encounter_method_id");
   const encounterMethods: Rows = csv.encounter_methods.map((m) => ({
@@ -303,7 +365,7 @@ function transform(csv: Csv) {
 
   return {
     generations, regions, types, versionGroups, versionGroupRegions, versions,
-    pokedexes, pokedexVersionGroups, pokedexEntries, species, pokemons,
+    pokedexes, pokedexVersionGroups, pokedexEntries, species, pokemons, evolutions,
     locations, locationAreas, encounterMethods, encounterConditions, encounterConditionValues,
     encounters, encounterConditionLinks, areaRates, versionCoverage,
   };
@@ -347,7 +409,9 @@ async function load(client: pg.PoolClient, data: Data) {
       await client.query(`DELETE FROM "PokedexEntry"`);
       await client.query(`DELETE FROM "PokedexVersionGroup"`);
       await client.query(`DELETE FROM "VersionGroupRegion"`);
+      await client.query(`DELETE FROM "Evolution"`);
     });
+    await step(`Evolution (${data.evolutions.length})`, () => insertRows(client, "Evolution", data.evolutions));
     await step(`VersionGroupRegion (${data.versionGroupRegions.length})`, () => insertRows(client, "VersionGroupRegion", data.versionGroupRegions));
     await step(`PokedexVersionGroup (${data.pokedexVersionGroups.length})`, () => insertRows(client, "PokedexVersionGroup", data.pokedexVersionGroups));
     await step(`PokedexEntry (${data.pokedexEntries.length})`, () => insertRows(client, "PokedexEntry", data.pokedexEntries));

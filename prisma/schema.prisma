@@ -151,20 +151,25 @@ model Type {
 
 /// Espèce = entrée du Pokédex national (id = numéro national).
 model Species {
-  id               Int     @id
-  slug             String  @unique
-  nameFr           String
-  nameEn           String
-  genusFr          String?
-  generationId     Int
-  isLegendary      Boolean @default(false)
-  isMythical       Boolean @default(false)
-  isBaby           Boolean @default(false)
-  captureRate      Int?
-  /// Chaîne d'évolution PokeAPI, pour regrouper les familles plus tard.
-  evolutionChainId Int?
+  id                   Int     @id
+  slug                 String  @unique
+  nameFr               String
+  nameEn               String
+  genusFr              String?
+  generationId         Int
+  isLegendary          Boolean @default(false)
+  isMythical           Boolean @default(false)
+  isBaby               Boolean @default(false)
+  captureRate          Int?
+  /// Chaîne d'évolution PokeAPI : toutes les espèces d'une même famille partagent l'id.
+  evolutionChainId     Int?
+  /// Espèce dont celle-ci évolue (null pour le premier stade).
+  evolvesFromSpeciesId Int?
 
   generation     Generation     @relation(fields: [generationId], references: [id])
+  evolvesFrom    Species?       @relation("Evolution", fields: [evolvesFromSpeciesId], references: [id])
+  evolvesTo      Species[]      @relation("Evolution")
+  evolutions     Evolution[]
   pokemons       Pokemon[]
   pokedexEntries PokedexEntry[]
   captures       Capture[]
@@ -173,20 +178,46 @@ model Species {
 
   @@index([nameFr])
   @@index([nameEn])
+  @@index([evolutionChainId])
+}
+
+/// Une façon d'obtenir une espèce par évolution (une espèce peut en avoir plusieurs selon les jeux).
+/// `conditionFr` est le libellé court affiché sur l'arbre : « Niv. 16 », « Pierre Foudre », « Échange »…
+model Evolution {
+  id               Int     @id
+  evolvedSpeciesId Int
+  triggerSlug      String
+  conditionFr      String
+  isDefault        Boolean @default(true)
+
+  evolvedSpecies Species @relation(fields: [evolvedSpeciesId], references: [id])
+
+  @@index([evolvedSpeciesId])
 }
 
 /// Forme concrète d'une espèce (forme par défaut, formes régionales, Méga…).
 /// Les rencontres pointent vers une forme, pas vers une espèce.
 model Pokemon {
-  id         Int     @id
-  speciesId  Int
-  slug       String  @unique
-  isDefault  Boolean
-  formNameFr String?
-  type1Id    Int
-  type2Id    Int?
-  height     Int?
-  weight     Int?
+  id              Int     @id
+  speciesId       Int
+  slug            String  @unique
+  isDefault       Boolean
+  /// Nom complet de la forme (« Méga-Florizarre », « Rattata d'Alola »), null pour la forme par défaut.
+  nameFr          String?
+  formNameFr      String?
+  /// Comment obtenir la forme, pour l'arbre d'évolution (« Florizarrite », « Gigamax »).
+  formConditionFr String?
+  type1Id         Int
+  type2Id         Int?
+  height          Int?
+  weight          Int?
+  /// Stats de base.
+  hp              Int?
+  attack          Int?
+  defense         Int?
+  specialAttack   Int?
+  specialDefense  Int?
+  speed           Int?
 
   species    Species     @relation(fields: [speciesId], references: [id])
   type1      Type        @relation("PokemonType1", fields: [type1Id], references: [id])

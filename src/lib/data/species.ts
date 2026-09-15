@@ -16,6 +16,170 @@ export type SpeciesEncounterSummary = {
   }[];
 };
 
+/** Stats de base d'une forme. */
+export type BaseStats = { hp: number; attack: number; defense: number; specialAttack: number; specialDefense: number; speed: number };
+
+/** Nœud de l'arbre d'évolution : une espèce (forme par défaut) ou une forme alternative rattachée à son espèce. */
+export type FamilyNode = {
+  /** Id de la forme (unique dans l'arbre). */
+  id: number;
+  speciesId: number;
+  /** Image de repli (forme par défaut de l'espèce) quand celle de la forme manque. */
+  spriteFallbackId: number;
+  kind: "species" | "form";
+  nameFr: string;
+  nameEn: string;
+  genusFr: string | null;
+  /** Légende de la carte : « N° 0003 » pour une espèce, « Forme Gigamax » pour une forme. */
+  caption: string;
+  /** Libellé sur le trait qui mène au nœud : « Niv. 16 », « Florizarrite »… */
+  condition: string | null;
+  generation: { id: number; nameFr: string };
+  types: { slug: string; nameFr: string }[];
+  flags: string[];
+  height: number | null;
+  weight: number | null;
+  captureRate: number | null;
+  stats: BaseStats | null;
+  children: FamilyNode[];
+};
+
+const pokemonSelect = {
+  id: true,
+  slug: true,
+  isDefault: true,
+  nameFr: true,
+  formNameFr: true,
+  formConditionFr: true,
+  height: true,
+  weight: true,
+  hp: true,
+  attack: true,
+  defense: true,
+  specialAttack: true,
+  specialDefense: true,
+  speed: true,
+  type1: { select: { slug: true, nameFr: true } },
+  type2: { select: { slug: true, nameFr: true } },
+} as const;
+
+type PokemonRow = {
+  id: number;
+  slug: string;
+  isDefault: boolean;
+  nameFr: string | null;
+  formNameFr: string | null;
+  formConditionFr: string | null;
+  height: number | null;
+  weight: number | null;
+  hp: number | null;
+  attack: number | null;
+  defense: number | null;
+  specialAttack: number | null;
+  specialDefense: number | null;
+  speed: number | null;
+  type1: { slug: string; nameFr: string };
+  type2: { slug: string; nameFr: string } | null;
+};
+
+function baseStats(p: PokemonRow): BaseStats | null {
+  if (p.hp === null || p.attack === null || p.defense === null || p.specialAttack === null || p.specialDefense === null || p.speed === null) return null;
+  return { hp: p.hp, attack: p.attack, defense: p.defense, specialAttack: p.specialAttack, specialDefense: p.specialDefense, speed: p.speed };
+}
+
+function speciesFlags(s: { isLegendary: boolean; isMythical: boolean; isBaby: boolean }) {
+  return [s.isLegendary && "Légendaire", s.isMythical && "Fabuleux", s.isBaby && "Bébé"].filter((flag): flag is string => Boolean(flag));
+}
+
+/**
+ * Arbre d'évolution de l'espèce : toutes les espèces de sa chaîne, chacune portant ses évolutions puis ses
+ * formes alternatives (Méga, Gigamax, régionales…) en enfants. Retourne la racine (premier stade).
+ */
+export async function getEvolutionFamily(speciesId: number): Promise<FamilyNode | null> {
+  cacheLife("max");
+  cacheTag("reference");
+
+  const current = await prisma.species.findUnique({ where: { id: speciesId }, select: { evolutionChainId: true } });
+  if (!current) return null;
+
+  const family = await prisma.species.findMany({
+    where: current.evolutionChainId === null ? { id: speciesId } : { evolutionChainId: current.evolutionChainId },
+    orderBy: { id: "asc" },
+    select: {
+      id: true,
+      nameFr: true,
+      nameEn: true,
+      genusFr: true,
+      isLegendary: true,
+      isMythical: true,
+      isBaby: true,
+      captureRate: true,
+      evolvesFromSpeciesId: true,
+      generation: { select: { id: true, nameFr: true } },
+      pokemons: { orderBy: { id: "asc" }, select: pokemonSelect },
+      evolutions: { orderBy: { id: "asc" }, select: { conditionFr: true, isDefault: true } },
+    },
+  });
+  if (family.length === 0) return null;
+
+  const ids = new Set(family.map((s) => s.id));
+  const build = (species: (typeof family)[number]): FamilyNode | null => {
+    const main = species.pokemons.find((p) => p.isDefault) ?? species.pokemons[0];
+    if (!main) return null;
+    const preferred = species.evolutions.filter((e) => e.isDefault);
+    const conditions = [...new Set((preferred.length > 0 ? preferred : species.evolutions).map((e) => e.conditionFr))];
+    const evolutions = family
+      .filter((s) => s.evolvesFromSpeciesId === species.id)
+      .map(build)
+      .filter((node): node is FamilyNode => node !== null);
+    const forms = species.pokemons
+      .filter((p) => !p.isDefault)
+      .map((p): FamilyNode => ({
+        id: p.id,
+        speciesId: species.id,
+        spriteFallbackId: main.id,
+        kind: "form",
+        nameFr: p.nameFr ?? p.formNameFr ?? humanizeSlug(p.slug),
+        nameEn: species.nameEn,
+        genusFr: species.genusFr,
+        caption: p.formNameFr ?? humanizeSlug(p.slug),
+        condition: p.formConditionFr,
+        generation: species.generation,
+        types: [p.type1, p.type2].filter((t) => t !== null),
+        flags: speciesFlags(species),
+        height: p.height,
+        weight: p.weight,
+        captureRate: species.captureRate,
+        stats: baseStats(p),
+        children: [],
+      }));
+    return {
+      id: main.id,
+      speciesId: species.id,
+      spriteFallbackId: main.id,
+      kind: "species",
+      nameFr: species.nameFr,
+      nameEn: species.nameEn,
+      genusFr: species.genusFr,
+      caption: `N° ${String(species.id).padStart(4, "0")}`,
+      condition: conditions.length > 0 ? conditions.join(" ou ") : null,
+      generation: species.generation,
+      types: [main.type1, main.type2].filter((t) => t !== null),
+      flags: speciesFlags(species),
+      height: main.height,
+      weight: main.weight,
+      captureRate: species.captureRate,
+      stats: baseStats(main),
+      children: [...evolutions, ...forms],
+    };
+  };
+
+  // La racine est le stade sans parent dans la famille ; à défaut (données incomplètes), l'espèce demandée.
+  const root =
+    family.find((s) => s.evolvesFromSpeciesId === null || !ids.has(s.evolvesFromSpeciesId)) ?? family.find((s) => s.id === speciesId) ?? family[0];
+  return build(root);
+}
+
 export async function getSpeciesById(id: number) {
   cacheLife("max");
   cacheTag("reference");

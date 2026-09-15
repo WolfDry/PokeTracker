@@ -230,3 +230,117 @@
 @utility shadow-float {
   box-shadow: var(--shadow-float);
 }
+
+/*
+ * Arbre d'évolution (`EvolutionTree`) : cartes reliées par des traits fins à coins arrondis.
+ * Mobile : arbre vertical, les enfants indentés sous leur parent. La colonne est tracée par `.evo-elbow`
+ * (une cellule qui s'étire sur toute la hauteur de l'enfant) et le virage vers la carte par la carte
+ * elle-même (`.evo-card::before`, à 50 % de sa propre hauteur : indépendant de la hauteur de la carte).
+ * Dès `sm` : arbre horizontal, tout est tracé par `.evo-elbow` (les cartes sont centrées dans leur rangée).
+ */
+@layer components {
+  .evo-elbow {
+    position: relative;
+    /* Deux moitiés : le libellé s'aligne au bas de la première, juste au-dessus du trait tracé à 50 %. */
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    align-items: end;
+    justify-items: center;
+    flex: none;
+    align-self: stretch;
+    width: 24px;
+    --evo-line: var(--line-strong);
+    --evo-r: 12px;
+  }
+  .evo-elbow::before,
+  .evo-elbow::after,
+  .evo-card::before {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+  }
+  /* Mobile : la colonne descend tout le long des enfants, sauf après le dernier. */
+  .evo-elbow::before {
+    left: 0;
+    top: 0;
+    bottom: 0;
+    border-left: 1px solid var(--evo-line);
+  }
+  .evo-elbow[data-last]::before {
+    display: none;
+  }
+  .evo-elbow::after {
+    display: none;
+  }
+  /* Virage vers la carte : part du haut de la rangée (16 px d'espace + 18 px de légende) et tourne à mi-hauteur. */
+  .evo-card {
+    position: relative;
+  }
+  li .evo-card::before {
+    left: -24px;
+    width: 24px;
+    top: -34px;
+    height: calc(50% + 34px);
+    border-left: 1px solid var(--line-strong);
+    border-bottom: 1px solid var(--line-strong);
+    border-bottom-left-radius: 12px;
+  }
+  @media (width >= 40rem) {
+    li .evo-card::before {
+      display: none;
+    }
+    .evo-elbow {
+      width: auto;
+      min-width: 64px;
+    }
+    .evo-elbow::after {
+      display: block;
+    }
+    /* Un seul enfant : trait droit. */
+    .evo-elbow[data-single] {
+      min-width: 48px;
+    }
+    .evo-elbow[data-single]::before {
+      display: none;
+    }
+    .evo-elbow[data-single]::after {
+      left: 0;
+      right: 0;
+      top: 50%;
+      border-top: 1px solid var(--evo-line);
+    }
+    /* Fourche : colonne verticale à gauche, virage arrondi vers chaque enfant. La colonne remonte
+       de la hauteur de l'espace entre rangées (`sm:gap-y-4`) pour rejoindre celle du frère précédent. */
+    .evo-elbow:not([data-single])::before {
+      display: block;
+      top: -16px;
+      bottom: 0;
+    }
+    .evo-elbow[data-first]:not([data-single])::before {
+      top: calc(50% + var(--evo-r));
+    }
+    .evo-elbow[data-last]:not([data-single])::before {
+      bottom: calc(50% + var(--evo-r));
+    }
+    .evo-elbow:not([data-single])::after {
+      left: 0;
+      right: 0;
+      top: 50%;
+      border-top: 1px solid var(--evo-line);
+    }
+    .evo-elbow[data-first]:not([data-single])::after {
+      height: var(--evo-r);
+      border-left: 1px solid var(--evo-line);
+      border-top-left-radius: var(--evo-r);
+    }
+    .evo-elbow[data-last]:not([data-single])::after {
+      top: auto;
+      bottom: 50%;
+      height: var(--evo-r);
+      border-top: 0;
+      border-left: 1px solid var(--evo-line);
+      border-bottom: 1px solid var(--evo-line);
+      border-bottom-left-radius: var(--evo-r);
+    }
+  }
+}
