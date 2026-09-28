@@ -30,8 +30,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col">
         <SiteHeader />
         {/* Sur mobile, la barre d'onglets occupe le bas : on lui réserve la place. */}
-        <main className="mx-auto w-full max-w-6xl flex-1 px-5 pt-8 pb-28 sm:px-10 sm:pt-12 sm:pb-16">{children}</main>
-        <footer className="hidden border-t border-line py-4 text-center t-small text-ink-3 sm:block">
+        <main className="mx-auto w-full max-w-6xl flex-1 px-5 pt-8 pb-28 sm:px-10 sm:pt-12 md:pb-16">{children}</main>
+        <footer className="hidden border-t border-line py-4 text-center t-small text-ink-3 md:block">
           Données : PokeAPI · Pokémon est une marque de Nintendo / Creatures / Game Freak
         </footer>
         <MobileTabBar />
