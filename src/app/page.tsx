@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ComponentType } from "react";
-import { ArrowRightIcon, BallIcon, MapIcon, PokedexIcon, StarIcon } from "@/components/icons";
+import { ArrowRightIcon, BallIcon, MapIcon, PokedexIcon, StarIcon, TeamIcon } from "@/components/icons";
 import { cardLink } from "@/components/ui";
 
 const features: { href: string; title: string; text: string; icon: ComponentType<{ size?: number }> }[] = [
@@ -27,6 +27,12 @@ const features: { href: string; title: string; text: string; icon: ComponentType
     title: "Chasse aux shiny",
     text: "Compteur de rencontres par chasse et collection de tes shiny attrapés.",
     icon: StarIcon,
+  },
+  {
+    href: "/equipe",
+    title: "Composer une équipe",
+    text: "Six Pokémon disponibles dans ton jeu, et leurs faiblesses et avantages de types d'un coup d'œil.",
+    icon: TeamIcon,
   },
 ];
 

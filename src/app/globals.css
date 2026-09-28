@@ -21,6 +21,7 @@
   --shiny: oklch(0.62 0.13 85);
   --focus-ring: oklch(0.5 0.01 85 / 0.15);
   --shadow-float: 0 1px 2px oklch(0.2 0.01 85 / 0.06), 0 8px 24px -12px oklch(0.2 0.01 85 / 0.12);
+  --scrim: oklch(0.2 0.01 85 / 0.35);
 
   /* Types Pokémon : teinte canonique, clarté et chroma harmonisés. */
   --type-normal: oklch(0.72 0.1 107);
@@ -62,6 +63,7 @@
     --shiny: oklch(0.76 0.13 85);
     --focus-ring: oklch(0.9 0.01 85 / 0.2);
     --shadow-float: 0 1px 2px oklch(0 0 0 / 0.3), 0 8px 24px -12px oklch(0 0 0 / 0.5);
+    --scrim: oklch(0 0 0 / 0.6);
     color-scheme: dark;
   }
 }
@@ -78,6 +80,7 @@
   --shiny: oklch(0.76 0.13 85);
   --focus-ring: oklch(0.9 0.01 85 / 0.2);
   --shadow-float: 0 1px 2px oklch(0 0 0 / 0.3), 0 8px 24px -12px oklch(0 0 0 / 0.5);
+  --scrim: oklch(0 0 0 / 0.6);
   color-scheme: dark;
 }
 
@@ -99,6 +102,7 @@
   --color-success: var(--success);
   --color-danger: var(--danger);
   --color-shiny: var(--shiny);
+  --color-scrim: var(--scrim);
 
   --font-sans: var(--font-manrope), "Segoe UI", system-ui, sans-serif;
 
@@ -114,6 +118,12 @@
   html {
     background: var(--bg);
   }
+
+  /* La page ne défile pas derrière une fenêtre modale ouverte. */
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+
   body {
     background: var(--bg);
     color: var(--ink);
@@ -123,11 +133,13 @@
     font-variant-numeric: tabular-nums;
     -webkit-font-smoothing: antialiased;
   }
+
   :focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ink);
     border-radius: var(--radius-sm);
   }
+
   ::selection {
     background: var(--ink);
     color: var(--on-ink);
@@ -141,11 +153,13 @@
   font-weight: 800;
   letter-spacing: -0.02em;
   text-wrap: balance;
-  @media (width >= 40rem) {
+
+  @media (width >=40rem) {
     font-size: 40px;
     line-height: 44px;
   }
 }
+
 @utility t-h1 {
   font-size: 28px;
   line-height: 34px;
@@ -153,16 +167,19 @@
   letter-spacing: -0.015em;
   text-wrap: balance;
 }
+
 @utility t-h2 {
   font-size: 20px;
   line-height: 28px;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
+
 @utility t-small {
   font-size: 13px;
   line-height: 20px;
 }
+
 @utility t-caption {
   font-size: 12px;
   line-height: 16px;
@@ -171,12 +188,14 @@
   text-transform: uppercase;
   color: var(--ink-2);
 }
+
 @utility t-counter {
   font-size: 72px;
   line-height: 72px;
   font-weight: 800;
   letter-spacing: -0.04em;
-  @media (width >= 40rem) {
+
+  @media (width >=40rem) {
     font-size: 96px;
     line-height: 96px;
   }
@@ -195,6 +214,7 @@
   font-weight: 600;
   color: var(--ink);
   background: color-mix(in oklch, var(--tc) 18%, var(--surface));
+
   &::before {
     content: "";
     width: 8px;
@@ -204,11 +224,13 @@
     flex: none;
   }
 }
+
 @utility type-badge-sm {
   height: 20px;
   padding: 0 8px 0 6px;
   font-size: 11px;
   gap: 5px;
+
   &::before {
     width: 6px;
     height: 6px;
@@ -221,6 +243,7 @@
     border-color: var(--ink);
     box-shadow: 0 0 0 3px var(--focus-ring);
   }
+
   &:focus-visible {
     outline: none;
     box-shadow: 0 0 0 3px var(--focus-ring);
@@ -252,6 +275,7 @@
     --evo-line: var(--line-strong);
     --evo-r: 12px;
   }
+
   .evo-elbow::before,
   .evo-elbow::after,
   .evo-card::before {
@@ -259,6 +283,7 @@
     position: absolute;
     pointer-events: none;
   }
+
   /* Mobile : la colonne descend tout le long des enfants, sauf après le dernier. */
   .evo-elbow::before {
     left: 0;
@@ -266,16 +291,20 @@
     bottom: 0;
     border-left: 1px solid var(--evo-line);
   }
+
   .evo-elbow[data-last]::before {
     display: none;
   }
+
   .evo-elbow::after {
     display: none;
   }
+
   /* Virage vers la carte : part du haut de la rangée (16 px d'espace + 18 px de légende) et tourne à mi-hauteur. */
   .evo-card {
     position: relative;
   }
+
   li .evo-card::before {
     left: -24px;
     width: 24px;
@@ -285,30 +314,37 @@
     border-bottom: 1px solid var(--line-strong);
     border-bottom-left-radius: 12px;
   }
-  @media (width >= 40rem) {
+
+  @media (width >=40rem) {
     li .evo-card::before {
       display: none;
     }
+
     .evo-elbow {
       width: auto;
       min-width: 64px;
     }
+
     .evo-elbow::after {
       display: block;
     }
+
     /* Un seul enfant : trait droit. */
     .evo-elbow[data-single] {
       min-width: 48px;
     }
+
     .evo-elbow[data-single]::before {
       display: none;
     }
+
     .evo-elbow[data-single]::after {
       left: 0;
       right: 0;
       top: 50%;
       border-top: 1px solid var(--evo-line);
     }
+
     /* Fourche : colonne verticale à gauche, virage arrondi vers chaque enfant. La colonne remonte
        de la hauteur de l'espace entre rangées (`sm:gap-y-4`) pour rejoindre celle du frère précédent. */
     .evo-elbow:not([data-single])::before {
@@ -316,23 +352,28 @@
       top: -16px;
       bottom: 0;
     }
+
     .evo-elbow[data-first]:not([data-single])::before {
       top: calc(50% + var(--evo-r));
     }
+
     .evo-elbow[data-last]:not([data-single])::before {
       bottom: calc(50% + var(--evo-r));
     }
+
     .evo-elbow:not([data-single])::after {
       left: 0;
       right: 0;
       top: 50%;
       border-top: 1px solid var(--evo-line);
     }
+
     .evo-elbow[data-first]:not([data-single])::after {
       height: var(--evo-r);
       border-left: 1px solid var(--evo-line);
       border-top-left-radius: var(--evo-r);
     }
+
     .evo-elbow[data-last]:not([data-single])::after {
       top: auto;
       bottom: 50%;

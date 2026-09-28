@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
-import { BallIcon, MapIcon, PokedexIcon, StarIcon } from "@/components/icons";
+import { BallIcon, MapIcon, PokedexIcon, StarIcon, TeamIcon } from "@/components/icons";
 
 export const navLinks: { href: string; label: string; icon: ComponentType<{ size?: number }> }[] = [
   { href: "/pokedex", label: "Pokédex", icon: PokedexIcon },
   { href: "/rencontres", label: "Rencontres", icon: MapIcon },
   { href: "/captures", label: "Captures", icon: BallIcon },
   { href: "/shiny", label: "Shiny", icon: StarIcon },
+  { href: "/equipe", label: "Équipe", icon: TeamIcon },
 ];
 
 /** `/pokedex/kanto` → section Pokédex active. */

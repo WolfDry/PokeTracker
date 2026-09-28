@@ -29,12 +29,12 @@ const options = {
 const CSV_FILES = [
   "generations", "generation_names",
   "regions", "region_names",
-  "types", "type_names",
+  "types", "type_names", "type_efficacy", "type_efficacy_past",
   "version_groups", "version_group_regions",
   "versions", "version_names",
   "pokedexes", "pokedex_prose", "pokedex_version_groups", "pokemon_dex_numbers",
   "pokemon_species", "pokemon_species_names",
-  "pokemon", "pokemon_types", "pokemon_forms", "pokemon_form_names", "pokemon_stats", "stats",
+  "pokemon", "pokemon_types", "pokemon_types_past", "pokemon_forms", "pokemon_form_names", "pokemon_stats", "stats",
   "pokemon_evolution", "evolution_triggers", "evolution_trigger_prose", "items", "item_names", "move_names",
   "locations", "location_names",
   "location_areas", "location_area_prose",
@@ -85,6 +85,34 @@ function transform(csv: Csv) {
     nameFr: typeNames.fr(t.id, t.identifier),
     nameEn: typeNames.en(t.id, t.identifier),
   }));
+
+  // Table des types par génération. PokeAPI donne la table actuelle, plus les valeurs d'avant un
+  // changement (valables jusqu'à leur génération incluse) : on reconstruit la table de chaque génération.
+  // Seuls les 18 types de combat (ni Stellaire, ni « ??? », ni Obscur) et ceux déjà apparus.
+  const typeGeneration = new Map(csv.types.map((t) => [t.id, Number(t.generation_id)]));
+  const isBattleType = (id: string) => Number(id) <= 18;
+  const pastEfficacy = new Map<string, { factor: number; generationId: number }[]>();
+  for (const row of csv.type_efficacy_past) {
+    const key = `${row.damage_type_id}-${row.target_type_id}`;
+    pastEfficacy.set(key, [...(pastEfficacy.get(key) ?? []), { factor: Number(row.damage_factor), generationId: Number(row.generation_id) }]);
+  }
+  const typeEfficacy: Rows = csv.generations.flatMap((g) => {
+    const generationId = Number(g.id);
+    const exists = (id: string) => isBattleType(id) && (typeGeneration.get(id) ?? Infinity) <= generationId;
+    return csv.type_efficacy
+      .filter((row) => exists(row.damage_type_id) && exists(row.target_type_id))
+      .map((row) => {
+        const past = (pastEfficacy.get(`${row.damage_type_id}-${row.target_type_id}`) ?? [])
+          .filter((p) => p.generationId >= generationId)
+          .sort((a, b) => a.generationId - b.generationId)[0];
+        return {
+          generationId,
+          attackTypeId: Number(row.damage_type_id),
+          defenseTypeId: Number(row.target_type_id),
+          factor: past?.factor ?? Number(row.damage_factor),
+        };
+      });
+  });
 
   const versionGroups: Rows = csv.version_groups.map((vg) => ({
     id: Number(vg.id),
@@ -165,8 +193,10 @@ function transform(csv: Csv) {
   const fullFormNames = localized(csv.pokemon_form_names, "pokemon_form_id", "pokemon_name");
   const formNameByPokemon = new Map<string, string>();
   const fullNameByPokemon = new Map<string, string>();
+  const defaultFormByPokemon = new Map<string, Row>();
   for (const form of csv.pokemon_forms) {
     if (!bool(form.is_default)) continue;
+    defaultFormByPokemon.set(form.pokemon_id, form);
     const name = formNames.fr(form.id, "");
     if (name) formNameByPokemon.set(form.pokemon_id, name);
     const fullName = fullFormNames.frOnly(form.id);
@@ -198,6 +228,7 @@ function transform(csv: Csv) {
     if (!pokemonTypes?.[1]) throw new Error(`Pokémon ${p.identifier} (${p.id}) sans type`);
     const isDefault = bool(p.is_default);
     const stats = statsByPokemon.get(p.id) ?? {};
+    const form = defaultFormByPokemon.get(p.id);
     return {
       id: Number(p.id),
       speciesId: Number(p.species_id),
@@ -206,6 +237,8 @@ function transform(csv: Csv) {
       nameFr: isDefault ? null : (fullNameByPokemon.get(p.id) ?? null),
       formNameFr: formNameByPokemon.get(p.id) ?? null,
       formConditionFr: isDefault ? null : formConditionFr(p.identifier, speciesSlugById.get(p.species_id) ?? "", itemFrBySlug),
+      isBattleOnly: bool(form?.is_battle_only),
+      introducedVersionGroupId: int(form?.introduced_in_version_group_id),
       type1Id: pokemonTypes[1],
       type2Id: pokemonTypes[2] ?? null,
       height: int(p.height),
@@ -218,6 +251,16 @@ function transform(csv: Csv) {
       speed: stats.speed ?? null,
     };
   });
+
+  // Types d'avant un changement (Mélofée Normal jusqu'en 5e génération), une ligne par (forme, génération).
+  const pastTypes = new Map<string, Record<string, number | null>>();
+  for (const row of csv.pokemon_types_past) {
+    const key = `${row.pokemon_id}-${row.generation_id}`;
+    const entry = pastTypes.get(key) ?? { pokemonId: Number(row.pokemon_id), generationId: Number(row.generation_id), type1Id: null, type2Id: null };
+    entry[row.slot === "1" ? "type1Id" : "type2Id"] = Number(row.type_id);
+    pastTypes.set(key, entry);
+  }
+  const pokemonPastTypes: Rows = [...pastTypes.values()];
 
   const locationNames = localized(csv.location_names, "location_id");
   const locations: Rows = csv.locations.map((l) => ({
@@ -364,8 +407,8 @@ function transform(csv: Csv) {
   });
 
   return {
-    generations, regions, types, versionGroups, versionGroupRegions, versions,
-    pokedexes, pokedexVersionGroups, pokedexEntries, species, pokemons, evolutions,
+    generations, regions, types, typeEfficacy, versionGroups, versionGroupRegions, versions,
+    pokedexes, pokedexVersionGroups, pokedexEntries, species, pokemons, pokemonPastTypes, evolutions,
     locations, locationAreas, encounterMethods, encounterConditions, encounterConditionValues,
     encounters, encounterConditionLinks, areaRates, versionCoverage,
   };
@@ -410,7 +453,11 @@ async function load(client: pg.PoolClient, data: Data) {
       await client.query(`DELETE FROM "PokedexVersionGroup"`);
       await client.query(`DELETE FROM "VersionGroupRegion"`);
       await client.query(`DELETE FROM "Evolution"`);
+      await client.query(`DELETE FROM "TypeEfficacy"`);
+      await client.query(`DELETE FROM "PokemonPastType"`);
     });
+    await step(`TypeEfficacy (${data.typeEfficacy.length})`, () => insertRows(client, "TypeEfficacy", data.typeEfficacy));
+    await step(`PokemonPastType (${data.pokemonPastTypes.length})`, () => insertRows(client, "PokemonPastType", data.pokemonPastTypes));
     await step(`Evolution (${data.evolutions.length})`, () => insertRows(client, "Evolution", data.evolutions));
     await step(`VersionGroupRegion (${data.versionGroupRegions.length})`, () => insertRows(client, "VersionGroupRegion", data.versionGroupRegions));
     await step(`PokedexVersionGroup (${data.pokedexVersionGroups.length})`, () => insertRows(client, "PokedexVersionGroup", data.pokedexVersionGroups));

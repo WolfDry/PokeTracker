@@ -9,7 +9,7 @@ function Tabs({ pathname }: { pathname: string | null }) {
   return (
     <nav
       aria-label="Sections"
-      className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-line bg-surface px-2 pt-2 pb-[max(env(safe-area-inset-bottom),12px)] sm:hidden"
+      className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-line bg-surface px-2 pt-2 pb-[max(env(safe-area-inset-bottom),12px)] sm:hidden"
     >
       {navLinks.map(({ href, label, icon: Icon }) => {
         const active = isActive(pathname, href);

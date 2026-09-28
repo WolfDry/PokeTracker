@@ -6,6 +6,7 @@ import { type ReactNode, useMemo, useState } from "react";
 import { CheckIcon, ChevronDownIcon, MapIcon, SearchIcon } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
 import { PokemonSprite } from "@/components/pokemon-sprite";
+import { ToolbarSelect } from "@/components/toolbar-select";
 import { ProgressBar } from "@/components/progress-bar";
 import { TypeDots } from "@/components/type-badge";
 import { card, cardLink, checkCircle, chip, chipCount, dexNumber, input, primaryButton, secondaryButton, textLink } from "@/components/ui";
@@ -288,37 +289,6 @@ function FilterSection({ label, children }: { label: string; children: ReactNode
       <p className="t-caption">{label}</p>
       <div className="flex flex-wrap gap-1.5">{children}</div>
     </div>
-  );
-}
-
-type ToolbarSelectProps = {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-  /** Première option, vide (« Tous les types ») ; sans elle, une valeur est toujours choisie. */
-  placeholder?: string;
-  /** Chip encre pleine quand un filtre est actif. */
-  highlight?: boolean;
-};
-
-/** Menu déroulant habillé en chip, précédé de son étiquette : « JEU  [Rouge Feu ▾] ». */
-function ToolbarSelect({ label, value, onChange, options, placeholder, highlight = false }: ToolbarSelectProps) {
-  return (
-    <label className="inline-flex items-center gap-2">
-      <span className="t-caption">{label}</span>
-      <span className="relative inline-flex">
-        <select value={value} onChange={(e) => onChange(e.target.value)} className={`${chip(highlight)} appearance-none pr-7 ${highlight ? "" : "text-ink"}`}>
-          {placeholder !== undefined && <option value="">{placeholder}</option>}
-          {options.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-        <ChevronDownIcon size={12} className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2" />
-      </span>
-    </label>
   );
 }
 

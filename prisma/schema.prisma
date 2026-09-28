@@ -27,6 +27,7 @@ model Generation {
   regions       Region[]
   versionGroups VersionGroup[]
   species       Species[]
+  typeEfficacy  TypeEfficacy[]
 }
 
 model Region {
@@ -145,8 +146,29 @@ model Type {
   nameFr String
   nameEn String
 
-  primaryOf   Pokemon[] @relation("PokemonType1")
-  secondaryOf Pokemon[] @relation("PokemonType2")
+  primaryOf   Pokemon[]         @relation("PokemonType1")
+  secondaryOf Pokemon[]         @relation("PokemonType2")
+  attacks     TypeEfficacy[]    @relation("AttackType")
+  defends     TypeEfficacy[]    @relation("DefenseType")
+  pastPrimary PokemonPastType[] @relation("PastType1")
+  pastSecond  PokemonPastType[] @relation("PastType2")
+}
+
+/// Table des types d'une génération : multiplicateur d'une attaque d'un type sur un Pokémon d'un
+/// type (sur un double type, on multiplie les deux). Seuls les types qui existent dans la génération
+/// ont des lignes (ni Ténèbres ni Acier en 1re génération, pas de Fée avant la 6e).
+model TypeEfficacy {
+  generationId  Int
+  attackTypeId  Int
+  defenseTypeId Int
+  /// Multiplicateur en pourcentage : 0, 50, 100 ou 200.
+  factor        Int
+
+  generation  Generation @relation(fields: [generationId], references: [id])
+  attackType  Type       @relation("AttackType", fields: [attackTypeId], references: [id])
+  defenseType Type       @relation("DefenseType", fields: [defenseTypeId], references: [id])
+
+  @@id([generationId, attackTypeId, defenseTypeId])
 }
 
 /// Espèce = entrée du Pokédex national (id = numéro national).
@@ -198,33 +220,53 @@ model Evolution {
 /// Forme concrète d'une espèce (forme par défaut, formes régionales, Méga…).
 /// Les rencontres pointent vers une forme, pas vers une espèce.
 model Pokemon {
-  id              Int     @id
-  speciesId       Int
-  slug            String  @unique
-  isDefault       Boolean
+  id                       Int     @id
+  speciesId                Int
+  slug                     String  @unique
+  isDefault                Boolean
   /// Nom complet de la forme (« Méga-Florizarre », « Rattata d'Alola »), null pour la forme par défaut.
-  nameFr          String?
-  formNameFr      String?
+  nameFr                   String?
+  formNameFr               String?
   /// Comment obtenir la forme, pour l'arbre d'évolution (« Florizarrite », « Gigamax »).
-  formConditionFr String?
-  type1Id         Int
-  type2Id         Int?
-  height          Int?
-  weight          Int?
+  formConditionFr          String?
+  /// Forme qui n'existe qu'en combat (Méga, Gigamax, Primo…) : pas de place dans une équipe.
+  isBattleOnly             Boolean @default(false)
+  /// Groupe de versions où la forme apparaît (Rattata d'Alola : Soleil et Lune).
+  introducedVersionGroupId Int?
+  type1Id                  Int
+  type2Id                  Int?
+  height                   Int?
+  weight                   Int?
   /// Stats de base.
-  hp              Int?
-  attack          Int?
-  defense         Int?
-  specialAttack   Int?
-  specialDefense  Int?
-  speed           Int?
+  hp                       Int?
+  attack                   Int?
+  defense                  Int?
+  specialAttack            Int?
+  specialDefense           Int?
+  speed                    Int?
 
-  species    Species     @relation(fields: [speciesId], references: [id])
-  type1      Type        @relation("PokemonType1", fields: [type1Id], references: [id])
-  type2      Type?       @relation("PokemonType2", fields: [type2Id], references: [id])
+  species    Species           @relation(fields: [speciesId], references: [id])
+  type1      Type              @relation("PokemonType1", fields: [type1Id], references: [id])
+  type2      Type?             @relation("PokemonType2", fields: [type2Id], references: [id])
   encounters Encounter[]
+  pastTypes  PokemonPastType[]
 
   @@index([speciesId])
+}
+
+/// Types d'une forme avant un changement (Mélofée Normal jusqu'à la 5e génération, Magnéti
+/// Électrik seul en 1re) : valables jusqu'à `generationId` inclus, les types actuels ensuite.
+model PokemonPastType {
+  pokemonId    Int
+  generationId Int
+  type1Id      Int
+  type2Id      Int?
+
+  pokemon Pokemon @relation(fields: [pokemonId], references: [id])
+  type1   Type    @relation("PastType1", fields: [type1Id], references: [id])
+  type2   Type?   @relation("PastType2", fields: [type2Id], references: [id])
+
+  @@id([pokemonId, generationId])
 }
 
 // ---------------------------------------------------------------------------

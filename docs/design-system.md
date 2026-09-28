@@ -31,6 +31,7 @@ Neutres teintés (teinte oklch 85, chroma ≤ 0.01). Tailwind : `bg-page`, `bg-s
 | `--success` | `oklch(0.60 0.12 150)` | idem | Pokédex complet, badge « Rencontres » |
 | `--danger` | `oklch(0.58 0.17 25)` | idem | suppression, erreurs de formulaire |
 | `--shiny` | `oklch(0.62 0.13 85)` | `oklch(0.76 0.13 85)` | l'étoile shiny, et elle seule |
+| `--scrim` (`scrim`) | `oklch(0.2 0.01 85 / 0.35)` | `oklch(0 0 0 / 0.6)` | voile derrière une fenêtre modale (`backdrop:bg-scrim`) |
 
 ### Types Pokémon
 
@@ -92,10 +93,14 @@ En-tête « famille » sur trois colonnes dès `lg` (224 px · identité · 300 
 
 **Ligne évolutive** : arbre sans conteneur. Chaque nœud est une carte bordée (200 px, sprite 40 dans une boîte Surface 2 de 48, légende `N° 0002` ou nature de la forme, nom en gras, badges de type `sm`) ; le nœud sélectionné a une bordure encre doublée. Les traits `line-strong` de 1 px relient un stade à ses évolutions **et à ses formes alternatives** (Méga, Gigamax, régionales…), condition en `t-caption ink-3` sur le trait, virages arrondis de 12 px (`.evo-elbow` dans `globals.css` ; dès `sm`, les enfants sont une grille à deux colonnes pour que les traits d'une même colonne partagent la largeur du plus long libellé, qui passe à la ligne au-delà de 104 px). Horizontal dès `sm`, vertical et indenté de 40 px sur mobile (le virage vers la carte est tracé par la carte elle-même, `.evo-card::before`, à mi-hauteur : la hauteur des cartes reste libre). Une espèce est un lien vers sa fiche ; une forme alternative (sans fiche propre) remplit l'en-tête au clic. Les noms longs passent à la ligne (`text-wrap: balance`). La section n'apparaît pas pour une espèce seule et sans forme.
 
+### Page Équipe (`TeamBuilder`, `TeamPicker`, `TeamAnalysis`)
+
+`/equipe?jeu=<version>&equipe=<ids>` : l'équipe vit dans l'URL (ids de formes séparés par `-`, `0` = emplacement vide), mise à jour par `history.replaceState`. Sélecteur Jeu (`ToolbarSelect`, jeux groupés par génération) dans les actions de l'en-tête. Six emplacements en grille (2 colonnes, 3 dès `sm`, 6 dès `lg`) : carte bordée avec numéro `t-caption`, sprite 96, nom en gras, badges de type, croix de retrait (cible 44 px) ; emplacement vide = bordure pointillée `line-strong` et rond Surface 2 « + ». Un clic ouvre une fenêtre modale (`<dialog>` natif, `shadow-float`, voile `scrim`, page figée derrière) : recherche + filtre Type, grille de cartes compactes (sprite 80, points de type, coche encre si déjà dans l'équipe). Analyse sur deux colonnes dès `lg` (`1fr · 380 px`) : **Faiblesses** (tableau type d'attaque × membre, `×4`/`×2` en `danger`, `½`/`¼`/`0` en `success`, `·` pour ×1, colonnes Faib./Rés., points faibles en tête) et **Avantages** (types touchés en super efficace par un type d'un membre, mini-sprites des membres, types non couverts en tête). Le rouge et le vert y restent des signaux, jamais un fond.
+
 ## Navigation
 
 - Desktop (`sm+`) : en-tête collant 64 px — logo, sections (`NavLinks`), recherche, bascule de thème, compte.
-- Mobile : en-tête réduit (logo, recherche, thème, compte) + barre d'onglets fixée en bas (`MobileTabBar`, icônes Pokédex / Rencontres / Captures / Shiny). Le `<main>` réserve `pb-28` pour ne rien cacher.
+- Mobile : en-tête réduit (logo, recherche, thème, compte) + barre d'onglets fixée en bas (`MobileTabBar`, icônes Pokédex / Rencontres / Captures / Shiny / Équipe). Le `<main>` réserve `pb-28` pour ne rien cacher.
 
 ## Icônes
 

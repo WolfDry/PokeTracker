@@ -50,6 +50,19 @@ export const MinusIcon = (p: IconProps) => (
   </Icon>
 );
 
+export const CloseIcon = (p: IconProps) => (
+  <Icon size={16} {...p}>
+    <path d="m5 5 10 10M15 5 5 15" />
+  </Icon>
+);
+
+export const LinkIcon = (p: IconProps) => (
+  <Icon size={16} {...p}>
+    <path d="M8.5 11.5a3.5 3.5 0 0 0 5 0l2.5-2.5a3.5 3.5 0 0 0-5-5l-1 1" />
+    <path d="M11.5 8.5a3.5 3.5 0 0 0-5 0L4 11a3.5 3.5 0 0 0 5 5l1-1" />
+  </Icon>
+);
+
 export const StarIcon = (p: IconProps) => (
   <Icon size={16} {...p}>
     <path d="m10 2.5 2.3 4.9 5.2.7-3.8 3.7.9 5.2L10 14.5 5.4 17l.9-5.2L2.5 8.1l5.2-.7Z" />
@@ -108,6 +121,18 @@ export const BallIcon = (p: IconProps) => (
     <circle cx="10" cy="10" r="7" />
     <path d="M3 10h4.5M12.5 10H17" />
     <circle cx="10" cy="10" r="2.5" />
+  </Icon>
+);
+
+/** Six emplacements : onglet Équipe. */
+export const TeamIcon = (p: IconProps) => (
+  <Icon size={20} {...p}>
+    <circle cx="4.5" cy="7" r="2" />
+    <circle cx="10" cy="7" r="2" />
+    <circle cx="15.5" cy="7" r="2" />
+    <circle cx="4.5" cy="13" r="2" />
+    <circle cx="10" cy="13" r="2" />
+    <circle cx="15.5" cy="13" r="2" />
   </Icon>
 );
 
