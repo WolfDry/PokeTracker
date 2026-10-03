@@ -10,6 +10,8 @@ type Props = {
   root: FamilyNode;
   /** Nœud affiché dans l'en-tête (forme sélectionnée ou espèce de la fiche). */
   selectedId: number;
+  /** Espèce de la fiche : sa carte revient à elle dans l'en-tête au lieu de recharger la même page. */
+  currentSpeciesId: number;
   /** Une forme alternative n'a pas de fiche : la cliquer remplit l'en-tête. */
   onSelect: (node: FamilyNode) => void;
 };
@@ -19,19 +21,19 @@ type Props = {
  * Une espèce mène à sa fiche, une forme alternative remplit l'en-tête de la fiche courante.
  * Vertical sur mobile, horizontal dès `sm` (voir `.evo-elbow` dans globals.css).
  */
-export function EvolutionTree({ root, selectedId, onSelect }: Props) {
+export function EvolutionTree({ root, selectedId, currentSpeciesId, onSelect }: Props) {
   return (
     <div className="overflow-x-auto">
-      <TreeNode node={root} selectedId={selectedId} onSelect={onSelect} />
+      <TreeNode node={root} selectedId={selectedId} currentSpeciesId={currentSpeciesId} onSelect={onSelect} />
     </div>
   );
 }
 
-function TreeNode({ node, selectedId, onSelect }: { node: FamilyNode } & Omit<Props, "root">) {
+function TreeNode({ node, selectedId, currentSpeciesId, onSelect }: { node: FamilyNode } & Omit<Props, "root">) {
   const fork = node.children.length > 1;
   return (
     <div className="flex flex-col sm:flex-row sm:items-center">
-      <NodeCard node={node} selected={node.id === selectedId} onSelect={onSelect} />
+      <NodeCard node={node} selected={node.id === selectedId} current={node.kind === "species" && node.speciesId === currentSpeciesId} onSelect={onSelect} />
       {node.children.length > 0 && (
         <>
           {/* Tronc entre la carte et la fourche (desktop seulement : sur mobile la colonne part sous la carte). */}
@@ -56,7 +58,7 @@ function TreeNode({ node, selectedId, onSelect }: { node: FamilyNode } & Omit<Pr
                 <div className="min-w-0 flex-1 pt-4 sm:pt-0">
                   {/* Sur mobile la condition se lit au-dessus de la carte. */}
                   <p className="mb-0.5 h-4 truncate pl-2 t-caption text-ink-3 sm:hidden">{child.condition}</p>
-                  <TreeNode node={child} selectedId={selectedId} onSelect={onSelect} />
+                  <TreeNode node={child} selectedId={selectedId} currentSpeciesId={currentSpeciesId} onSelect={onSelect} />
                 </div>
               </li>
             ))}
@@ -72,7 +74,15 @@ const nodeCard = (selected: boolean) =>
     selected ? "border-ink ring-1 ring-ink ring-inset" : "border-line hover:border-line-strong"
   }`;
 
-function NodeCard({ node, selected, onSelect }: { node: FamilyNode; selected: boolean; onSelect: (node: FamilyNode) => void }) {
+type NodeCardProps = {
+  node: FamilyNode;
+  selected: boolean;
+  /** Espèce de la fiche affichée. */
+  current: boolean;
+  onSelect: (node: FamilyNode) => void;
+};
+
+function NodeCard({ node, selected, current, onSelect }: NodeCardProps) {
   const content = (
     <>
       <span className={`${spriteBox} size-12 rounded-sm`}>
@@ -98,11 +108,12 @@ function NodeCard({ node, selected, onSelect }: { node: FamilyNode; selected: bo
       </button>
     );
   }
-  if (selected) {
+  // L'espèce de la fiche : un lien vers la même URL ne remettrait pas l'en-tête à zéro après le clic sur une forme.
+  if (current) {
     return (
-      <span aria-current="page" className={nodeCard(true)}>
+      <button type="button" onClick={() => onSelect(node)} aria-current="page" aria-pressed={selected} className={nodeCard(selected)}>
         {content}
-      </span>
+      </button>
     );
   }
   return (

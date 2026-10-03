@@ -95,7 +95,7 @@ export function SpeciesFamily({ root, speciesId }: Props) {
       {root.children.length > 0 && (
         <section className="space-y-4">
           <SectionHeader title="Ligne évolutive" />
-          <EvolutionTree root={root} selectedId={node.id} onSelect={(n) => setSelectedId(n.id)} />
+          <EvolutionTree root={root} selectedId={node.id} currentSpeciesId={speciesId} onSelect={(n) => setSelectedId(n.id)} />
         </section>
       )}
     </>
