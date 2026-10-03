@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { EvolutionTree } from "@/components/evolution-tree";
+import { EvolutionTree, FamilyCard } from "@/components/evolution-tree";
 import { StarIcon } from "@/components/icons";
 import { SectionHeader } from "@/components/page-header";
 import { PokemonSprite } from "@/components/pokemon-sprite";
@@ -21,15 +21,18 @@ type Props = {
 const numberFr = new Intl.NumberFormat("fr-FR");
 
 function flatten(node: FamilyNode): FamilyNode[] {
-  return [node, ...node.children.flatMap(flatten)];
+  return [node, ...node.forms, ...node.children.flatMap(flatten)];
 }
 
 /**
- * En-tête « famille » de la fiche Pokémon : l'espèce de la fiche, ou la forme alternative cliquée dans l'arbre
- * d'évolution (sprite, identité, mesures, radar de stats). Les autres stades mènent à leur propre fiche.
+ * En-tête « famille » de la fiche Pokémon : l'espèce de la fiche, ou la forme alternative cliquée dans la ligne
+ * des formes (sprite, identité, mesures, radar de stats), puis l'arbre d'évolution et les formes de la famille.
+ * Les autres stades mènent à leur propre fiche.
  */
 export function SpeciesFamily({ root, speciesId }: Props) {
   const nodes = useMemo(() => flatten(root), [root]);
+  // Une ligne par espèce qui a des formes alternatives, dans l'ordre de l'arbre.
+  const withForms = nodes.filter((n) => n.forms.length > 0);
   const initial = nodes.find((n) => n.kind === "species" && n.speciesId === speciesId) ?? root;
   const [selectedId, setSelectedId] = useState(initial.id);
   const [shiny, setShiny] = useState(false);
@@ -96,6 +99,30 @@ export function SpeciesFamily({ root, speciesId }: Props) {
         <section className="space-y-4">
           <SectionHeader title="Ligne évolutive" />
           <EvolutionTree root={root} selectedId={node.id} currentSpeciesId={speciesId} onSelect={(n) => setSelectedId(n.id)} />
+        </section>
+      )}
+
+      {withForms.length > 0 && (
+        <section className="space-y-4">
+          <SectionHeader title="Formes" />
+          <div className="space-y-5">
+            {withForms.map((species) => (
+              // La forme de base ouvre la ligne : on y revient d'un clic après avoir regardé une forme.
+              <ul key={species.id} aria-label={`Formes de ${species.nameFr}`} className="grid gap-3 sm:flex sm:flex-wrap">
+                {[species, ...species.forms].map((member) => (
+                  <li key={member.id} className="min-w-0 sm:w-50">
+                    <p className="mb-0.5 h-4 truncate pl-2 t-caption text-ink-3">{member.kind === "species" ? "Forme de base" : member.condition}</p>
+                    <FamilyCard
+                      node={member}
+                      selected={member.id === node.id}
+                      current={member.kind === "species" && member.speciesId === speciesId}
+                      onSelect={(n) => setSelectedId(n.id)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            ))}
+          </div>
         </section>
       )}
     </>

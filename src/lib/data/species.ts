@@ -19,7 +19,7 @@ export type SpeciesEncounterSummary = {
 /** Stats de base d'une forme. */
 export type BaseStats = { hp: number; attack: number; defense: number; specialAttack: number; specialDefense: number; speed: number };
 
-/** Nœud de l'arbre d'évolution : une espèce (forme par défaut) ou une forme alternative rattachée à son espèce. */
+/** Membre de la famille : une espèce (forme par défaut) ou une forme alternative rattachée à son espèce. */
 export type FamilyNode = {
   /** Id de la forme (unique dans l'arbre). */
   id: number;
@@ -32,7 +32,7 @@ export type FamilyNode = {
   genusFr: string | null;
   /** Légende de la carte : « N° 0003 » pour une espèce, « Forme Gigamax » pour une forme. */
   caption: string;
-  /** Libellé sur le trait qui mène au nœud : « Niv. 16 », « Florizarrite »… */
+  /** Comment l'obtenir : « Niv. 16 » sur le trait de l'arbre, « Florizarrite » au-dessus d'une forme. */
   condition: string | null;
   generation: { id: number; nameFr: string };
   types: { slug: string; nameFr: string }[];
@@ -41,7 +41,10 @@ export type FamilyNode = {
   weight: number | null;
   captureRate: number | null;
   stats: BaseStats | null;
+  /** Évolutions de l'espèce (vide pour une forme). */
   children: FamilyNode[];
+  /** Formes alternatives de l'espèce : Méga, Gigamax, régionales… (vide pour une forme). */
+  forms: FamilyNode[];
 };
 
 const pokemonSelect = {
@@ -92,8 +95,8 @@ function speciesFlags(s: { isLegendary: boolean; isMythical: boolean; isBaby: bo
 }
 
 /**
- * Arbre d'évolution de l'espèce : toutes les espèces de sa chaîne, chacune portant ses évolutions puis ses
- * formes alternatives (Méga, Gigamax, régionales…) en enfants. Retourne la racine (premier stade).
+ * Arbre d'évolution de l'espèce : toutes les espèces de sa chaîne, chacune portant ses évolutions en enfants
+ * et ses formes alternatives (Méga, Gigamax, régionales…) à part. Retourne la racine (premier stade).
  */
 export async function getEvolutionFamily(speciesId: number): Promise<FamilyNode | null> {
   cacheLife("max");
@@ -152,6 +155,7 @@ export async function getEvolutionFamily(speciesId: number): Promise<FamilyNode 
         captureRate: species.captureRate,
         stats: baseStats(p),
         children: [],
+        forms: [],
       }));
     return {
       id: main.id,
@@ -170,7 +174,8 @@ export async function getEvolutionFamily(speciesId: number): Promise<FamilyNode 
       weight: main.weight,
       captureRate: species.captureRate,
       stats: baseStats(main),
-      children: [...evolutions, ...forms],
+      children: evolutions,
+      forms,
     };
   };
 

@@ -12,13 +12,12 @@ type Props = {
   selectedId: number;
   /** Espèce de la fiche : sa carte revient à elle dans l'en-tête au lieu de recharger la même page. */
   currentSpeciesId: number;
-  /** Une forme alternative n'a pas de fiche : la cliquer remplit l'en-tête. */
   onSelect: (node: FamilyNode) => void;
 };
 
 /**
- * Arbre d'évolution : chaque nœud est une carte reliée à son parent par un trait fin portant la condition.
- * Une espèce mène à sa fiche, une forme alternative remplit l'en-tête de la fiche courante.
+ * Arbre d'évolution : chaque espèce est une carte reliée à son stade précédent par un trait fin portant la
+ * condition, et mène à sa fiche. Les formes alternatives n'y figurent pas (voir la ligne « Formes »).
  * Vertical sur mobile, horizontal dès `sm` (voir `.evo-elbow` dans globals.css).
  */
 export function EvolutionTree({ root, selectedId, currentSpeciesId, onSelect }: Props) {
@@ -33,7 +32,13 @@ function TreeNode({ node, selectedId, currentSpeciesId, onSelect }: { node: Fami
   const fork = node.children.length > 1;
   return (
     <div className="flex flex-col sm:flex-row sm:items-center">
-      <NodeCard node={node} selected={node.id === selectedId} current={node.kind === "species" && node.speciesId === currentSpeciesId} onSelect={onSelect} />
+      <FamilyCard
+        node={node}
+        selected={node.id === selectedId}
+        current={node.speciesId === currentSpeciesId}
+        onSelect={onSelect}
+        className="evo-card"
+      />
       {node.children.length > 0 && (
         <>
           {/* Tronc entre la carte et la fourche (desktop seulement : sur mobile la colonne part sous la carte). */}
@@ -70,19 +75,24 @@ function TreeNode({ node, selectedId, currentSpeciesId, onSelect }: { node: Fami
 }
 
 const nodeCard = (selected: boolean) =>
-  `evo-card flex w-full shrink-0 items-center gap-2 rounded-lg border bg-surface p-1.5 text-left transition-colors sm:w-50 ${
+  `flex w-full shrink-0 items-center gap-2 rounded-lg border bg-surface p-1.5 text-left transition-colors sm:w-50 ${
     selected ? "border-ink ring-1 ring-ink ring-inset" : "border-line hover:border-line-strong"
   }`;
 
-type NodeCardProps = {
+type FamilyCardProps = {
   node: FamilyNode;
   selected: boolean;
   /** Espèce de la fiche affichée. */
   current: boolean;
   onSelect: (node: FamilyNode) => void;
+  className?: string;
 };
 
-function NodeCard({ node, selected, current, onSelect }: NodeCardProps) {
+/**
+ * Carte d'un membre de la famille (arbre d'évolution et ligne des formes). Une autre espèce mène à sa fiche ;
+ * une forme alternative (sans fiche propre) ou l'espèce de la fiche remplit l'en-tête au clic.
+ */
+export function FamilyCard({ node, selected, current, onSelect, className = "" }: FamilyCardProps) {
   const content = (
     <>
       <span className={`${spriteBox} size-12 rounded-sm`}>
@@ -101,9 +111,10 @@ function NodeCard({ node, selected, current, onSelect }: NodeCardProps) {
       </span>
     </>
   );
+  const classes = `${nodeCard(selected)} ${className}`;
   if (node.kind === "form") {
     return (
-      <button type="button" onClick={() => onSelect(node)} aria-pressed={selected} className={nodeCard(selected)}>
+      <button type="button" onClick={() => onSelect(node)} aria-pressed={selected} className={classes}>
         {content}
       </button>
     );
@@ -111,13 +122,13 @@ function NodeCard({ node, selected, current, onSelect }: NodeCardProps) {
   // L'espèce de la fiche : un lien vers la même URL ne remettrait pas l'en-tête à zéro après le clic sur une forme.
   if (current) {
     return (
-      <button type="button" onClick={() => onSelect(node)} aria-current="page" aria-pressed={selected} className={nodeCard(selected)}>
+      <button type="button" onClick={() => onSelect(node)} aria-current="page" aria-pressed={selected} className={classes}>
         {content}
       </button>
     );
   }
   return (
-    <Link href={`/pokemon/${node.speciesId}`} className={nodeCard(false)}>
+    <Link href={`/pokemon/${node.speciesId}`} className={classes}>
       {content}
     </Link>
   );
