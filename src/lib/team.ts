@@ -1,11 +1,22 @@
 import type { TeamBuilderData, TeamOption, TypeRef } from "@/lib/data/team";
+import { MAX_MOVES, type TeamMove } from "@/lib/moves";
 
-// Analyse des types d'une équipe. Talents (Lévitation, Absorb Eau…) et capacités ne sont pas
-// pris en compte : seuls les types des Pokémon comptent, et en attaque leurs types propres (STAB).
+// Analyse des types d'une équipe. Les talents (Lévitation, Absorb Eau…) ne sont pas pris en compte.
+// En défense, seuls les types des Pokémon comptent ; en attaque, les types des capacités choisies,
+// ou à défaut ceux du Pokémon (une attaque de son type, STAB).
 
 export const TEAM_SIZE = 6;
 
 type Chart = Pick<TeamBuilderData, "types" | "chart">;
+
+/** Un membre de l'équipe : une forme et les capacités choisies (quatre au plus). */
+export type TeamMember = TeamOption & { moves?: TeamMove[] };
+
+/** Types avec lesquels un membre attaque : ceux de ses capacités (hors dégâts fixes), sinon les siens. */
+function memberAttacks(member: TeamMember): { type: TypeRef; move?: string }[] {
+  const moves = (member.moves ?? []).filter((m) => !m.fixedDamage);
+  return moves.length > 0 ? moves.map((m) => ({ type: m.type, move: m.nameFr })) : member.types.map((type) => ({ type }));
+}
 
 /** Multiplicateur d'une attaque du type `attack` sur un Pokémon de types `defender` (×4, ×2, ×1, ×½, ×¼ ou 0). */
 export function multiplier({ types, chart }: Chart, attack: string, defender: TypeRef[]) {
@@ -45,20 +56,20 @@ export function teamWeaknesses(rows: DefenseRow[]) {
 
 export type OffenseRow = {
   type: TypeRef;
-  /** Membres qui touchent ce type en super efficace avec une attaque de leur type, et le type d'attaque utilisé. */
-  hitters: { slot: number; member: TeamOption; attack: TypeRef }[];
+  /** Membres qui touchent ce type en super efficace, avec le type d'attaque utilisé et la capacité s'il en a choisi. */
+  hitters: { slot: number; member: TeamMember; attack: TypeRef; move?: string }[];
 };
 
-/** Pour chaque type en défense : les membres qui le touchent en super efficace avec l'un de leurs types. */
-export function analyzeOffense(data: Chart, team: (TeamOption | null)[]): OffenseRow[] {
+/** Pour chaque type en défense : les membres qui le touchent en super efficace avec l'une de leurs capacités (ou l'un de leurs types). */
+export function analyzeOffense(data: Chart, team: (TeamMember | null)[]): OffenseRow[] {
   return data.types.map((type) => ({
     type,
     hitters: team.flatMap((member, slot) => {
       if (!member) return [];
-      const best = member.types
-        .map((attack) => ({ attack, factor: multiplier(data, attack.slug, [type]) }))
+      const best = memberAttacks(member)
+        .map((attack) => ({ ...attack, factor: multiplier(data, attack.type.slug, [type]) }))
         .sort((a, b) => b.factor - a.factor)[0];
-      return best && best.factor > 1 ? [{ slot, member, attack: best.attack }] : [];
+      return best && best.factor > 1 ? [{ slot, member, attack: best.type, move: best.move }] : [];
     }),
   }));
 }
@@ -85,7 +96,7 @@ export type Suggestion = {
  * points faibles, couvrent le plus de types non couverts et ont les meilleures stats de base.
  * Un seul par combinaison de types : les autres sont proposés en alternative.
  */
-export function suggestMembers(data: Chart, team: (TeamOption | null)[], options: TeamOption[], { legendary = false, limit = 9 } = {}): Suggestion[] {
+export function suggestMembers(data: Chart, team: (TeamMember | null)[], options: TeamOption[], { legendary = false, limit = 9 } = {}): Suggestion[] {
   const members = team.filter((m) => m !== null);
   const defense = analyzeDefense(data, team);
   const weaknesses = teamWeaknesses(defense);
@@ -135,17 +146,25 @@ export function formatFactor(factor: number) {
   return `×${factor}`;
 }
 
-/** Équipe ↔ paramètre d'URL : « 25-0-6 » (0 = emplacement vide, emplacements vides de fin omis). */
-export function encodeTeam(team: (number | null)[]) {
-  const ids = team.map((id) => id ?? 0);
-  while (ids.length > 0 && ids[ids.length - 1] === 0) ids.pop();
-  return ids.join("-");
+/** Un emplacement tel qu'il est dans l'URL : la forme et les ids de ses capacités. */
+export type TeamSlotIds = { pokemonId: number; moveIds: number[] } | null;
+
+/**
+ * Équipe ↔ paramètre d'URL : « 6.53.394-0-25 » — par emplacement, l'id de la forme suivi de ceux de ses
+ * capacités, séparés par des points ; 0 = emplacement vide, emplacements vides de fin omis.
+ */
+export function encodeTeam(team: TeamSlotIds[]) {
+  const parts = team.map((slot) => (slot ? [slot.pokemonId, ...slot.moveIds].join(".") : "0"));
+  while (parts.length > 0 && parts[parts.length - 1] === "0") parts.pop();
+  return parts.join("-");
 }
 
-export function decodeTeam(value: string | string[] | undefined, available: Set<number>): (number | null)[] {
+/** Les formes absentes de `available` laissent leur emplacement vide ; les capacités restent à valider côté serveur. */
+export function decodeTeam(value: string | string[] | undefined, available: Set<number>): TeamSlotIds[] {
   const parts = typeof value === "string" ? value.split("-").slice(0, TEAM_SIZE) : [];
   return Array.from({ length: TEAM_SIZE }, (_, i) => {
-    const id = Number(parts[i]);
-    return Number.isInteger(id) && available.has(id) ? id : null;
+    const [pokemonId, ...moveIds] = (parts[i] ?? "").split(".").map(Number);
+    if (!Number.isInteger(pokemonId) || !available.has(pokemonId)) return null;
+    return { pokemonId, moveIds: [...new Set(moveIds.filter((id) => Number.isInteger(id) && id > 0))].slice(0, MAX_MOVES) };
   });
 }

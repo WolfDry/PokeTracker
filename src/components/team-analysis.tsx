@@ -1,12 +1,12 @@
 import { PokemonSprite } from "@/components/pokemon-sprite";
 import { TypeBadge } from "@/components/type-badge";
 import { card } from "@/components/ui";
-import type { TeamBuilderData, TeamOption } from "@/lib/data/team";
-import { analyzeDefense, analyzeOffense, formatFactor, teamWeaknesses } from "@/lib/team";
+import type { TeamBuilderData } from "@/lib/data/team";
+import { analyzeDefense, analyzeOffense, formatFactor, type TeamMember, teamWeaknesses } from "@/lib/team";
 
 type Props = {
   data: Pick<TeamBuilderData, "types" | "chart" | "game">;
-  team: (TeamOption | null)[];
+  team: (TeamMember | null)[];
 };
 
 /** Couleur d'une case du tableau défensif : rouge si le membre est faible, vert s'il résiste. */
@@ -105,7 +105,9 @@ export function TeamAnalysis({ data, team }: Props) {
                 {offense.length - uncovered.length}/{offense.length} types
               </span>
             </div>
-            <p className="t-small text-ink-2">Types touchés en super efficace par une attaque du type d&apos;un membre.</p>
+            <p className="t-small text-ink-2">
+              Types touchés en super efficace par les attaques choisies, ou à défaut par une attaque du type d&apos;un membre.
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="mr-1 t-caption">Non couverts</span>
@@ -126,11 +128,14 @@ export function TeamAnalysis({ data, team }: Props) {
                 <span className="t-small text-ink-3">Aucun membre</span>
               ) : (
                 <span className="flex flex-wrap items-center gap-1">
-                  {row.hitters.map(({ slot, member, attack }) => (
-                    <span key={slot} title={`${member.nameFr} · attaque ${attack.nameFr}`}>
-                      <PokemonSprite pokemonId={member.pokemonId} fallbackId={member.speciesId} alt={`${member.nameFr} (${attack.nameFr})`} size={40} className="size-8" />
-                    </span>
-                  ))}
+                  {row.hitters.map(({ slot, member, attack, move }) => {
+                    const label = move ? `${move}, ${attack.nameFr}` : `attaque ${attack.nameFr}`;
+                    return (
+                      <span key={slot} title={`${member.nameFr} · ${label}`}>
+                        <PokemonSprite pokemonId={member.pokemonId} fallbackId={member.speciesId} alt={`${member.nameFr} (${label})`} size={40} className="size-8" />
+                      </span>
+                    );
+                  })}
                 </span>
               )}
             </li>

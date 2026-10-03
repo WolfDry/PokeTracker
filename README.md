@@ -55,8 +55,8 @@ npm run import:data
 ```
 
 Le script télécharge les CSV du repo PokeAPI (cache dans `data/cache/`), remplit la base
-en une transaction (~15 s sur Neon), affiche une vérification (Route 101 dans Rubis, Pokédex
-de Paldea, couverture par jeu) puis télécharge les images des Pokémon dans `public/sprites/pokemon/` (rendu Pokémon HOME,
+en une transaction (~30 s sur Neon), affiche une vérification (Route 101 dans Rubis, Pokédex
+de Paldea, capacités de Dracaufeu, couverture par jeu) puis télécharge les images des Pokémon dans `public/sprites/pokemon/` (rendu Pokémon HOME,
 ou illustration officielle à défaut, converties en WebP 256×256).
 
 Options : `-- --refresh` (re-télécharger les CSV après une mise à jour PokeAPI),

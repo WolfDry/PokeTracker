@@ -36,6 +36,7 @@ const CSV_FILES = [
   "pokemon_species", "pokemon_species_names",
   "pokemon", "pokemon_types", "pokemon_types_past", "pokemon_forms", "pokemon_form_names", "pokemon_stats", "stats",
   "pokemon_evolution", "evolution_triggers", "evolution_trigger_prose", "items", "item_names", "move_names",
+  "moves", "move_changelog", "pokemon_moves", "pokemon_move_methods",
   "locations", "location_names",
   "location_areas", "location_area_prose",
   "encounter_methods", "encounter_method_prose",
@@ -313,6 +314,54 @@ function transform(csv: Csv) {
     isDefault: e.is_default === undefined || bool(e.is_default),
   }));
 
+  // Capacités : valeurs actuelles, valeurs d'avant un changement, et capacités offensives apprenables.
+  const DAMAGE_CLASSES: Record<string, string> = { "1": "status", "2": "physical", "3": "special" };
+  const moves: Rows = csv.moves.map((m) => ({
+    id: Number(m.id),
+    slug: m.identifier,
+    nameFr: moveNames.fr(m.id, humanize(m.identifier)),
+    nameEn: moveNames.en(m.id, humanize(m.identifier)),
+    generationId: Number(m.generation_id),
+    typeId: Number(m.type_id),
+    damageClass: DAMAGE_CLASSES[m.damage_class_id] ?? "status",
+    power: int(m.power),
+    accuracy: int(m.accuracy),
+    pp: int(m.pp),
+  }));
+  const movePastValues: Rows = csv.move_changelog
+    .map((c) => ({
+      moveId: Number(c.move_id),
+      changedInVersionGroupId: Number(c.changed_in_version_group_id),
+      typeId: int(c.type_id),
+      power: int(c.power),
+      accuracy: int(c.accuracy),
+      pp: int(c.pp),
+    }))
+    // Les changements de priorité ou d'effet seuls ne nous servent pas.
+    .filter((c) => c.typeId !== null || c.power !== null || c.accuracy !== null || c.pp !== null);
+  // Une ligne par (forme, groupe de versions, capacité offensive) : la façon la plus simple de l'apprendre,
+  // au plus bas niveau pour la montée de niveau.
+  const methodSlugById = new Map(csv.pokemon_move_methods.map((m) => [m.id, m.identifier]));
+  const METHOD_PRIORITY = ["level-up", "machine", "tutor", "egg"];
+  const methodRank = (slug: string) => (METHOD_PRIORITY.includes(slug) ? METHOD_PRIORITY.indexOf(slug) : METHOD_PRIORITY.length);
+  const damagingMoveIds = new Set(moves.filter((m) => m.damageClass !== "status").map((m) => String(m.id)));
+  const pokemonMovesByKey = new Map<string, { pokemonId: number; versionGroupId: number; moveId: number; method: string; level: number | null }>();
+  for (const row of csv.pokemon_moves) {
+    if (!damagingMoveIds.has(row.move_id)) continue;
+    const key = `${row.pokemon_id}-${row.version_group_id}-${row.move_id}`;
+    const method = methodSlugById.get(row.pokemon_move_method_id) ?? "other";
+    const level = method === "level-up" ? int(row.level) : null;
+    const current = pokemonMovesByKey.get(key);
+    const better =
+      !current ||
+      methodRank(method) < methodRank(current.method) ||
+      (method === current.method && level !== null && (current.level === null || level < current.level));
+    if (better) {
+      pokemonMovesByKey.set(key, { pokemonId: Number(row.pokemon_id), versionGroupId: Number(row.version_group_id), moveId: Number(row.move_id), method, level });
+    }
+  }
+  const pokemonMoves: Rows = [...pokemonMovesByKey.values()];
+
   const methodNames = localized(csv.encounter_method_prose, "encounter_method_id");
   const encounterMethods: Rows = csv.encounter_methods.map((m) => ({
     id: Number(m.id),
@@ -409,6 +458,7 @@ function transform(csv: Csv) {
   return {
     generations, regions, types, typeEfficacy, versionGroups, versionGroupRegions, versions,
     pokedexes, pokedexVersionGroups, pokedexEntries, species, pokemons, pokemonPastTypes, evolutions,
+    moves, movePastValues, pokemonMoves,
     locations, locationAreas, encounterMethods, encounterConditions, encounterConditionValues,
     encounters, encounterConditionLinks, areaRates, versionCoverage,
   };
@@ -439,6 +489,7 @@ async function load(client: pg.PoolClient, data: Data) {
     await step(`Pokedex (${data.pokedexes.length})`, () => insertRows(client, "Pokedex", data.pokedexes, byId));
     await step(`Species (${data.species.length})`, () => insertRows(client, "Species", data.species, byId));
     await step(`Pokemon (${data.pokemons.length})`, () => insertRows(client, "Pokemon", data.pokemons, byId));
+    await step(`Move (${data.moves.length})`, () => insertRows(client, "Move", data.moves, byId));
     await step(`Location (${data.locations.length})`, () => insertRows(client, "Location", data.locations, byId));
     await step(`LocationArea (${data.locationAreas.length})`, () => insertRows(client, "LocationArea", data.locationAreas, byId));
     await step(`EncounterMethod (${data.encounterMethods.length})`, () => insertRows(client, "EncounterMethod", data.encounterMethods, byId));
@@ -455,10 +506,14 @@ async function load(client: pg.PoolClient, data: Data) {
       await client.query(`DELETE FROM "Evolution"`);
       await client.query(`DELETE FROM "TypeEfficacy"`);
       await client.query(`DELETE FROM "PokemonPastType"`);
+      await client.query(`DELETE FROM "MovePastValue"`);
+      await client.query(`DELETE FROM "PokemonMove"`);
     });
     await step(`TypeEfficacy (${data.typeEfficacy.length})`, () => insertRows(client, "TypeEfficacy", data.typeEfficacy));
     await step(`PokemonPastType (${data.pokemonPastTypes.length})`, () => insertRows(client, "PokemonPastType", data.pokemonPastTypes));
     await step(`Evolution (${data.evolutions.length})`, () => insertRows(client, "Evolution", data.evolutions));
+    await step(`MovePastValue (${data.movePastValues.length})`, () => insertRows(client, "MovePastValue", data.movePastValues));
+    await step(`PokemonMove (${data.pokemonMoves.length})`, () => insertRows(client, "PokemonMove", data.pokemonMoves));
     await step(`VersionGroupRegion (${data.versionGroupRegions.length})`, () => insertRows(client, "VersionGroupRegion", data.versionGroupRegions));
     await step(`PokedexVersionGroup (${data.pokedexVersionGroups.length})`, () => insertRows(client, "PokedexVersionGroup", data.pokedexVersionGroups));
     await step(`PokedexEntry (${data.pokedexEntries.length})`, () => insertRows(client, "PokedexEntry", data.pokedexEntries));
@@ -517,6 +572,11 @@ async function verify(client: pg.PoolClient) {
     `SELECT COUNT(*) FROM "PokedexEntry" pe JOIN "Pokedex" d ON d."id" = pe."pokedexId" WHERE d."slug" = 'paldea'`,
   );
   console.log(`\nPokédex de Paldea : ${paldea.rows[0].count} entrées (attendu : 400)`);
+
+  const moves = await client.query<{ count: string }>(
+    `SELECT COUNT(*) FROM "PokemonMove" pm JOIN "VersionGroup" vg ON vg."id" = pm."versionGroupId" WHERE pm."pokemonId" = 6 AND vg."slug" = 'red-blue'`,
+  );
+  console.log(`Capacités offensives de Dracaufeu dans Rouge/Bleu : ${moves.rows[0].count}`);
 
   const coverage = await client.query<{ nameFr: string; status: string; encounterCount: number; areaCount: number }>(`
     SELECT v."nameFr", c."status", c."encounterCount", c."areaCount"

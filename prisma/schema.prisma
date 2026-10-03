@@ -28,6 +28,7 @@ model Generation {
   versionGroups VersionGroup[]
   species       Species[]
   typeEfficacy  TypeEfficacy[]
+  moves         Move[]
 }
 
 model Region {
@@ -49,10 +50,12 @@ model VersionGroup {
   generationId Int
   order        Int
 
-  generation Generation            @relation(fields: [generationId], references: [id])
-  versions   Version[]
-  pokedexes  PokedexVersionGroup[]
-  regions    VersionGroupRegion[]
+  generation   Generation            @relation(fields: [generationId], references: [id])
+  versions     Version[]
+  pokedexes    PokedexVersionGroup[]
+  regions      VersionGroupRegion[]
+  moveChanges  MovePastValue[]
+  pokemonMoves PokemonMove[]
 }
 
 model VersionGroupRegion {
@@ -152,6 +155,8 @@ model Type {
   defends     TypeEfficacy[]    @relation("DefenseType")
   pastPrimary PokemonPastType[] @relation("PastType1")
   pastSecond  PokemonPastType[] @relation("PastType2")
+  moves       Move[]            @relation("MoveType")
+  pastMoves   MovePastValue[]   @relation("MovePastType")
 }
 
 /// Table des types d'une génération : multiplicateur d'une attaque d'un type sur un Pokémon d'un
@@ -250,6 +255,7 @@ model Pokemon {
   type2      Type?             @relation("PokemonType2", fields: [type2Id], references: [id])
   encounters Encounter[]
   pastTypes  PokemonPastType[]
+  moves      PokemonMove[]
 
   @@index([speciesId])
 }
@@ -267,6 +273,66 @@ model PokemonPastType {
   type2   Type?   @relation("PastType2", fields: [type2Id], references: [id])
 
   @@id([pokemonId, generationId])
+}
+
+// ---------------------------------------------------------------------------
+// Référence : capacités
+// ---------------------------------------------------------------------------
+
+/// Capacité (Charge, Lance-Flammes…) avec ses valeurs actuelles. Celles d'avant un changement
+/// (Morsure Normal en 1re génération, Lance-Flammes à 95 de puissance jusqu'à la 5e) sont dans `MovePastValue`.
+model Move {
+  id           Int     @id
+  slug         String  @unique
+  nameFr       String
+  nameEn       String
+  generationId Int
+  typeId       Int
+  /// "physical", "special" ou "status". Avant la 4e génération, la catégorie d'une capacité offensive dépendait de son type.
+  damageClass  String
+  power        Int?
+  accuracy     Int?
+  pp           Int?
+
+  generation Generation      @relation(fields: [generationId], references: [id])
+  type       Type            @relation("MoveType", fields: [typeId], references: [id])
+  pastValues MovePastValue[]
+  learnedBy  PokemonMove[]
+}
+
+/// Valeurs d'une capacité avant un changement : valables dans les jeux qui précèdent `changedInVersionGroupId`
+/// (ordre des groupes de versions) ; `null` = valeur inchangée à cette occasion.
+model MovePastValue {
+  moveId                  Int
+  changedInVersionGroupId Int
+  typeId                  Int?
+  power                   Int?
+  accuracy                Int?
+  pp                      Int?
+
+  move                  Move         @relation(fields: [moveId], references: [id])
+  changedInVersionGroup VersionGroup @relation(fields: [changedInVersionGroupId], references: [id])
+  type                  Type?        @relation("MovePastType", fields: [typeId], references: [id])
+
+  @@id([moveId, changedInVersionGroupId])
+}
+
+/// Capacité offensive qu'une forme peut apprendre dans un groupe de versions (les capacités de statut ne
+/// sont pas importées). Une ligne par capacité, avec la façon la plus simple de l'apprendre.
+model PokemonMove {
+  pokemonId      Int
+  versionGroupId Int
+  moveId         Int
+  /// "level-up", "machine", "tutor", "egg" ou une méthode propre à un jeu ("form-change"…).
+  method         String
+  /// Niveau d'apprentissage pour "level-up" (0 = à l'évolution).
+  level          Int?
+
+  pokemon      Pokemon      @relation(fields: [pokemonId], references: [id])
+  versionGroup VersionGroup @relation(fields: [versionGroupId], references: [id])
+  move         Move         @relation(fields: [moveId], references: [id])
+
+  @@id([pokemonId, versionGroupId, moveId])
 }
 
 // ---------------------------------------------------------------------------

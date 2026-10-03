@@ -6,47 +6,59 @@ import { CheckIcon, CloseIcon, LinkIcon, PlusIcon } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
 import { PokemonSprite } from "@/components/pokemon-sprite";
 import { TeamAnalysis } from "@/components/team-analysis";
+import { TeamMovePicker } from "@/components/team-move-picker";
 import { TeamPicker } from "@/components/team-picker";
 import { TeamSuggestions } from "@/components/team-suggestions";
 import { ToolbarSelect } from "@/components/toolbar-select";
 import { TypeBadge } from "@/components/type-badge";
 import { cardLink, ghostButton, notice, smallButton } from "@/components/ui";
 import type { TeamBuilderData } from "@/lib/data/team";
-import { encodeTeam, TEAM_SIZE } from "@/lib/team";
+import { MAX_MOVES, type TeamMove } from "@/lib/moves";
+import { encodeTeam, TEAM_SIZE, type TeamMember } from "@/lib/team";
 
 export type TeamGameGroup = { id: number; nameFr: string; versions: { slug: string; nameFr: string }[] };
+
+/** Un emplacement : la forme et ses capacités choisies, ou `null` s'il est vide. */
+export type TeamSlot = { pokemonId: number; moves: TeamMove[] } | null;
 
 type Props = {
   data: TeamBuilderData;
   /** Jeux proposés dans le sélecteur, par génération. */
   games: TeamGameGroup[];
-  /** Formes par emplacement, lues dans l'URL (`?equipe=25-0-6`). */
-  initialTeam: (number | null)[];
+  /** Formes et capacités par emplacement, lues dans l'URL (`?equipe=6.53.394-0-25`). */
+  initialTeam: TeamSlot[];
 };
 
-const teamHref = (gameSlug: string, team: (number | null)[]) => {
-  const encoded = encodeTeam(team);
+const teamHref = (gameSlug: string, team: TeamSlot[]) => {
+  const encoded = encodeTeam(team.map((slot) => slot && { pokemonId: slot.pokemonId, moveIds: slot.moves.map((m) => m.id) }));
   return `/equipe?jeu=${gameSlug}${encoded ? `&equipe=${encoded}` : ""}`;
 };
 
-/** Six emplacements à remplir avec les Pokémon du jeu, puis l'analyse des types de l'équipe. L'équipe vit dans l'URL. */
+/** Six emplacements à remplir avec les Pokémon du jeu et leurs attaques, puis l'analyse des types de l'équipe. L'équipe vit dans l'URL. */
 export function TeamBuilder({ data, games, initialTeam }: Props) {
   const router = useRouter();
   const [team, setTeam] = useState(initialTeam);
   const [picking, setPicking] = useState<number | null>(null);
+  const [editingMoves, setEditingMoves] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const byId = useMemo(() => new Map(data.options.map((o) => [o.pokemonId, o])), [data.options]);
-  const members = team.map((id) => (id === null ? null : (byId.get(id) ?? null)));
+  const members = team.map((slot): TeamMember | null => {
+    const option = slot && byId.get(slot.pokemonId);
+    return option ? { ...option, moves: slot.moves } : null;
+  });
   const count = members.filter(Boolean).length;
 
   // L'URL suit l'équipe (lien partageable, retour arrière conservé) sans recharger la page.
-  const update = (next: (number | null)[]) => {
+  const update = (next: TeamSlot[]) => {
     setTeam(next);
     window.history.replaceState(null, "", teamHref(data.game.slug, next));
   };
-  const setSlot = (slot: number, pokemonId: number | null) => update(team.map((id, i) => (i === slot ? pokemonId : id)));
+  // Changer de Pokémon vide ses attaques : elles dépendent de ce qu'il peut apprendre.
+  const setSlot = (slot: number, pokemonId: number | null) =>
+    update(team.map((current, i) => (i !== slot ? current : pokemonId === null ? null : { pokemonId, moves: current?.pokemonId === pokemonId ? current.moves : [] })));
+  const setMoves = (slot: number, moves: TeamMove[]) => update(team.map((current, i) => (i === slot && current ? { ...current, moves } : current)));
 
   const copyLink = async () => {
     try {
@@ -67,7 +79,7 @@ export function TeamBuilder({ data, games, initialTeam }: Props) {
         title="Équipe"
         intro={
           <p className="t-small">
-            {data.options.length} Pokémon disponibles dans {data.game.nameFr}. Clique sur un emplacement pour choisir un Pokémon.
+            {data.options.length} Pokémon disponibles dans {data.game.nameFr}. Clique sur un emplacement pour choisir un Pokémon, puis ses attaques.
           </p>
         }
         actions={
@@ -100,7 +112,7 @@ export function TeamBuilder({ data, games, initialTeam }: Props) {
         <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {members.map((member, slot) =>
             member ? (
-              <li key={slot} className={`${cardLink} relative`}>
+              <li key={slot} className={`${cardLink} relative flex flex-col`}>
                 <span aria-hidden className="absolute top-2.5 left-3.5 t-caption text-ink-3">
                   {slot + 1}
                 </span>
@@ -108,7 +120,7 @@ export function TeamBuilder({ data, games, initialTeam }: Props) {
                   type="button"
                   onClick={() => setPicking(slot)}
                   aria-label={`Emplacement ${slot + 1} : ${member.nameFr}, changer`}
-                  className="flex h-full w-full flex-col items-center gap-2 rounded-lg px-3 pt-5 pb-4"
+                  className="flex w-full flex-col items-center gap-2 rounded-t-lg px-3 pt-5 pb-3"
                 >
                   <PokemonSprite pokemonId={member.pokemonId} fallbackId={member.speciesId} alt="" size={96} className="size-24" />
                   <span className="text-center text-[15px] leading-5 font-bold tracking-[-0.01em] text-balance">{member.nameFr}</span>
@@ -118,6 +130,34 @@ export function TeamBuilder({ data, games, initialTeam }: Props) {
                     ))}
                   </span>
                 </button>
+                {/* Attaques choisies (quatre au plus) et accès à la fenêtre de choix. */}
+                <div className="mt-auto border-t border-line p-2">
+                  {member.moves && member.moves.length > 0 && (
+                    <ul aria-label={`Attaques de ${member.nameFr}`} className="mb-1 space-y-0.5 px-1.5 pt-0.5">
+                      {member.moves.map((move) => (
+                        <li key={move.id} className="flex items-center gap-1.5 text-[13px] leading-5" title={`${move.nameFr} · ${move.type.nameFr}`}>
+                          <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: `var(--type-${move.type.slug}, var(--type-unknown))` }} />
+                          <span className="truncate">{move.nameFr}</span>
+                          <span className="sr-only">({move.type.nameFr})</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setEditingMoves(slot)}
+                    aria-label={`Choisir les attaques de ${member.nameFr}`}
+                    className={`${ghostButton} ${smallButton} w-full`}
+                  >
+                    {member.moves && member.moves.length > 0 ? (
+                      `Attaques ${member.moves.length}/${MAX_MOVES}`
+                    ) : (
+                      <>
+                        <PlusIcon size={14} /> Attaques
+                      </>
+                    )}
+                  </button>
+                </div>
                 <button
                   type="button"
                   onClick={() => setSlot(slot, null)}
@@ -154,8 +194,8 @@ export function TeamBuilder({ data, games, initialTeam }: Props) {
           <div className="space-y-3">
             <TeamAnalysis data={data} team={members} />
             <p className="t-small text-ink-3">
-              Table des types en vigueur dans {data.game.nameFr}. Seuls les types des Pokémon comptent : talents (Lévitation, Absorb Eau…) et capacités ne
-              sont pas pris en compte.
+              Table des types et attaques telles qu&apos;elles sont dans {data.game.nameFr}. Les avantages viennent des attaques choisies, ou à défaut des
+              types de chaque Pokémon ; les talents (Lévitation, Absorb Eau…) ne sont pas pris en compte.
             </p>
           </div>
           <TeamSuggestions
@@ -175,12 +215,25 @@ export function TeamBuilder({ data, games, initialTeam }: Props) {
           gameName={data.game.nameFr}
           options={data.options}
           types={data.types}
-          inTeam={new Set(team.filter((id) => id !== null))}
+          inTeam={new Set(team.flatMap((slot) => (slot ? [slot.pokemonId] : [])))}
           onPick={(pokemonId) => {
             setSlot(picking, pokemonId);
             setPicking(null);
           }}
           onClose={() => setPicking(null)}
+        />
+      )}
+
+      {editingMoves !== null && members[editingMoves] && (
+        <TeamMovePicker
+          key={editingMoves}
+          slot={editingMoves}
+          gameSlug={data.game.slug}
+          gameName={data.game.nameFr}
+          pokemon={members[editingMoves]}
+          selected={members[editingMoves].moves ?? []}
+          onChange={(moves) => setMoves(editingMoves, moves)}
+          onClose={() => setEditingMoves(null)}
         />
       )}
     </div>

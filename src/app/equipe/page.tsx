@@ -6,7 +6,9 @@ import { PageSkeleton } from "@/components/page-skeleton";
 import { TeamBuilder } from "@/components/team-builder";
 import { chip } from "@/components/ui";
 import { getGameOptions } from "@/lib/data/games";
+import { getLearnableMoves } from "@/lib/data/moves";
 import { getTeamBuilderData } from "@/lib/data/team";
+import { toTeamMove } from "@/lib/moves";
 import { decodeTeam } from "@/lib/team";
 
 export const metadata: Metadata = { title: "Équipe" };
@@ -29,7 +31,7 @@ async function TeamPage({ searchParams }: Pick<PageProps<"/equipe">, "searchPara
         <PageHeader
           eyebrow="Stratégie"
           title="Équipe"
-          intro="Compose une équipe de six Pokémon disponibles dans un jeu et vois d'un coup d'œil ses faiblesses et ses avantages de types."
+          intro="Compose une équipe de six Pokémon disponibles dans un jeu, choisis leurs attaques et vois d'un coup d'œil ses faiblesses et ses avantages de types."
         />
         <section className="space-y-4">
           <h2 className="t-h2">Choisir un jeu</h2>
@@ -50,7 +52,19 @@ async function TeamPage({ searchParams }: Pick<PageProps<"/equipe">, "searchPara
     );
   }
 
-  // Un Pokémon absent du jeu (lien d'une équipe composée dans un autre jeu) laisse son emplacement vide.
-  const initialTeam = decodeTeam(equipe, new Set(data.options.map((o) => o.pokemonId)));
+  // Un Pokémon absent du jeu (lien d'une équipe composée dans un autre jeu) laisse son emplacement vide,
+  // une capacité qu'il ne peut pas apprendre dans ce jeu est ignorée.
+  const slots = decodeTeam(equipe, new Set(data.options.map((o) => o.pokemonId)));
+  const initialTeam = await Promise.all(
+    slots.map(async (slot) => {
+      if (!slot) return null;
+      const learnable = new Map((await getLearnableMoves(data.game.slug, slot.pokemonId)).map((m) => [m.id, m]));
+      const moves = slot.moveIds.flatMap((id) => {
+        const move = learnable.get(id);
+        return move ? [toTeamMove(move)] : [];
+      });
+      return { pokemonId: slot.pokemonId, moves };
+    }),
+  );
   return <TeamBuilder key={data.game.slug} data={data} games={games} initialTeam={initialTeam} />;
 }
