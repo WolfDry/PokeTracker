@@ -3,6 +3,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { dlcVersionSlugs, HIDDEN_LOCATION_PREFIX, humanizeSlug, isHiddenLocation, isHiddenVersion } from "@/lib/data/filters";
 import { getVersionBySlug } from "@/lib/data/games";
+import { locationRanks } from "@/lib/data/location-order";
 import {
   collapseConditionRows,
   type ConditionMeta,
@@ -29,7 +30,7 @@ export type VersionLocation = {
 
 export type VersionLocationGroup = { region: string; locations: VersionLocation[] };
 
-/** Lieux d'un jeu où l'on rencontre des Pokémon, regroupés par région et triés (Route 1, 2… 10). */
+/** Lieux d'un jeu où l'on rencontre des Pokémon, regroupés par région, dans l'ordre où on les découvre dans le jeu. */
 export async function getVersionLocations(versionSlug: string) {
   cacheLife("max");
   cacheTag("reference");
@@ -54,9 +55,12 @@ export async function getVersionLocations(versionSlug: string) {
     const key = region ?? "Autres lieux";
     byRegion.set(key, [...(byRegion.get(key) ?? []), location]);
   }
+  // Ordre de progression du jeu ; les lieux absents de la liste ensuite, par ordre alphabétique (Route 2 avant Route 10).
+  const ranks = locationRanks(version.versionGroupSlug);
+  const rank = (location: VersionLocation) => ranks.get(location.slug) ?? ranks.size;
   const collator = new Intl.Collator("fr", { numeric: true });
   const groups: VersionLocationGroup[] = [...byRegion.entries()]
-    .map(([region, locations]) => ({ region, locations: locations.sort((a, b) => collator.compare(a.nameFr, b.nameFr)) }))
+    .map(([region, locations]) => ({ region, locations: locations.sort((a, b) => rank(a) - rank(b) || collator.compare(a.nameFr, b.nameFr)) }))
     // Région principale du jeu d'abord (celle avec le plus de lieux), puis les autres.
     .sort((a, b) => b.locations.length - a.locations.length);
 

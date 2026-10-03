@@ -88,6 +88,7 @@ export async function getVersionBySlug(slug: string) {
     nameFr: version.nameFr,
     coverage: version.coverage,
     generation: version.versionGroup.generation,
+    versionGroupSlug: version.versionGroup.slug,
     /** Versions jumelles (Rouge ↔ Bleu), pour naviguer entre elles. */
     siblings: version.versionGroup.versions.filter((v) => v.id !== version.id && !isHiddenVersion(v.slug)),
     pokedexes: version.versionGroup.pokedexes
