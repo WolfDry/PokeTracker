@@ -73,7 +73,7 @@ export function CaptureChecklist({ versionId, entries, captured, coverageNote }:
                   </span>
                 </button>
                 <span className={`${spriteBox} size-12 rounded-sm`}>
-                  <PokemonSprite pokemonId={entry.species.pokemonId} alt="" size={48} />
+                  <PokemonSprite pokemonId={entry.species.pokemonId} fallbackId={entry.species.id} alt="" size={48} />
                 </span>
                 <div className="min-w-0 flex-1 space-y-1 py-1">
                   <Link href={`/pokemon/${entry.species.id}`} className="flex items-baseline gap-2 font-semibold hover:underline">

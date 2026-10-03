@@ -8,11 +8,48 @@ export type PokedexGridEntry = {
   species: {
     id: number;
     nameFr: string;
-    /** Forme par défaut : sprite et types affichés dans la grille. */
+    /** Forme affichée (sprite et types) : la forme régionale de la région du Pokédex s'il y en a une, sinon la forme par défaut. */
     pokemonId: number;
     types: { slug: string; nameFr: string }[];
   };
 };
+
+/**
+ * Suffixe des formes régionales qu'on rencontre dans chaque Pokédex : dans celui d'Alola, Rattata est
+ * Rattata d'Alola (`rattata-alola`). Kitakami et Myrtille, rattachés à Paldea par PokeAPI, n'ont pas de
+ * forme propre à leur région.
+ */
+const REGIONAL_FORM_SUFFIX: Record<string, string> = {
+  "original-alola": "alola",
+  "original-melemele": "alola",
+  "original-akala": "alola",
+  "original-ulaula": "alola",
+  "original-poni": "alola",
+  "updated-alola": "alola",
+  "updated-melemele": "alola",
+  "updated-akala": "alola",
+  "updated-ulaula": "alola",
+  "updated-poni": "alola",
+  galar: "galar",
+  "isle-of-armor": "galar",
+  "crown-tundra": "galar",
+  hisui: "hisui",
+  paldea: "paldea",
+};
+
+type FormRow = { id: number; slug: string; isDefault: boolean };
+
+/**
+ * Forme régionale d'une espèce (`meowth-galar`, `tauros-paldea-combat-breed` : la première si la région en a
+ * plusieurs), sans les formes « totem » ni les Pikachu à casquette.
+ */
+function regionalForm<T extends FormRow>(speciesSlug: string, pokemons: T[], suffix: string | undefined) {
+  if (!suffix) return undefined;
+  const prefix = `${speciesSlug}-${suffix}`;
+  return pokemons
+    .filter((p) => !p.isDefault && (p.slug === prefix || p.slug.startsWith(`${prefix}-`)) && !p.slug.includes("totem") && !p.slug.endsWith("-cap"))
+    .sort((a, b) => a.id - b.id)[0];
+}
 
 export async function getPokedexBySlug(slug: string) {
   cacheLife("max");
@@ -32,11 +69,14 @@ export async function getPokedexBySlug(slug: string) {
           species: {
             select: {
               id: true,
+              slug: true,
               nameFr: true,
               pokemons: {
-                where: { isDefault: true },
+                orderBy: { id: "asc" },
                 select: {
                   id: true,
+                  slug: true,
+                  isDefault: true,
                   type1: { select: { slug: true, nameFr: true } },
                   type2: { select: { slug: true, nameFr: true } },
                 },
@@ -49,8 +89,10 @@ export async function getPokedexBySlug(slug: string) {
   });
   if (!pokedex) return null;
 
+  const suffix = REGIONAL_FORM_SUFFIX[pokedex.slug];
   const entries: PokedexGridEntry[] = pokedex.entries.map((entry) => {
-    const pokemon = entry.species.pokemons[0];
+    const { pokemons } = entry.species;
+    const pokemon = regionalForm(entry.species.slug, pokemons, suffix) ?? pokemons.find((p) => p.isDefault) ?? pokemons[0];
     return {
       number: entry.number,
       species: {

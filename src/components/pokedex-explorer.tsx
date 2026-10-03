@@ -313,7 +313,13 @@ function Grid({ entries, captures, signedIn }: GridProps) {
               {dexNumber(entry.number)}
             </span>
             <Link href={`/pokemon/${entry.species.id}`} className="relative flex flex-col items-center gap-2 px-3 pt-6 pb-4 sm:gap-3 sm:pt-8">
-              <PokemonSprite pokemonId={entry.species.pokemonId} alt={entry.species.nameFr} size={160} className="size-28 sm:size-40" />
+              <PokemonSprite
+                pokemonId={entry.species.pokemonId}
+                fallbackId={entry.species.id}
+                alt={entry.species.nameFr}
+                size={160}
+                className="size-28 sm:size-40"
+              />
               <span className="flex flex-col items-center gap-1.5">
                 <span className="text-[15px] leading-5 font-bold tracking-[-0.01em] sm:text-[17px] sm:leading-[22px]">{entry.species.nameFr}</span>
                 <TypeDots types={entry.species.types} />
