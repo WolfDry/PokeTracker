@@ -15,6 +15,10 @@ export type TeamOption = {
   nameFr: string;
   /** Types tels qu'ils sont dans le jeu (Mélofée est Normal avant la 6e génération). */
   types: TypeRef[];
+  /** Total des stats de base, pour départager les suggestions. */
+  baseTotal: number;
+  /** Légendaire ou fabuleux : écarté des suggestions sauf demande. */
+  legendary: boolean;
 };
 
 export type TeamBuilderData = {
@@ -84,7 +88,13 @@ export async function getTeamBuilderData(versionSlug: string): Promise<TeamBuild
       introducedVersionGroupId: true,
       nameFr: true,
       formNameFr: true,
-      species: { select: { nameFr: true } },
+      hp: true,
+      attack: true,
+      defense: true,
+      specialAttack: true,
+      specialDefense: true,
+      speed: true,
+      species: { select: { nameFr: true, isLegendary: true, isMythical: true } },
       type1: typeSelect,
       type2: typeSelect,
       pastTypes: { orderBy: { generationId: "asc" }, select: { generationId: true, type1: typeSelect, type2: typeSelect } },
@@ -111,7 +121,14 @@ export async function getTeamBuilderData(versionSlug: string): Promise<TeamBuild
       if (!base || sameTypes(types, base)) continue;
     }
     const nameFr = p.isDefault ? p.species.nameFr : (p.nameFr ?? `${p.species.nameFr} (${p.formNameFr ?? p.slug})`);
-    const option = { pokemonId: p.id, speciesId: p.speciesId, nameFr, types: types.map(({ slug, nameFr }) => ({ slug, nameFr })) };
+    const option = {
+      pokemonId: p.id,
+      speciesId: p.speciesId,
+      nameFr,
+      types: types.map(({ slug, nameFr }) => ({ slug, nameFr })),
+      baseTotal: (p.hp ?? 0) + (p.attack ?? 0) + (p.defense ?? 0) + (p.specialAttack ?? 0) + (p.specialDefense ?? 0) + (p.speed ?? 0),
+      legendary: p.species.isLegendary || p.species.isMythical,
+    };
     // La forme par défaut en tête (les ids des formes par défaut sont les plus petits).
     bySpecies.set(p.speciesId, [...(bySpecies.get(p.speciesId) ?? []), option]);
   }

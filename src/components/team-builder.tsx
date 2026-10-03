@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { PokemonSprite } from "@/components/pokemon-sprite";
 import { TeamAnalysis } from "@/components/team-analysis";
 import { TeamPicker } from "@/components/team-picker";
+import { TeamSuggestions } from "@/components/team-suggestions";
 import { ToolbarSelect } from "@/components/toolbar-select";
 import { TypeBadge } from "@/components/type-badge";
 import { cardLink, ghostButton, notice, smallButton } from "@/components/ui";
@@ -149,13 +150,23 @@ export function TeamBuilder({ data, games, initialTeam }: Props) {
       {count === 0 ? (
         <p className={notice}>Ajoute un premier Pokémon pour voir les faiblesses et les avantages de ton équipe.</p>
       ) : (
-        <div className="space-y-3">
-          <TeamAnalysis data={data} team={members} />
-          <p className="t-small text-ink-3">
-            Table des types en vigueur dans {data.game.nameFr}. Seuls les types des Pokémon comptent : talents (Lévitation, Absorb Eau…) et capacités ne
-            sont pas pris en compte.
-          </p>
-        </div>
+        <>
+          <div className="space-y-3">
+            <TeamAnalysis data={data} team={members} />
+            <p className="t-small text-ink-3">
+              Table des types en vigueur dans {data.game.nameFr}. Seuls les types des Pokémon comptent : talents (Lévitation, Absorb Eau…) et capacités ne
+              sont pas pris en compte.
+            </p>
+          </div>
+          <TeamSuggestions
+            data={data}
+            team={members}
+            onAdd={(pokemonId) => {
+              const slot = team.indexOf(null);
+              if (slot >= 0) setSlot(slot, pokemonId);
+            }}
+          />
+        </>
       )}
 
       {picking !== null && (

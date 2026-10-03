@@ -63,6 +63,69 @@ export function analyzeOffense(data: Chart, team: (TeamOption | null)[]): Offens
   }));
 }
 
+/** Faiblesses non compensées : pour chaque type d'attaque, les membres faibles en trop par rapport à ceux qui résistent. */
+function weaknessPressure(rows: DefenseRow[]) {
+  return rows.reduce((sum, r) => sum + Math.max(0, r.weak - r.resist), 0);
+}
+
+export type Suggestion = {
+  /** Le mieux doté en stats de base parmi les Pokémon de mêmes types. */
+  option: TeamOption;
+  /** Autres Pokémon de mêmes types, les plus forts d'abord. */
+  alternatives: TeamOption[];
+  /** Points faibles de l'équipe auxquels il résiste (multiplicateur < 1, 0 pour une immunité). */
+  resists: { type: TypeRef; factor: number }[];
+  /** Types encore non couverts qu'il touche en super efficace avec l'un de ses types. */
+  covers: TypeRef[];
+};
+
+/**
+ * Pokémon du jeu qui comblent le mieux les points faibles de l'équipe : ceux dont l'arrivée réduit le plus
+ * les faiblesses non compensées (une faiblesse ajoutée compte contre lui), puis qui résistent au plus de
+ * points faibles, couvrent le plus de types non couverts et ont les meilleures stats de base.
+ * Un seul par combinaison de types : les autres sont proposés en alternative.
+ */
+export function suggestMembers(data: Chart, team: (TeamOption | null)[], options: TeamOption[], { legendary = false, limit = 9 } = {}): Suggestion[] {
+  const members = team.filter((m) => m !== null);
+  const defense = analyzeDefense(data, team);
+  const weaknesses = teamWeaknesses(defense);
+  if (members.length === 0 || weaknesses.length === 0) return [];
+
+  const before = weaknessPressure(defense);
+  const uncovered = analyzeOffense(data, team).filter((r) => r.hitters.length === 0);
+  const inTeam = new Set(members.map((m) => m.speciesId));
+
+  const scored = options
+    .filter((o) => !inTeam.has(o.speciesId) && (legendary || !o.legendary))
+    .map((option) => ({
+      option,
+      gain: before - weaknessPressure(analyzeDefense(data, [...team, option])),
+      resists: weaknesses
+        .map((r) => ({ type: r.type, factor: multiplier(data, r.type.slug, option.types) }))
+        .filter((r) => r.factor < 1)
+        .sort((a, b) => a.factor - b.factor),
+      covers: uncovered.filter((r) => option.types.some((t) => multiplier(data, t.slug, [r.type]) > 1)).map((r) => r.type),
+    }))
+    .filter((s) => s.gain > 0)
+    .sort(
+      (a, b) =>
+        b.gain - a.gain ||
+        b.resists.length - a.resists.length ||
+        b.covers.length - a.covers.length ||
+        b.option.baseTotal - a.option.baseTotal,
+    );
+
+  // Une carte par combinaison de types : le premier du classement, les suivants en alternative.
+  const byTypes = new Map<string, Suggestion>();
+  for (const { option, resists, covers } of scored) {
+    const key = option.types.map((t) => t.slug).sort().join("+");
+    const existing = byTypes.get(key);
+    if (existing) existing.alternatives.push(option);
+    else byTypes.set(key, { option, alternatives: [], resists, covers });
+  }
+  return [...byTypes.values()].slice(0, limit);
+}
+
 /** « ×2 », « ½ », « 0 » ; chaîne vide pour ×1. */
 export function formatFactor(factor: number) {
   if (factor === 1) return "";
