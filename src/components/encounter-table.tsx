@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { Fragment, type ReactNode, useMemo, useState } from "react";
-import { ChevronDownIcon, ChevronRightIcon } from "@/components/icons";
+import { CheckIcon, ChevronDownIcon, ChevronRightIcon } from "@/components/icons";
 import { PokemonSprite } from "@/components/pokemon-sprite";
-import { card, chip, spriteBox } from "@/components/ui";
+import { ProgressBar } from "@/components/progress-bar";
+import { card, checkCircle, chip, chipCount, spriteBox, textLink } from "@/components/ui";
+import { useCaptures } from "@/components/use-captures";
 import {
   formatLevels,
   ROD_METHOD_SLUGS,
@@ -14,11 +16,28 @@ import {
   type LocationEncounterTable,
 } from "@/lib/encounters";
 
+/** Captures de l'utilisateur dans le jeu de la page. */
+export type EncounterCaptures = {
+  /** Jeu où cocher : celui de la page, ou son jeu de base pour une extension (Isolarmure → Épée). */
+  versionId: number;
+  versionName: string;
+  /** Espèces déjà cochées ; `null` = personne n'est connecté. */
+  captured: number[] | null;
+  loginNext: string;
+};
+
 type Props = {
   table: LocationEncounterTable;
   /** Le jeu demandé est toujours `table.versions[0]`. */
   currentVersionName: string;
+  /** Absent tant que la session n'est pas lue : le tableau s'affiche alors sans les cases « attrapé ». */
+  capture?: EncounterCaptures;
 };
+
+type CaptureStatus = "all" | "missing" | "caught";
+
+/** Case « attrapé » d'une espèce, cible 44 px (le clic ne déplie pas la ligne). */
+type CaptureToggle = (speciesId: number, name: string) => ReactNode;
 
 /** Au-delà de ce nombre de lignes, seule la première zone est dépliée au chargement (Terres Sauvages : 20 antres…). */
 const COLLAPSE_THRESHOLD = 200;
@@ -38,13 +57,14 @@ function groupBySpecies(rows: KeyedRow[], pokemons: LocationEncounterTable["poke
   return [...groups.values()];
 }
 
-/** Tableau des rencontres d'un lieu, par sous-zone, avec filtres côté client (instantanés). */
-export function EncounterTable({ table, currentVersionName }: Props) {
+/** Tableau des rencontres d'un lieu, par sous-zone, avec filtres côté client (instantanés) et cases « attrapé » par espèce. */
+export function EncounterTable({ table, currentVersionName, capture }: Props) {
   const { versions, methods, conditions, areas } = table;
   const hasTwins = versions.length > 1;
   const rodMethodIds = useMemo(() => new Set(methods.filter((m) => ROD_METHOD_SLUGS.has(m.slug)).map((m) => m.id)), [methods]);
   const methodById = useMemo(() => new Map(methods.map((m) => [m.id, m])), [methods]);
   const totalRows = useMemo(() => areas.reduce((sum, area) => sum + area.rows.length, 0), [areas]);
+  const speciesIds = useMemo(() => new Set(areas.flatMap((area) => area.rows.map((row) => table.pokemons[row.pokemonId].speciesId))), [areas, table.pokemons]);
 
   const [onlyCurrent, setOnlyCurrent] = useState(false);
   const [hideRods, setHideRods] = useState(false);
@@ -52,6 +72,35 @@ export function EncounterTable({ table, currentVersionName }: Props) {
   const [openAreas, setOpenAreas] = useState<Set<number>>(
     () => new Set(totalRows > COLLAPSE_THRESHOLD ? areas.slice(0, 1).map((a) => a.id) : areas.map((a) => a.id)),
   );
+
+  const signedIn = capture !== undefined && capture.captured !== null;
+  const captures = useCaptures(capture?.versionId ?? 0, capture?.captured ?? []);
+  const [status, setStatus] = useState<CaptureStatus>("all");
+  const caughtCount = signedIn ? [...speciesIds].filter((id) => captures.captured.has(id)).length : 0;
+  const keepSpecies = (speciesId: number) => !signedIn || status === "all" || captures.captured.has(speciesId) === (status === "caught");
+
+  const captureToggle: CaptureToggle | null = signedIn
+    ? (speciesId, name) => {
+        const caught = captures.captured.has(speciesId);
+        return (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              captures.toggle(speciesId);
+            }}
+            aria-pressed={caught}
+            aria-label={`${caught ? "Retirer" : "Marquer"} ${name} ${caught ? "des captures" : "comme attrapé"}`}
+            title={caught ? "Attrapé — cliquer pour retirer" : "Marquer comme attrapé"}
+            className="-m-2 grid size-11 shrink-0 place-items-center"
+          >
+            <span className={checkCircle(caught)}>
+              <CheckIcon />
+            </span>
+          </button>
+        );
+      }
+    : null;
 
   const visibleVersions = onlyCurrent ? [0] : versions.map((_, index) => index);
 
@@ -69,7 +118,7 @@ export function EncounterTable({ table, currentVersionName }: Props) {
       groups: groupBySpecies(
         area.rows.map((row, index) => ({ row, key: index })).filter(({ row }) => keepRow(row)),
         table.pokemons,
-      ),
+      ).filter((group) => keepSpecies(group.speciesId)),
     }))
     .filter((area) => area.groups.length > 0);
   const shownRows = filteredAreas.reduce((sum, area) => sum + area.groups.length, 0);
@@ -101,6 +150,39 @@ export function EncounterTable({ table, currentVersionName }: Props) {
   return (
     <div className="space-y-6">
       <div className={`${card} space-y-3 p-4`}>
+        {capture &&
+          (signedIn ? (
+            <div className="flex flex-wrap items-end gap-x-6 gap-y-3 border-b border-line pb-4">
+              <div className="min-w-56 flex-1">
+                <ProgressBar caught={caughtCount} total={speciesIds.size} label={`Attrapés ici dans ${capture.versionName}`} />
+              </div>
+              <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Statut de capture">
+                {(
+                  [
+                    ["all", "Tous", speciesIds.size],
+                    ["missing", "Manquants", speciesIds.size - caughtCount],
+                    ["caught", "Attrapés", caughtCount],
+                  ] as const
+                ).map(([key, label, count]) => (
+                  <button key={key} type="button" className={chip(status === key)} aria-pressed={status === key} onClick={() => setStatus(key)}>
+                    {label} <span className={chipCount(status === key)}>{count}</span>
+                  </button>
+                ))}
+              </div>
+              {captures.error && (
+                <p role="alert" className="w-full t-small text-danger">
+                  {captures.error}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="border-b border-line pb-3 t-small text-ink-2">
+              <Link href={`/connexion?next=${encodeURIComponent(capture.loginNext)}`} className={textLink}>
+                Connecte-toi
+              </Link>{" "}
+              pour cocher les Pokémon attrapés dans {capture.versionName}.
+            </p>
+          ))}
         {hasTwins && (
           <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Versions affichées">
             <button type="button" className={chip(!onlyCurrent)} aria-pressed={!onlyCurrent} onClick={() => setOnlyCurrent(false)}>
@@ -141,7 +223,13 @@ export function EncounterTable({ table, currentVersionName }: Props) {
       </div>
 
       {shownRows === 0 ? (
-        <p className="text-ink-2">Aucune rencontre avec ces filtres.</p>
+        <p className="text-ink-2">
+          {status === "missing" && speciesIds.size === caughtCount
+            ? "Tous les Pokémon de ce lieu sont attrapés, bravo !"
+            : status === "caught" && caughtCount === 0
+              ? "Aucun Pokémon de ce lieu attrapé pour l'instant."
+              : "Aucune rencontre avec ces filtres."}
+        </p>
       ) : (
         filteredAreas.map((area) => {
           const open = openAreas.has(area.id);
@@ -172,6 +260,7 @@ export function EncounterTable({ table, currentVersionName }: Props) {
                   showConditions={showConditions}
                   methodName={(id) => methodById.get(id)?.nameFr ?? "?"}
                   conditionParts={conditionParts}
+                  captureToggle={captureToggle}
                 />
               )}
             </section>
@@ -190,6 +279,8 @@ type AreaTableProps = {
   showConditions: boolean;
   methodName: (id: number) => string;
   conditionParts: (row: EncounterRow) => EncounterConditionRef[][];
+  /** `null` sans utilisateur connecté (ou avant la lecture de la session). */
+  captureToggle: CaptureToggle | null;
 };
 
 /** "5 %" ou "5–95 %" selon les valeurs présentes ; `null` si aucune. */
@@ -200,7 +291,7 @@ const formatRates = (rates: number[]) => {
   return min === max ? `${min} %` : `${min}–${max} %`;
 };
 
-function AreaTable({ area, groups, table, visibleVersions, showConditions, methodName, conditionParts }: AreaTableProps) {
+function AreaTable({ area, groups, table, visibleVersions, showConditions, methodName, conditionParts, captureToggle }: AreaTableProps) {
   const { versions, pokemons } = table;
   const [openGroups, setOpenGroups] = useState<Set<number>>(new Set());
   const toggleGroup = (speciesId: number) =>
@@ -267,6 +358,7 @@ function AreaTable({ area, groups, table, visibleVersions, showConditions, metho
   const pokemonCell = (pokemonId: number, label: string, formName: string | null, method: string, extra?: ReactNode) => (
     <td className={`${stickyCell} bg-surface`}>
       <span className="flex items-center gap-2">
+        {captureToggle?.(pokemons[pokemonId].speciesId, label)}
         {extra}
         <Link href={`/pokemon/${pokemons[pokemonId].speciesId}`} className="flex items-center gap-2 hover:underline" onClick={(e) => e.stopPropagation()}>
           <span className={`${spriteBox} size-10 rounded-sm`}>
