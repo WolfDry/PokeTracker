@@ -130,7 +130,7 @@ const ROMAN_NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", 
 
 /**
  * Frise de l'accueil : une étape par génération (chiffre romain, région principale), ses jeux habillés
- * de leur mascotte et d'une note. Les extensions se rattachent à leur jeu de base : pas d'entrée à part.
+ * de leur mascotte. Les extensions se rattachent à leur jeu de base : pas d'entrée à part.
  */
 export async function getHomeTimeline() {
   cacheLife("max");
@@ -148,7 +148,6 @@ export async function getHomeTimeline() {
           slug: version.slug,
           nameFr: version.nameFr,
           mascot: GAME_EXTRAS[version.slug]?.mascot ?? null,
-          note: GAME_EXTRAS[version.slug]?.note ?? null,
         })),
     }))
     .filter((generation) => generation.games.length > 0);

@@ -1,6 +1,6 @@
-// Habillage des jeux sur l'accueil : la mascotte (Pokémon de la jaquette, id de forme PokeAPI) et une note
-// qui situe le jeu dans la série (« Jumeau de Bleu », « Remake d'Or »). PokeAPI n'a ni l'un ni l'autre :
-// la liste est tenue à la main, en slugs de version. Un jeu absent s'affiche sans sprite ni note.
+// Habillage des jeux sur l'accueil : la mascotte, Pokémon de la jaquette, en id de forme PokeAPI pour
+// prendre la forme propre au jeu (Kyurem Noir pour Noir 2, Primo-Groudon pour Rubis Oméga…).
+// PokeAPI n'a pas cette donnée : la liste est tenue à la main, en slugs de version. Un jeu absent s'affiche sans sprite.
 
 export type GameExtra = { mascot: number };
 export const GAME_EXTRAS: Record<string, GameExtra> = {
@@ -19,27 +19,27 @@ export const GAME_EXTRAS: Record<string, GameExtra> = {
   xd: { mascot: 249 },
   diamond: { mascot: 483 },
   pearl: { mascot: 484 },
-  platinum: { mascot: 487 },
+  platinum: { mascot: 10007 }, // Giratina Forme Originelle
   heartgold: { mascot: 250 },
   soulsilver: { mascot: 249 },
   black: { mascot: 643 },
   white: { mascot: 644 },
-  "black-2": { mascot: 646 },
-  "white-2": { mascot: 646 },
+  "black-2": { mascot: 10022 }, // Kyurem Noir
+  "white-2": { mascot: 10023 }, // Kyurem Blanc
   x: { mascot: 716 },
   y: { mascot: 717 },
-  "omega-ruby": { mascot: 383 },
-  "alpha-sapphire": { mascot: 382 },
+  "omega-ruby": { mascot: 10078 }, // Primo-Groudon
+  "alpha-sapphire": { mascot: 10077 }, // Primo-Kyogre
   sun: { mascot: 791 },
   moon: { mascot: 792 },
-  "ultra-sun": { mascot: 800 },
-  "ultra-moon": { mascot: 800 },
-  "lets-go-pikachu": { mascot: 25 },
-  "lets-go-eevee": { mascot: 133 },
+  "ultra-sun": { mascot: 10155 }, // Necrozma Crinière du Couchant
+  "ultra-moon": { mascot: 10156 }, // Necrozma Ailes de l'Aurore
+  "lets-go-pikachu": { mascot: 10158 }, // Pikachu partenaire
+  "lets-go-eevee": { mascot: 10159 }, // Évoli partenaire
   sword: { mascot: 888 },
   shield: { mascot: 889 },
-  "brilliant-diamond": { mascot: 483 },
-  "shining-pearl": { mascot: 484 },
+  "brilliant-diamond": { mascot: 10245 }, // Dialga Forme Originelle
+  "shining-pearl": { mascot: 10246 }, // Palkia Forme Originelle
   "legends-arceus": { mascot: 493 },
   scarlet: { mascot: 1007 },
   violet: { mascot: 1008 },
