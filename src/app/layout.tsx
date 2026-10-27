@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
+import { GameStoreHydration } from "@/components/game-store-hydration";
 // Navigation désactivée temporairement : seule la page d'accueil est accessible.
 // import { MobileTabBar } from "@/components/mobile-tab-bar";
 import { SiteHeader } from "@/components/site-header";
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Données : PokeAPI · Pokémon est une marque de Nintendo / Creatures / Game Freak
         </footer>
         {/* <MobileTabBar /> */}
+        <GameStoreHydration />
       </body>
     </html>
   );

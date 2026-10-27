@@ -2,6 +2,7 @@
 
 import { cacheLife, cacheTag } from "next/cache";
 import { isDlcVersion, isHiddenVersion } from "@/lib/data/filters";
+import { GAME_EXTRAS } from "@/lib/data/game-catalog";
 import { type Game, NATIONAL_GAME, NATIONAL_SLUG } from "@/lib/game";
 import { prisma } from "@/lib/prisma";
 
@@ -124,6 +125,36 @@ export async function getGame(slug: string): Promise<Game | null> {
     versionGroupSlug: version.versionGroupSlug,
   };
 }
+
+const ROMAN_NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+
+/**
+ * Frise de l'accueil : une étape par génération (chiffre romain, région principale), ses jeux habillés
+ * de leur mascotte et d'une note. Les extensions se rattachent à leur jeu de base : pas d'entrée à part.
+ */
+export async function getHomeTimeline() {
+  cacheLife("max");
+  cacheTag("reference");
+
+  const generations = await getGenerationsWithGames();
+  return generations
+    .map((generation) => ({
+      id: generation.id,
+      numeral: ROMAN_NUMERALS[generation.id - 1] ?? String(generation.id),
+      region: generation.regionNames[0] ?? generation.nameFr,
+      games: generation.versions
+        .filter((version) => !isDlcVersion(version.slug))
+        .map((version) => ({
+          slug: version.slug,
+          nameFr: version.nameFr,
+          mascot: GAME_EXTRAS[version.slug]?.mascot ?? null,
+          note: GAME_EXTRAS[version.slug]?.note ?? null,
+        })),
+    }))
+    .filter((generation) => generation.games.length > 0);
+}
+
+export type HomeGeneration = Awaited<ReturnType<typeof getHomeTimeline>>[number];
 
 /** Jeux proposés dans les formulaires (chasse shiny, ajout d'un shiny) : par génération, sans les extensions. */
 export async function getGameOptions() {

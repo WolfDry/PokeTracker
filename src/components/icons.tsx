@@ -69,6 +69,12 @@ export const StarIcon = (p: IconProps) => (
   </Icon>
 );
 
+export const ChevronLeftIcon = (p: IconProps) => (
+  <Icon size={16} {...p}>
+    <path d="m13 4-6 6 6 6" />
+  </Icon>
+);
+
 export const ChevronRightIcon = (p: IconProps) => (
   <Icon size={16} {...p}>
     <path d="m7 4 6 6-6 6" />
