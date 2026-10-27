@@ -16,7 +16,10 @@ type Props = {
 
 /** Image d'une forme (rendu Pokémon HOME, ou illustration officielle à défaut), affichée à `size` px. */
 export function PokemonSprite({ pokemonId, fallbackId, alt, shiny = false, size = 96, className }: Props) {
-  const [id, setId] = useState(pokemonId);
+  // On retient la forme dont l'image a échoué, pas l'id affiché : si `pokemonId` change (la carte reste montée
+  // quand on change de jeu), le nouveau sprite s'affiche sans rechargement.
+  const [failedId, setFailedId] = useState<number | null>(null);
+  const id = failedId === pokemonId && fallbackId !== undefined ? fallbackId : pokemonId;
   return (
     <Image
       src={spriteUrl(id, { shiny })}
@@ -26,7 +29,7 @@ export function PokemonSprite({ pokemonId, fallbackId, alt, shiny = false, size 
       unoptimized
       className={className}
       onError={() => {
-        if (fallbackId !== undefined && id !== fallbackId) setId(fallbackId);
+        if (fallbackId !== undefined && id !== fallbackId) setFailedId(pokemonId);
       }}
     />
   );
