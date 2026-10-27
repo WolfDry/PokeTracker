@@ -2,7 +2,7 @@
 
 /*
  * Design system PokeTracker — « une collection, pas un tableau de bord ».
- * Neutres chauds (teinte 85) en oklch, aucun accent : l'action principale est de l'encre.
+ * Neutres chauds (teinte 85) en oklch. Accueil : coque rouge du Pokédex et teinte du jeu en cours (`.game-tint`).
  * Référence : docs/design-system.md
  */
 
@@ -22,6 +22,16 @@
   --focus-ring: oklch(0.5 0.01 85 / 0.15);
   --shadow-float: 0 1px 2px oklch(0.2 0.01 85 / 0.06), 0 8px 24px -12px oklch(0.2 0.01 85 / 0.12);
   --scrim: oklch(0.2 0.01 85 / 0.35);
+
+  /* Coque du Pokédex : l'en-tête rouge, ses voyants, la génération choisie dans la frise. */
+  --shell: oklch(0.52 0.19 27);
+  --shell-deep: oklch(0.42 0.16 27);
+  --on-shell: oklch(0.99 0.005 27);
+  --led: oklch(0.66 0.14 238);
+  --led-ring: oklch(0.97 0.01 238);
+  --led-red: oklch(0.64 0.21 25);
+  --led-yellow: oklch(0.87 0.15 95);
+  --led-green: oklch(0.74 0.17 145);
 
   /* Types Pokémon : teinte canonique, clarté et chroma harmonisés. */
   --type-normal: oklch(0.72 0.1 107);
@@ -64,6 +74,10 @@
     --focus-ring: oklch(0.9 0.01 85 / 0.2);
     --shadow-float: 0 1px 2px oklch(0 0 0 / 0.3), 0 8px 24px -12px oklch(0 0 0 / 0.5);
     --scrim: oklch(0 0 0 / 0.6);
+    --shell: oklch(0.45 0.16 27);
+    --shell-deep: oklch(0.34 0.13 27);
+    --led: oklch(0.72 0.13 238);
+    --led-ring: oklch(0.93 0.02 238);
     color-scheme: dark;
   }
 }
@@ -81,7 +95,41 @@
   --focus-ring: oklch(0.9 0.01 85 / 0.2);
   --shadow-float: 0 1px 2px oklch(0 0 0 / 0.3), 0 8px 24px -12px oklch(0 0 0 / 0.5);
   --scrim: oklch(0 0 0 / 0.6);
+  --shell: oklch(0.45 0.16 27);
+  --shell-deep: oklch(0.34 0.13 27);
+  --led: oklch(0.72 0.13 238);
+  --led-ring: oklch(0.93 0.02 238);
   color-scheme: dark;
+}
+
+/*
+ * Teinte du jeu : un élément `.game-tint` reçoit `--game-h` et `--game-c` (teinte et chroma oklch du jeu,
+ * `game-catalog.ts`) et en dérive ses couleurs. Sans teinte, il reste neutre.
+ */
+.game-tint {
+  --game: oklch(0.52 var(--game-c, 0) var(--game-h, 85));
+  --game-soft: oklch(0.955 min(calc(var(--game-c, 0) * 0.22), 0.03) var(--game-h, 85));
+  --game-line: oklch(0.89 min(calc(var(--game-c, 0) * 0.4), 0.05) var(--game-h, 85));
+  --game-text: oklch(0.47 var(--game-c, 0) var(--game-h, 85));
+  --on-game: oklch(0.99 0 0);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .game-tint {
+    --game: oklch(0.74 var(--game-c, 0) var(--game-h, 85));
+    --game-soft: oklch(0.27 min(calc(var(--game-c, 0) * 0.3), 0.045) var(--game-h, 85));
+    --game-line: oklch(0.34 min(calc(var(--game-c, 0) * 0.4), 0.055) var(--game-h, 85));
+    --game-text: oklch(0.8 var(--game-c, 0) var(--game-h, 85));
+    --on-game: oklch(0.18 0.02 var(--game-h, 85));
+  }
+}
+
+:root[data-theme="dark"] .game-tint {
+  --game: oklch(0.74 var(--game-c, 0) var(--game-h, 85));
+  --game-soft: oklch(0.27 min(calc(var(--game-c, 0) * 0.3), 0.045) var(--game-h, 85));
+  --game-line: oklch(0.34 min(calc(var(--game-c, 0) * 0.4), 0.055) var(--game-h, 85));
+  --game-text: oklch(0.8 var(--game-c, 0) var(--game-h, 85));
+  --on-game: oklch(0.18 0.02 var(--game-h, 85));
 }
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
@@ -103,8 +151,23 @@
   --color-danger: var(--danger);
   --color-shiny: var(--shiny);
   --color-scrim: var(--scrim);
+  --color-shell: var(--shell);
+  --color-shell-deep: var(--shell-deep);
+  --color-on-shell: var(--on-shell);
+  --color-led: var(--led);
+  --color-led-ring: var(--led-ring);
+  --color-led-red: var(--led-red);
+  --color-led-yellow: var(--led-yellow);
+  --color-led-green: var(--led-green);
+  --color-game: var(--game);
+  --color-game-soft: var(--game-soft);
+  --color-game-line: var(--game-line);
+  --color-game-text: var(--game-text);
+  --color-on-game: var(--on-game);
 
   --font-sans: var(--font-manrope), "Segoe UI", system-ui, sans-serif;
+  --font-display: var(--font-rubik), var(--font-manrope), system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, monospace;
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -235,6 +298,26 @@
     width: 6px;
     height: 6px;
   }
+}
+
+/* Écran du Pokédex : fond et quadrillage à la teinte du jeu (dans un `.game-tint`). */
+@utility pokedex-screen {
+  background-color: var(--game-soft);
+  background-image:
+    linear-gradient(var(--game-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--game-line) 1px, transparent 1px);
+  background-size: 14px 14px;
+  background-position: -1px -1px;
+  border: 1.5px solid var(--game-line);
+}
+
+/* Afficheur : numéros façon écran à cristaux liquides. */
+@utility t-lcd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 /* Halo de focus des champs (bordure encre + anneau doux). */

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
+import { Manrope, Rubik, Space_Mono } from "next/font/google";
 import { GameStoreHydration } from "@/components/game-store-hydration";
 // Navigation désactivée temporairement : seule la page d'accueil est accessible.
 // import { MobileTabBar } from "@/components/mobile-tab-bar";
@@ -11,6 +11,19 @@ const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
+});
+
+// Titres à caractère et afficheur du Pokédex (accueil).
+const rubik = Rubik({
+  variable: "--font-rubik",
+  subsets: ["latin"],
+  weight: ["600", "700"],
+});
+
+const spaceMono = Space_Mono({
+  variable: "--font-space-mono",
+  subsets: ["latin"],
+  weight: ["700"],
 });
 
 export const metadata: Metadata = {
@@ -25,7 +38,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // `data-theme` est posé par le script d'amorçage avant l'hydratation : React ne doit pas s'en alarmer.
-    <html lang="fr" className={`${manrope.variable} h-full`} suppressHydrationWarning>
+    <html lang="fr" className={`${manrope.variable} ${rubik.variable} ${spaceMono.variable} h-full`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>

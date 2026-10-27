@@ -137,6 +137,13 @@ export async function getHomeTimeline() {
   cacheTag("reference");
 
   const generations = await getGenerationsWithGames();
+  // N° national de chaque mascotte (une forme : Primo-Groudon → 383), pour l'afficheur de l'écran.
+  const mascots = await prisma.pokemon.findMany({
+    where: { id: { in: Object.values(GAME_EXTRAS).map((extra) => extra.mascot) } },
+    select: { id: true, speciesId: true },
+  });
+  const mascotDex = new Map(mascots.map((pokemon) => [pokemon.id, pokemon.speciesId]));
+
   return generations
     .map((generation) => ({
       id: generation.id,
@@ -144,13 +151,26 @@ export async function getHomeTimeline() {
       region: generation.regionNames[0] ?? generation.nameFr,
       games: generation.versions
         .filter((version) => !isDlcVersion(version.slug))
-        .map((version) => ({
-          slug: version.slug,
-          nameFr: version.nameFr,
-          mascot: GAME_EXTRAS[version.slug]?.mascot ?? null,
-        })),
+        .map((version) => {
+          const extra = GAME_EXTRAS[version.slug];
+          return {
+            slug: version.slug,
+            nameFr: version.nameFr,
+            mascot: extra?.mascot ?? null,
+            mascotDex: (extra && mascotDex.get(extra.mascot)) ?? null,
+            tint: extra ? { hue: extra.hue, chroma: extra.chroma } : null,
+          };
+        }),
     }))
     .filter((generation) => generation.games.length > 0);
+}
+
+/** Nombre d'espèces du Pokédex National (afficheur de la carte National). */
+export async function getNationalSpeciesCount() {
+  cacheLife("max");
+  cacheTag("reference");
+
+  return prisma.species.count();
 }
 
 export type HomeGeneration = Awaited<ReturnType<typeof getHomeTimeline>>[number];

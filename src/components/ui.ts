@@ -42,6 +42,13 @@ export const cardLink = `${card} transition-colors hover:border-line-strong`;
 /** Lien texte dans un paragraphe. */
 export const textLink = "underline decoration-line-strong underline-offset-[3px] hover:text-ink hover:decoration-ink";
 
+/** Accueil (DA « Pokédex ») : action principale à la teinte du jeu, dans un `.game-tint`. */
+export const gameButton =
+  "inline-flex h-12 items-center justify-center gap-2.5 rounded-full bg-game pr-[22px] pl-6 font-bold whitespace-nowrap text-on-game shadow-[inset_0_-3px_0_color-mix(in_oklch,var(--game),black_22%)] transition-opacity hover:opacity-90";
+/** Accueil (DA « Pokédex ») : action secondaire en pilule. */
+export const pillButton =
+  "inline-flex h-12 items-center justify-center gap-1.5 rounded-full border border-line-strong bg-surface px-[22px] font-semibold whitespace-nowrap text-ink transition-colors hover:bg-surface-2";
+
 /** Boîte de sprite : fond Surface 2, sprite centré. */
 export const spriteBox = "grid shrink-0 place-items-center rounded-md bg-surface-2";
 

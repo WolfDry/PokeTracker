@@ -42,19 +42,19 @@ import { CurrentGame } from "@/components/current-game";
 import { GameTimeline } from "@/components/game-timeline";
 import { ChevronRightIcon } from "@/components/icons";
 import { PokemonSprite } from "@/components/pokemon-sprite";
-import { cardLink } from "@/components/ui";
+import { cardLink, dexNumber } from "@/components/ui";
 import { NATIONAL_PREVIEW } from "@/lib/data/game-catalog";
-import { getHomeTimeline } from "@/lib/data/games";
+import { getHomeTimeline, getNationalSpeciesCount } from "@/lib/data/games";
 import { NATIONAL_SLUG } from "@/lib/game";
 
 export default async function HomePage() {
-  const generations = await getHomeTimeline();
+  const [generations, nationalCount] = await Promise.all([getHomeTimeline(), getNationalSpeciesCount()]);
 
   return (
     <div className="space-y-10 sm:space-y-14">
       <section className="grid gap-3 sm:gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <CurrentGame generations={generations} />
-        <NationalCard />
+        <NationalCard count={nationalCount} />
       </section>
 
       <GameTimeline generations={generations} />
@@ -80,31 +80,38 @@ export default async function HomePage() {
 }
 
 /** Le « jeu » National : une ligne compacte sur mobile, une carte à côté de la partie en cours dès `lg`. */
-function NationalCard() {
+function NationalCard({ count }: { count: number }) {
+  const range = `N° 0001 → ${dexNumber(count, 4)}`;
   return (
     <Link
       href={`/jeu/${NATIONAL_SLUG}`}
-      className={`${cardLink} flex items-center gap-3.5 p-3 pr-4 lg:flex-col lg:items-stretch lg:justify-between lg:gap-5 lg:p-6`}
+      className={`${cardLink} flex items-center gap-3.5 rounded-[18px] p-3 pr-4 lg:flex-col lg:items-stretch lg:justify-between lg:gap-5 lg:rounded-3xl lg:p-6`}
     >
       <span className="flex pl-2.5 lg:order-2 lg:pl-3">
         {NATIONAL_PREVIEW.map((id, index) => (
           <span
             key={id}
-            className={`-ml-2.5 size-10 shrink-0 place-items-center rounded-full border-2 border-surface bg-surface-2 lg:-ml-3 lg:size-14 ${index > 2 ? "hidden lg:grid" : "grid"}`}
+            className={`-ml-2.5 size-[42px] shrink-0 place-items-center rounded-full border-2 border-surface bg-surface-2 lg:-ml-3 lg:size-16 lg:border-[3px] ${index > 2 ? "hidden lg:grid" : "grid"}`}
           >
-            <PokemonSprite pokemonId={id} alt="" size={44} className="size-8 object-contain lg:size-11" />
+            <PokemonSprite pokemonId={id} alt="" size={56} className="size-9 object-contain lg:size-14" />
           </span>
         ))}
       </span>
       <span className="min-w-0 flex-1 lg:order-1 lg:flex-none lg:space-y-1.5">
-        <span className="hidden t-caption lg:block">Tous les jeux</span>
-        <span className="block font-bold lg:text-2xl lg:leading-[30px] lg:tracking-[-0.015em]">Pokédex National</span>
-        <span className="block t-small text-ink-2">
-          <span className="lg:hidden">Toutes générations</span>
-          <span className="hidden lg:inline">Toutes les espèces, toutes générations confondues.</span>
+        <span className="hidden t-caption font-bold lg:block">Toutes les générations</span>
+        <span className="block font-display text-[17px] leading-[22px] font-bold lg:text-[28px] lg:leading-[34px] lg:tracking-[-0.015em]">
+          Pokédex National
         </span>
+        <span className="block t-lcd leading-4 text-ink-2 lg:hidden">{range}</span>
       </span>
       <ChevronRightIcon className="shrink-0 text-ink-3 lg:hidden" />
+      <span className="hidden items-center justify-between gap-3 lg:order-3 lg:flex">
+        <span className="rounded-lg bg-surface-2 px-2.5 py-1.5 t-lcd text-xs leading-4 text-ink-2">{range}</span>
+        <span className="inline-flex h-11 items-center gap-1.5 rounded-full border border-line-strong pr-4 pl-[18px] font-semibold">
+          Ouvrir
+          <ChevronRightIcon size={16} />
+        </span>
+      </span>
     </Link>
   );
 }
