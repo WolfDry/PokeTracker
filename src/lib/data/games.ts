@@ -2,6 +2,7 @@
 
 import { cacheLife, cacheTag } from "next/cache";
 import { isDlcVersion, isHiddenVersion } from "@/lib/data/filters";
+import { type Game, NATIONAL_GAME, NATIONAL_SLUG } from "@/lib/game";
 import { prisma } from "@/lib/prisma";
 
 // Données de référence : elles ne changent qu'à l'import, on les cache au maximum.
@@ -103,6 +104,25 @@ export async function getVersionSlugs() {
   cacheTag("reference");
   const versions = await prisma.version.findMany({ select: { slug: true } });
   return versions.map((v) => v.slug);
+}
+
+/** Jeu sélectionnable depuis l'accueil (versions DLC et masquées exclues), ou le National. */
+export async function getGame(slug: string): Promise<Game | null> {
+  cacheLife("max");
+  cacheTag("reference");
+
+  if (slug === NATIONAL_SLUG) return NATIONAL_GAME;
+  if (isHiddenVersion(slug) || isDlcVersion(slug)) return null;
+  const version = await getVersionBySlug(slug);
+  if (!version) return null;
+  return {
+    kind: "version",
+    id: version.id,
+    slug: version.slug,
+    nameFr: version.nameFr,
+    generation: version.generation,
+    versionGroupSlug: version.versionGroupSlug,
+  };
 }
 
 /** Jeux proposés dans les formulaires (chasse shiny, ajout d'un shiny) : par génération, sans les extensions. */
