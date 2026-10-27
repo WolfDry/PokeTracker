@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { Suspense } from "react";
-import { PokeballIcon, SearchIcon } from "@/components/icons";
-import { NavLinks, NavLinksFallback } from "@/components/nav-links";
-import { SearchForm } from "@/components/search-form";
+// Navigation désactivée temporairement : seule la page d'accueil est accessible.
+// import { Suspense } from "react";
+import { PokeballIcon /* , SearchIcon */ } from "@/components/icons";
+// import { NavLinks, NavLinksFallback } from "@/components/nav-links";
+// import { SearchForm } from "@/components/search-form";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ghostButton } from "@/components/ui";
-import { UserMenu, UserMenuFallback } from "@/components/user-menu";
+// import { UserMenu, UserMenuFallback } from "@/components/user-menu";
 
 const iconButton = `${ghostButton} size-10 shrink-0 px-0`;
 
@@ -23,24 +24,24 @@ export function SiteHeader() {
           <span className="md:max-lg:hidden">PokeTracker</span>
         </Link>
         {/* Navigation dans l'en-tête dès la tablette ; barre d'onglets en bas en dessous. */}
-        <div className="hidden md:block">
+        {/* <div className="hidden md:block">
           <Suspense fallback={<NavLinksFallback />}>
             <NavLinks />
           </Suspense>
-        </div>
+        </div> */}
         <div className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2">
           {/* Champ complet seulement quand la navigation laisse la place ; il rétrécit si besoin. */}
-          <div className="hidden min-w-0 xl:block">
+          {/* <div className="hidden min-w-0 xl:block">
             <SearchForm />
           </div>
           <Link href="/recherche" aria-label="Rechercher" title="Rechercher" className={`${iconButton} xl:hidden`}>
             <SearchIcon />
-          </Link>
+          </Link> */}
           <ThemeToggle className={iconButton} />
           {/* La session se lit à la requête : le reste de l'en-tête reste dans la coquille statique. */}
-          <Suspense fallback={<UserMenuFallback />}>
+          {/* <Suspense fallback={<UserMenuFallback />}>
             <UserMenu />
-          </Suspense>
+          </Suspense> */}
         </div>
       </div>
     </header>

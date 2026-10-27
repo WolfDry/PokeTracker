@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
-import { MobileTabBar } from "@/components/mobile-tab-bar";
+// Navigation désactivée temporairement : seule la page d'accueil est accessible.
+// import { MobileTabBar } from "@/components/mobile-tab-bar";
 import { SiteHeader } from "@/components/site-header";
 import { themeBootScript } from "@/lib/theme";
 import "./globals.css";
@@ -34,7 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <footer className="hidden border-t border-line py-4 text-center t-small text-ink-3 md:block">
           Données : PokeAPI · Pokémon est une marque de Nintendo / Creatures / Game Freak
         </footer>
-        <MobileTabBar />
+        {/* <MobileTabBar /> */}
       </body>
     </html>
   );
