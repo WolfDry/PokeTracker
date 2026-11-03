@@ -1,13 +1,16 @@
 "use client";
 
 import { useCallback, useState, useTransition } from "react";
-import { toggleCaptureAction } from "@/lib/capture-actions";
+import { type CaptureActionResult, toggleCaptureAction } from "@/lib/capture-actions";
+
+/** Server Action qui enregistre une coche : captures (par défaut) ou shiny dex. */
+export type ToggleAction = (versionId: number, speciesId: number, value: boolean) => Promise<CaptureActionResult>;
 
 /**
  * État « attrapé » d'un jeu côté client, mis à jour de façon optimiste :
  * la case change tout de suite, et revient en arrière si le serveur refuse.
  */
-export function useCaptures(versionId: number, initial: number[]) {
+export function useCaptures(versionId: number, initial: number[], action: ToggleAction = toggleCaptureAction) {
   const [captured, setCaptured] = useState(() => new Set(initial));
   const [error, setError] = useState<string | null>(null);
   // Changement de jeu sans remonter le composant : on repart des captures de ce jeu.
@@ -33,14 +36,14 @@ export function useCaptures(versionId: number, initial: number[]) {
       setOne(speciesId, value);
       setError(null);
       startTransition(async () => {
-        const result = await toggleCaptureAction(versionId, speciesId, value);
+        const result = await action(versionId, speciesId, value);
         if (!result.ok) {
           setOne(speciesId, !value);
           setError(result.error);
         }
       });
     },
-    [captured, versionId],
+    [captured, versionId, action],
   );
 
   return { captured, toggle, error, pending };

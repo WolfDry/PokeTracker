@@ -100,6 +100,75 @@ export async function getShinies(userId: string, speciesId?: number): Promise<Sh
   return rows.map((row) => ({ ...row, species: toSpecies(row.species) }));
 }
 
+/** Chasses en cours dans un jeu, les plus récemment touchées en premier. */
+export async function getGameHunts(userId: string, versionId: number): Promise<Hunt[]> {
+  const rows = await prisma.shinyHunt.findMany({ where: { userId, versionId, status: "ACTIVE" }, orderBy: { updatedAt: "desc" }, select: huntSelect });
+  return rows.map((row) => ({ ...row, species: toSpecies(row.species) }));
+}
+
+/** État d'une espèce dans le shiny dex d'un jeu. */
+export type ShinyDexMeta = {
+  /** Shinies obtenus dans ce jeu. */
+  count: number;
+  /** Au moins un shiny issu d'une chasse ou renseigné : on confirme avant de le supprimer en décochant. */
+  detailed: boolean;
+  /** Chasse en cours sur l'espèce dans ce jeu. */
+  hunt: { id: string; count: number } | null;
+};
+
+/** Shiny dex d'un jeu : espèces obtenues, et pour chaque espèce concernée ses shinies et sa chasse en cours. */
+export async function getShinyDex(userId: string, versionId: number): Promise<{ speciesIds: number[]; meta: Record<number, ShinyDexMeta> }> {
+  const [shinies, hunts] = await Promise.all([
+    prisma.shinyCapture.findMany({
+      where: { userId, versionId },
+      select: { speciesId: true, huntId: true, encounters: true, method: true, nickname: true, note: true },
+    }),
+    prisma.shinyHunt.findMany({ where: { userId, versionId, status: "ACTIVE" }, orderBy: { updatedAt: "desc" }, select: { id: true, speciesId: true, count: true } }),
+  ]);
+  const meta: Record<number, ShinyDexMeta> = {};
+  const entry = (speciesId: number) => (meta[speciesId] ??= { count: 0, detailed: false, hunt: null });
+  for (const shiny of shinies) {
+    const m = entry(shiny.speciesId);
+    m.count += 1;
+    m.detailed ||= Boolean(shiny.huntId || shiny.encounters !== null || shiny.method || shiny.nickname || shiny.note);
+  }
+  // La chasse la plus récente si plusieurs sont menées sur la même espèce.
+  for (const hunt of hunts) entry(hunt.speciesId).hunt ??= { id: hunt.id, count: hunt.count };
+  return { speciesIds: [...new Set(shinies.map((s) => s.speciesId))], meta };
+}
+
+/** Shiny dex National : espèces obtenues dans au moins un jeu, et les jeux où chacune l'est (dans l'ordre des jeux). */
+export async function getNationalShinies(userId: string): Promise<{ speciesIds: number[]; caughtIn: Record<number, string[]> }> {
+  const rows = await prisma.shinyCapture.findMany({
+    where: { userId },
+    orderBy: { versionId: "asc" },
+    select: { speciesId: true, version: { select: { nameFr: true } } },
+  });
+  const caughtIn: Record<number, string[]> = {};
+  for (const row of rows) {
+    const games = (caughtIn[row.speciesId] ??= []);
+    if (!games.includes(row.version.nameFr)) games.push(row.version.nameFr);
+  }
+  return { speciesIds: Object.keys(caughtIn).map(Number), caughtIn };
+}
+
+/**
+ * Coche ou décoche une espèce dans le shiny dex d'un jeu. Cocher ajoute un shiny sans détails s'il n'y en a
+ * pas déjà un ; décocher supprime tous les shinies de l'espèce dans ce jeu, et les chasses dont ils sont issus.
+ */
+export async function setShinyObtained(userId: string, versionId: number, speciesId: number, obtained: boolean) {
+  await prisma.$transaction(async (tx) => {
+    const shinies = await tx.shinyCapture.findMany({ where: { userId, versionId, speciesId }, select: { id: true, huntId: true } });
+    if (obtained) {
+      if (shinies.length === 0) await tx.shinyCapture.create({ data: { userId, versionId, speciesId } });
+      return;
+    }
+    await tx.shinyCapture.deleteMany({ where: { id: { in: shinies.map((s) => s.id) } } });
+    const huntIds = shinies.flatMap((s) => (s.huntId ? [s.huntId] : []));
+    if (huntIds.length > 0) await tx.shinyHunt.deleteMany({ where: { id: { in: huntIds }, userId } });
+  });
+}
+
 export async function createHunt(userId: string, data: { speciesId: number; versionId: number; method: string | null; count: number }) {
   return prisma.shinyHunt.create({ data: { userId, ...data }, select: { id: true } });
 }

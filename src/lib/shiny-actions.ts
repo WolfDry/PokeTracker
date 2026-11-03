@@ -12,6 +12,7 @@ import {
   deleteShiny,
   setHuntCount,
   setHuntStatus,
+  setShinyObtained,
 } from "@/lib/data/shiny";
 import { getCurrentUser } from "@/lib/session";
 import { MAX_HUNT_COUNT } from "@/lib/shiny";
@@ -182,6 +183,22 @@ export async function addShinyAction(_prev: ShinyFormState, formData: FormData):
     return { error: isForeignKeyError(error) ? "Pokémon ou jeu inconnu." : FAILED, values: values(formData, fields) };
   }
   redirect("/shiny/galerie");
+}
+
+/** Coche / décoche une espèce dans le shiny dex d'un jeu. L'UI est optimiste : le résultat sert à annuler en cas d'échec. */
+export async function toggleShinyAction(versionId: number, speciesId: number, obtained: boolean): Promise<ShinyActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: NOT_SIGNED_IN };
+  if (!Number.isInteger(versionId) || !Number.isInteger(speciesId) || typeof obtained !== "boolean") {
+    return { ok: false, error: "Requête invalide." };
+  }
+  try {
+    await setShinyObtained(user.id, versionId, speciesId, obtained);
+    return { ok: true };
+  } catch (error) {
+    console.error("[shiny]", error);
+    return { ok: false, error: isForeignKeyError(error) ? "Pokémon ou jeu inconnu." : FAILED };
+  }
 }
 
 export async function deleteShinyAction(shinyId: string): Promise<void> {

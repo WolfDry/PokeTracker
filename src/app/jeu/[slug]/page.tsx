@@ -6,6 +6,8 @@ import { ProgressBar } from "@/components/progress-bar";
 import { cardLink } from "@/components/ui";
 import { getDexProgress, getNationalCaptures } from "@/lib/data/captures";
 import { getGame, getNationalSpeciesCount } from "@/lib/data/games";
+import { getVersionPokedexes } from "@/lib/data/pokedex";
+import { getGameHunts, getHunts, getNationalShinies, getShinyDex } from "@/lib/data/shiny";
 import type { Game } from "@/lib/game";
 import { requireUser } from "@/lib/session";
 
@@ -37,7 +39,17 @@ export default async function GamePage({ params }: PageProps<"/jeu/[slug]">) {
         </Suspense>
       ),
     },
-    { href: `${base}/shiny`, title: "Shiny dex", text: "Les mêmes espèces, en version chromatique, avec tes chasses en cours.", icon: StarIcon },
+    {
+      href: `${base}/shiny`,
+      title: "Shiny dex",
+      text: "Les mêmes espèces, en version chromatique, avec tes chasses en cours.",
+      icon: StarIcon,
+      summary: (
+        <Suspense fallback={<ProgressFallback />}>
+          <ShinyDexProgress game={game} />
+        </Suspense>
+      ),
+    },
   ];
   if (game.kind !== "national") {
     features.push({ href: `${base}/equipe`, title: "Équipe", text: "Compose ton équipe de six, choisis ses attaques et sauvegarde-la.", icon: TeamIcon });
@@ -76,6 +88,33 @@ async function LivingDexProgress({ game }: { game: Game }) {
       {dexes.map((dex) => (
         <ProgressBar key={dex.id} caught={dex.caught} total={dex.total} label={dex.nameFr} />
       ))}
+    </div>
+  );
+}
+
+/** Avancement du shiny dex (par Pokédex du jeu, ou National) et nombre de chasses en cours. */
+async function ShinyDexProgress({ game }: { game: Game }) {
+  const user = await requireUser(`/jeu/${game.slug}`);
+  let bars: { id: number; label: string; caught: number; total: number }[];
+  let huntCount: number;
+  if (game.kind === "national") {
+    const [{ speciesIds }, total, hunts] = await Promise.all([getNationalShinies(user.id), getNationalSpeciesCount(), getHunts(user.id, "ACTIVE")]);
+    bars = [{ id: 0, label: "National", caught: speciesIds.length, total }];
+    huntCount = hunts.length;
+  } else {
+    const [{ speciesIds }, pokedexes, hunts] = await Promise.all([getShinyDex(user.id, game.id), getVersionPokedexes(game.id), getGameHunts(user.id, game.id)]);
+    const obtained = new Set(speciesIds);
+    bars = pokedexes.map((dex) => ({ id: dex.id, label: dex.nameFr, caught: dex.speciesIds.filter((id) => obtained.has(id)).length, total: dex.speciesIds.length }));
+    huntCount = hunts.length;
+  }
+  return (
+    <div className="space-y-3">
+      {bars.map((bar) => (
+        <ProgressBar key={bar.id} caught={bar.caught} total={bar.total} label={bar.label} />
+      ))}
+      <p className="t-small text-ink-2">
+        {huntCount === 0 ? "Aucune chasse en cours." : `${huntCount} chasse${huntCount > 1 ? "s" : ""} en cours.`}
+      </p>
     </div>
   );
 }
