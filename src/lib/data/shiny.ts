@@ -180,7 +180,7 @@ export async function setShinyObtained(userId: string, versionId: number, specie
 }
 
 export async function createHunt(userId: string, data: { speciesId: number; pokemonId: number | null; versionId: number; method: string | null; count: number }) {
-  return prisma.shinyHunt.create({ data: { userId, ...data }, select: { id: true } });
+  return prisma.shinyHunt.create({ data: { userId, ...data }, select: { id: true, version: { select: { slug: true } } } });
 }
 
 /** Enregistre la valeur du compteur (valeur absolue : le client est la source de vérité). */
@@ -208,25 +208,26 @@ export async function completeHunt(
   { count, ...data }: { count: number | null; nickname: string | null; note: string | null; caughtAt: Date },
 ) {
   return prisma.$transaction(async (tx) => {
-    const hunt = await tx.shinyHunt.findFirst({ where: { id: huntId, userId, status: "ACTIVE" } });
+    const hunt = await tx.shinyHunt.findFirst({ where: { id: huntId, userId, status: "ACTIVE" }, include: { version: { select: { slug: true } } } });
     if (!hunt) return null;
     const encounters = count ?? hunt.count;
     await tx.shinyHunt.update({ where: { id: hunt.id }, data: { status: "COMPLETED", completedAt: data.caughtAt, count: encounters } });
-    return tx.shinyCapture.create({
+    const shiny = await tx.shinyCapture.create({
       data: { userId, speciesId: hunt.speciesId, pokemonId: hunt.pokemonId, versionId: hunt.versionId, huntId: hunt.id, encounters, method: hunt.method, ...data },
       select: { id: true },
     });
+    return { id: shiny.id, versionSlug: hunt.version.slug };
   });
 }
 
-/** Supprime une chasse (et le shiny qui en est issu, le cas échéant). */
-export async function deleteHunt(userId: string, huntId: string) {
+/** Supprime une chasse (et le shiny qui en est issu, le cas échéant) ; renvoie le jeu de la chasse, `null` si introuvable. */
+export async function deleteHunt(userId: string, huntId: string): Promise<{ versionSlug: string } | null> {
   return prisma.$transaction(async (tx) => {
-    const hunt = await tx.shinyHunt.findFirst({ where: { id: huntId, userId }, select: { id: true } });
-    if (!hunt) return false;
+    const hunt = await tx.shinyHunt.findFirst({ where: { id: huntId, userId }, select: { id: true, version: { select: { slug: true } } } });
+    if (!hunt) return null;
     await tx.shinyCapture.deleteMany({ where: { huntId: hunt.id } });
     await tx.shinyHunt.delete({ where: { id: hunt.id } });
-    return true;
+    return { versionSlug: hunt.version.slug };
   });
 }
 

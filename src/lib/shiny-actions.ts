@@ -16,7 +16,7 @@ import {
 } from "@/lib/data/shiny";
 import { getPokemonForm } from "@/lib/data/species";
 import { getCurrentUser } from "@/lib/session";
-import { MAX_HUNT_COUNT } from "@/lib/shiny";
+import { huntHref, MAX_HUNT_COUNT } from "@/lib/shiny";
 
 // Server Actions des chasses shiny. Les formulaires (nouvelle chasse, clôture, ajout manuel)
 // passent par useActionState ; le compteur appelle `setHuntCountAction` avec un délai.
@@ -113,17 +113,17 @@ export async function createHuntAction(_prev: ShinyFormState, formData: FormData
   const parsed = huntSchema.safeParse(Object.fromEntries(fields.map((f) => [f, formData.get(f)])));
   if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error), values: values(formData, fields) };
 
-  let huntId: string;
+  let hunt: { id: string; version: { slug: string } };
   try {
-    const { speciesId, versionId, method, count } = parsed.data;
-    const { pokemonId } = parsed.data;
+    const { speciesId, pokemonId, versionId, method, count } = parsed.data;
     if (!(await isValidForm(speciesId, pokemonId))) return { fieldErrors: { speciesId: UNKNOWN_FORM }, values: values(formData, fields) };
-    huntId = (await createHunt(user.id, { speciesId, pokemonId, versionId, method, count: count ?? 0 })).id;
+    hunt = await createHunt(user.id, { speciesId, pokemonId, versionId, method, count: count ?? 0 });
   } catch (error) {
     console.error("[shiny]", error);
     return { error: isForeignKeyError(error) ? "Pokémon ou jeu inconnu." : FAILED, values: values(formData, fields) };
   }
-  redirect(`/shiny/chasse/${huntId}`);
+  // La chasse s'ouvre dans l'onglet Shiny dex de son jeu.
+  redirect(huntHref(hunt.version.slug, hunt.id));
 }
 
 /** Enregistre le compteur d'une chasse (valeur absolue, envoyée après un court délai par le client). */
@@ -149,15 +149,18 @@ export async function completeHuntAction(_prev: ShinyFormState, formData: FormDa
   const parsed = completeSchema.safeParse({ huntId: formData.get("huntId"), ...Object.fromEntries(fields.map((f) => [f, formData.get(f)])) });
   if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error), values: values(formData, fields) };
 
+  let versionSlug: string;
   try {
     const { huntId, ...data } = parsed.data;
     const shiny = await completeHunt(user.id, huntId, data);
     if (!shiny) return { error: NOT_FOUND, values: values(formData, fields) };
+    versionSlug = shiny.versionSlug;
   } catch (error) {
     console.error("[shiny]", error);
     return { error: FAILED, values: values(formData, fields) };
   }
-  redirect("/shiny/galerie");
+  // Retour au shiny dex du jeu, où l'espèce est désormais cochée.
+  redirect(`/jeu/${versionSlug}/shiny`);
 }
 
 /** Met une chasse en pause (elle reste listée, reprenable). */
@@ -178,8 +181,8 @@ export async function resumeHuntAction(huntId: string): Promise<void> {
 export async function deleteHuntAction(huntId: string): Promise<void> {
   const user = await getCurrentUser();
   if (!user) redirect("/connexion?next=%2Fshiny");
-  await deleteHunt(user.id, huntId);
-  redirect("/shiny");
+  const deleted = await deleteHunt(user.id, huntId);
+  redirect(deleted ? `/jeu/${deleted.versionSlug}/shiny` : "/");
 }
 
 /** Ajout d'un shiny sans chasse (full odds, œuf, échange…). */

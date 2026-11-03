@@ -12,6 +12,7 @@ import { useSpoilerStore } from "@/store/spoiler-store";
 import type { SpeciesLocation } from "@/lib/data/encounters";
 import type { PokedexGridEntry } from "@/lib/data/pokedex";
 import type { ShinyDexMeta } from "@/lib/data/shiny";
+import { huntHref, newHuntHref } from "@/lib/shiny";
 import { toggleShinyAction } from "@/lib/shiny-actions";
 
 export type ChecklistEntry = PokedexGridEntry & { locations: SpeciesLocation[] };
@@ -191,11 +192,11 @@ export function CaptureChecklist({ versionId, entries, captured, coverageNote, c
 function ShinyHuntLink({ gameSlug, speciesId, pokemonId, hunt }: { gameSlug: string; speciesId: number; pokemonId: number; hunt: ShinyDexMeta["hunt"] }) {
   const className = "inline-flex h-6 items-center rounded-full px-2.5 text-xs font-semibold transition-colors";
   return hunt ? (
-    <Link href={`/shiny/chasse/${hunt.id}`} className={`${className} bg-game-soft text-game-text hover:bg-game-line`}>
+    <Link href={huntHref(gameSlug, hunt.id)} className={`${className} bg-game-soft text-game-text hover:bg-game-line`}>
       Chasse en cours · {numberFr.format(hunt.count)}
     </Link>
   ) : (
-    <Link href={`/shiny/nouvelle?jeu=${gameSlug}&espece=${speciesId}&forme=${pokemonId}`} className={`${className} border border-line text-ink-2 hover:border-line-strong hover:text-ink`}>
+    <Link href={newHuntHref(gameSlug, { speciesId, pokemonId })} className={`${className} border border-line text-ink-2 hover:border-line-strong hover:text-ink`}>
       Chasser
     </Link>
   );

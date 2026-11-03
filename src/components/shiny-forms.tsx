@@ -101,14 +101,19 @@ function MethodField({ defaultValue, error }: { defaultValue?: string; error?: s
 
 const initialState: ShinyFormState = {};
 
-export function NewHuntForm({ games, initial }: { games: GameOption[]; initial?: ShinyFormInitial }) {
+/** `fixedVersionId` : chasse lancée depuis l'onglet d'un jeu, le jeu n'est pas à choisir. */
+export function NewHuntForm({ games, initial, fixedVersionId }: { games: GameOption[]; initial?: ShinyFormInitial; fixedVersionId?: number }) {
   const [state, action, pending] = useActionState(createHuntAction, initialState);
   const versionId = state.values?.versionId ? Number(state.values.versionId) : initial?.versionId;
   return (
     <form action={action} className="space-y-5" noValidate>
       {state.error && <FormError>{state.error}</FormError>}
       <SpeciesPicker label="Pokémon" initial={initial?.species} error={state.fieldErrors?.speciesId} autoFocus={!initial?.species} spoilerSafe />
-      <GameSelect games={games} defaultValue={versionId} error={state.fieldErrors?.versionId} />
+      {fixedVersionId ? (
+        <input type="hidden" name="versionId" value={fixedVersionId} />
+      ) : (
+        <GameSelect games={games} defaultValue={versionId} error={state.fieldErrors?.versionId} />
+      )}
       <MethodField defaultValue={state.values?.method} error={state.fieldErrors?.method} />
       <Field name="count" label="Rencontres déjà faites" error={state.fieldErrors?.count} hint="Laisse 0 pour une nouvelle chasse.">
         {(props) => <input {...props} type="number" inputMode="numeric" min={0} step={1} defaultValue={state.values?.count ?? "0"} />}

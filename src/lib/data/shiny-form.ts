@@ -11,12 +11,13 @@ const toId = (value: Param) => (typeof value === "string" && /^\d+$/.test(value)
  * Données des formulaires « Nouvelle chasse » et « Ajouter un shiny » : liste des jeux et
  * présélection depuis l'URL (`?espece=19&forme=10091&jeu=sun`, liens des fiches Pokémon et du shiny dex).
  * Une `forme` qui n'appartient pas à l'espèce (ou de combat, comme une Méga) est ignorée.
+ * `gameSlug` : jeu imposé par la page (onglet d'un jeu), prioritaire sur `?jeu=`.
  */
-export async function loadShinyFormProps(searchParams: Promise<{ espece?: Param; forme?: Param; jeu?: Param }>) {
+export async function loadShinyFormProps(searchParams: Promise<{ espece?: Param; forme?: Param; jeu?: Param }>, gameSlug?: string) {
   const { espece, forme, jeu } = await searchParams;
   const speciesId = toId(espece);
   const formId = toId(forme);
-  const versionSlug = typeof jeu === "string" ? jeu : null;
+  const versionSlug = gameSlug ?? (typeof jeu === "string" ? jeu : null);
 
   const [games, species, form, version] = await Promise.all([
     getGameOptions(),

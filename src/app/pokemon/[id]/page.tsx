@@ -12,6 +12,8 @@ import { getSpeciesCaptures } from "@/lib/data/captures";
 import { isDlcVersion } from "@/lib/data/filters";
 import { getPokedexHrefs } from "@/lib/data/pokedex-pages";
 import { getShinies, getSpeciesHunts } from "@/lib/data/shiny";
+import { NewHuntLink } from "@/components/new-hunt-link";
+import { huntHref } from "@/lib/shiny";
 import { getEvolutionFamily, getSpeciesById, getSpeciesEncounters } from "@/lib/data/species";
 import { getCurrentUser } from "@/lib/session";
 
@@ -70,7 +72,7 @@ async function MyShinies({ speciesId }: { speciesId: number }) {
                 Chasse en cours dans {hunt.version.nameFr} : <b className="font-bold text-ink">{numberFr.format(hunt.count)}</b> rencontres
                 {hunt.method && <span className="text-ink-2"> · {hunt.method}</span>}
               </span>
-              <Link href={`/shiny/chasse/${hunt.id}`} className={`${secondaryButton} ${smallButton} ml-auto`}>
+              <Link href={huntHref(hunt.version.slug, hunt.id)} className={`${secondaryButton} ${smallButton} ml-auto`}>
                 Ouvrir le compteur
               </Link>
             </li>
@@ -90,9 +92,9 @@ async function MyShinies({ speciesId }: { speciesId: number }) {
         </ul>
       )}
       <div className="flex flex-wrap gap-2">
-        <Link href={`/shiny/nouvelle?espece=${speciesId}`} className={`${secondaryButton} ${smallButton}`}>
+        <NewHuntLink speciesId={speciesId} className={`${secondaryButton} ${smallButton}`}>
           Lancer une chasse shiny
-        </Link>
+        </NewHuntLink>
         <Link href={`/shiny/ajouter?espece=${speciesId}`} className={`${ghostButton} ${smallButton}`}>
           Ajouter un shiny
         </Link>

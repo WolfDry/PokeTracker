@@ -12,6 +12,7 @@ import { getGame } from "@/lib/data/games";
 import { getPokedexBySlug } from "@/lib/data/pokedex";
 import { getGameHunts, getHunts, getNationalShinies, getShinyDex, type Hunt } from "@/lib/data/shiny";
 import { requireUser } from "@/lib/session";
+import { newHuntHref } from "@/lib/shiny";
 import { DexChips, loadGameDex } from "../game-dex";
 
 export async function generateMetadata({ params }: PageProps<"/jeu/[slug]/shiny">): Promise<Metadata> {
@@ -41,7 +42,7 @@ async function VersionShinyDex({ slug, searchParams }: { slug: string; searchPar
 
   return (
     <div className="space-y-10">
-      <Hunts hunts={hunts} newHuntHref={`/shiny/nouvelle?jeu=${slug}`} />
+      <Hunts hunts={hunts} newHuntHref={newHuntHref(slug)} />
       <section className="space-y-5">
         <DexChips pokedexes={pokedexes} current={current} href={(dex) => `/jeu/${slug}/shiny?dex=${dex}`} />
         <SectionHeader title={title} aside={`${entries.length} Pokémon`} />
@@ -65,7 +66,7 @@ async function NationalShinyDex({ slug }: { slug: string }) {
 
   return (
     <div className="space-y-10">
-      <Hunts hunts={hunts} newHuntHref="/shiny/nouvelle" showGame />
+      <Hunts hunts={hunts} newHuntHref={newHuntHref(slug)} showGame />
       <section className="space-y-5">
         <SectionHeader title="Pokédex National" aside={`${entries.length} Pokémon`} />
         <CaptureChecklist

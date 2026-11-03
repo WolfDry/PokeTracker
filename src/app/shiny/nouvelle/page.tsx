@@ -5,7 +5,7 @@ import { Breadcrumb } from "@/components/breadcrumb";
 import { card } from "@/components/ui";
 import { NewHuntForm } from "@/components/shiny-forms";
 import { requireUser } from "@/lib/session";
-import { loadShinyFormProps } from "../form-props";
+import { loadShinyFormProps } from "@/lib/data/shiny-form";
 
 export const metadata: Metadata = { title: "Nouvelle chasse shiny" };
 

@@ -8,6 +8,7 @@ import { SpoilerSprite } from "@/components/spoiler-sprite";
 import { card, cardLink, input, secondaryButton, spriteBox, textLink } from "@/components/ui";
 import { useHuntCounter, type SaveStatus } from "@/components/use-hunt-counter";
 import type { Hunt } from "@/lib/data/shiny";
+import { huntHref } from "@/lib/shiny";
 
 const numberFr = new Intl.NumberFormat("fr-FR");
 
@@ -141,11 +142,11 @@ export function HuntCard({ hunt }: { hunt: Hunt }) {
   const counter = useHuntCounter(hunt.id, hunt.count);
   return (
     <li className={`${cardLink} flex items-center gap-3 p-3`}>
-      <Link href={`/shiny/chasse/${hunt.id}`} className={`${spriteBox} size-14`}>
+      <Link href={huntHref(hunt.version.slug, hunt.id)} className={`${spriteBox} size-14`}>
         <SpoilerSprite pokemonId={hunt.species.pokemonId} alt="" size={56} />
       </Link>
       <div className="min-w-0 flex-1">
-        <Link href={`/shiny/chasse/${hunt.id}`} className="block truncate font-semibold hover:underline">
+        <Link href={huntHref(hunt.version.slug, hunt.id)} className="block truncate font-semibold hover:underline">
           {hunt.species.nameFr}
         </Link>
         <p className="truncate t-small text-ink-2">{hunt.method ?? "Méthode non précisée"}</p>

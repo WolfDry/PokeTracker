@@ -3,6 +3,7 @@ import { ConfirmButton } from "@/components/confirm-button";
 import { PokemonSprite } from "@/components/pokemon-sprite";
 import { card, cardLink, dangerButton, smallButton, spriteBox, textLink } from "@/components/ui";
 import type { Shiny } from "@/lib/data/shiny";
+import { huntHref } from "@/lib/shiny";
 import { deleteShinyAction } from "@/lib/shiny-actions";
 
 const numberFr = new Intl.NumberFormat("fr-FR");
@@ -46,7 +47,7 @@ export function ShinyCard({ shiny, compact = false }: { shiny: Shiny; compact?: 
         {shiny.note && <p className="t-small whitespace-pre-line text-ink-2">{shiny.note}</p>}
         <div className="flex flex-wrap items-center gap-x-3 pt-1 t-small">
           {shiny.huntId && (
-            <Link href={`/shiny/chasse/${shiny.huntId}`} className={`${textLink} text-ink-2`}>
+            <Link href={huntHref(shiny.version.slug, shiny.huntId)} className={`${textLink} text-ink-2`}>
               Voir la chasse
             </Link>
           )}
