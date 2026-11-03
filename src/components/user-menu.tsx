@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { UserIcon } from "@/components/icons";
+import { LogoutIcon, UserIcon } from "@/components/icons";
 import { ghostButton, secondaryButton, smallButton } from "@/components/ui";
 import { signOutAction } from "@/lib/auth-actions";
 import { getCurrentUser } from "@/lib/session";
@@ -29,6 +29,18 @@ export async function UserMenu() {
         </button>
       </form>
     </div>
+  );
+}
+
+/** Bouton rond de déconnexion pour la coque ; rien si personne n'est connecté. Lit la session → dans un <Suspense>. */
+export async function SignOutButton({ className }: { className?: string }) {
+  if (!(await getCurrentUser())) return null;
+  return (
+    <form action={signOutAction}>
+      <button type="submit" aria-label="Se déconnecter" title="Déconnexion" className={className}>
+        <LogoutIcon />
+      </button>
+    </form>
   );
 }
 

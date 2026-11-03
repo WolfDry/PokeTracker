@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { Suspense } from "react";
 // Navigation désactivée temporairement : seule la page d'accueil est accessible.
-// import { Suspense } from "react";
 // import { SearchIcon } from "@/components/icons";
 // import { NavLinks, NavLinksFallback } from "@/components/nav-links";
 // import { SearchForm } from "@/components/search-form";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SignOutButton } from "@/components/user-menu";
 // import { UserMenu, UserMenuFallback } from "@/components/user-menu";
 
 /** Bouton rond sur la coque. */
@@ -41,7 +42,11 @@ export function SiteHeader() {
               <SearchIcon />
             </Link> */}
             <ThemeToggle className={iconButton} />
-            {/* La session se lit à la requête : le reste de l'en-tête reste dans la coquille statique. */}
+            {/* La session se lit à la requête : le reste de l'en-tête reste dans la coquille statique.
+                Place réservée pendant la lecture pour que le bouton de thème ne bouge pas. */}
+            <Suspense fallback={<span aria-hidden className="block size-11 shrink-0" />}>
+              <SignOutButton className={iconButton} />
+            </Suspense>
             {/* <Suspense fallback={<UserMenuFallback />}>
               <UserMenu />
             </Suspense> */}

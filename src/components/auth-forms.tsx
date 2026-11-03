@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, type ReactNode } from "react";
+import { useActionState, useState, type ReactNode } from "react";
+import { EyeIcon, EyeOffIcon } from "@/components/icons";
 import { fieldError, fieldLabel, input, inputError, inputHeight, largeButton, primaryButton, textLink } from "@/components/ui";
 import { signInAction, signUpAction, updateNameAction, type AuthField, type AuthFormState } from "@/lib/auth-actions";
 
@@ -24,24 +25,41 @@ type FieldProps = {
 
 function Field({ name, label, type = "text", autoComplete, defaultValue, error, minLength, autoFocus }: FieldProps) {
   const id = `auth-${name}`;
+  const isPassword = type === "password";
+  // Mot de passe affiché en clair à la demande, champ par champ.
+  const [revealed, setRevealed] = useState(false);
   return (
     <div className="space-y-1.5">
       <label htmlFor={id} className={fieldLabel}>
         {label}
       </label>
-      <input
-        id={id}
-        name={name}
-        type={type}
-        autoComplete={autoComplete}
-        defaultValue={defaultValue}
-        minLength={minLength}
-        autoFocus={autoFocus}
-        required
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${id}-error` : undefined}
-        className={`${inputClass} ${error ? inputError : ""}`}
-      />
+      <div className="relative">
+        <input
+          id={id}
+          name={name}
+          type={isPassword && revealed ? "text" : type}
+          autoComplete={autoComplete}
+          defaultValue={defaultValue}
+          minLength={minLength}
+          autoFocus={autoFocus}
+          required
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${id}-error` : undefined}
+          className={`${inputClass} ${isPassword ? "pr-11" : ""} ${error ? inputError : ""}`}
+        />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setRevealed((value) => !value)}
+            aria-label={revealed ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+            aria-controls={id}
+            title={revealed ? "Masquer" : "Afficher"}
+            className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-md text-ink-3 transition-colors hover:text-ink"
+          >
+            {revealed ? <EyeOffIcon /> : <EyeIcon />}
+          </button>
+        )}
+      </div>
       {error && (
         <p id={`${id}-error`} className={fieldError}>
           {error}

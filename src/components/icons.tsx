@@ -32,6 +32,26 @@ export const MoonIcon = (p: IconProps) => (
   </Icon>
 );
 
+export const EyeIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10Z" />
+    <circle cx="10" cy="10" r="2.5" />
+  </Icon>
+);
+
+export const EyeOffIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M8.2 4.7A7.6 7.6 0 0 1 10 4.5c5 0 8 5.5 8 5.5a14 14 0 0 1-2.2 2.9M12.9 14.8a7.4 7.4 0 0 1-2.9.7c-5 0-8-5.5-8-5.5a14.4 14.4 0 0 1 3.4-4" />
+    <path d="M8.2 8.2a2.5 2.5 0 0 0 3.6 3.6M3 3l14 14" />
+  </Icon>
+);
+
+export const LogoutIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M8 17H4.5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1H8M13 14l4-4-4-4M17 10H8" />
+  </Icon>
+);
+
 export const CheckIcon = (p: IconProps) => (
   <Icon size={14} {...p}>
     <path d="m4 10.5 4 4 8-9" />
