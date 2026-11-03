@@ -20,6 +20,6 @@ export default function Page({ searchParams }: PageProps<"/inscription">) {
 async function SignUp({ searchParams }: Pick<PageProps<"/inscription">, "searchParams">) {
   const { next } = await searchParams;
   const target = safeNext(next, "");
-  if (await getCurrentUser()) redirect(target || "/compte");
+  if (await getCurrentUser()) redirect(target || "/");
   return <SignUpForm next={target || undefined} />;
 }

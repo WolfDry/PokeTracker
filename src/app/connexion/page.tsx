@@ -21,6 +21,6 @@ export default function Page({ searchParams }: PageProps<"/connexion">) {
 async function SignIn({ searchParams }: Pick<PageProps<"/connexion">, "searchParams">) {
   const { next } = await searchParams;
   const target = safeNext(next, "");
-  if (await getCurrentUser()) redirect(target || "/compte");
+  if (await getCurrentUser()) redirect(target || "/");
   return <SignInForm next={target || undefined} />;
 }

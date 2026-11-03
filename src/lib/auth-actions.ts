@@ -93,7 +93,7 @@ export async function signUpAction(_prev: AuthFormState, formData: FormData): Pr
   } catch (error) {
     return { error: errorMessage(error, "Impossible de créer le compte pour le moment."), values };
   }
-  redirect(safeNext(parsed.data.next, "/compte"));
+  redirect(safeNext(parsed.data.next, "/"));
 }
 
 export async function signInAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
@@ -110,17 +110,17 @@ export async function signInAction(_prev: AuthFormState, formData: FormData): Pr
   } catch (error) {
     return { error: errorMessage(error, "Connexion impossible pour le moment."), values };
   }
-  redirect(safeNext(parsed.data.next, "/compte"));
+  redirect(safeNext(parsed.data.next, "/"));
 }
 
 export async function signOutAction() {
   try {
     await auth.api.signOut({ headers: await headers() });
   } catch (error) {
-    // Session déjà expirée ou cookie absent : on renvoie quand même à l'accueil.
+    // Session déjà expirée ou cookie absent : on renvoie quand même à la connexion.
     console.error("[auth] déconnexion :", error);
   }
-  redirect("/");
+  redirect("/connexion");
 }
 
 export async function updateNameAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
