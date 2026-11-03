@@ -21,7 +21,7 @@ export async function getSearchIndex() {
   cacheLife("max");
   cacheTag("reference");
 
-  const [species, generations, locations, areasWithEncounters] = await Promise.all([
+  const [species, forms, generations, locations, areasWithEncounters] = await Promise.all([
     prisma.species.findMany({
       orderBy: { id: "asc" },
       select: {
@@ -33,6 +33,12 @@ export async function getSearchIndex() {
           select: { id: true, type1: { select: { slug: true, nameFr: true } }, type2: { select: { slug: true, nameFr: true } } },
         },
       },
+    }),
+    // Formes jouables (régionales, etc.) pour les champs de sélection : pas les formes de combat (Méga, Gigamax).
+    prisma.pokemon.findMany({
+      where: { isDefault: false, isBattleOnly: false, nameFr: { not: null } },
+      orderBy: { id: "asc" },
+      select: { id: true, speciesId: true, nameFr: true, species: { select: { nameEn: true } } },
     }),
     getGenerationsWithGames(),
     prisma.location.findMany({
@@ -53,6 +59,7 @@ export async function getSearchIndex() {
       pokemonId: s.pokemons[0].id,
       types: [s.pokemons[0].type1, s.pokemons[0].type2].filter((t) => t !== null),
     })),
+    forms: forms.map((f) => ({ id: f.speciesId, nameFr: f.nameFr!, nameEn: f.species.nameEn, pokemonId: f.id })),
     versions: generations.flatMap((g) =>
       g.versions.map<VersionHit>((v) => ({ id: v.id, slug: v.slug, nameFr: v.nameFr, generationNameFr: g.nameFr })),
     ),
@@ -91,9 +98,10 @@ export async function searchAll(rawQuery: string) {
   };
 }
 
+/** Pokémon choisi dans un formulaire : `id` = espèce, `pokemonId` = forme (Rattata d'Alola), `nameFr` = nom de la forme. */
 export type SpeciesPick = { id: number; nameFr: string; pokemonId: number };
 
-/** Espèces seules, pour les champs de sélection d'un Pokémon (nouvelle chasse, ajout d'un shiny). */
+/** Espèces et leurs formes jouables, pour les champs de sélection d'un Pokémon (nouvelle chasse, ajout d'un shiny). */
 export async function searchSpecies(rawQuery: string, limit = 8): Promise<SpeciesPick[]> {
   cacheLife("days");
   cacheTag("reference");
@@ -101,7 +109,9 @@ export async function searchSpecies(rawQuery: string, limit = 8): Promise<Specie
   const query = normalizeQuery(rawQuery);
   if (query.length === 0) return [];
   const index = await getSearchIndex();
-  return rank(index.species, query, (s) => [s.nameFr, s.nameEn, String(s.id)], limit).results.map((s) => ({
+  // Espèces d'abord, à score égal : « Rattata » avant « Rattata d'Alola ».
+  const picks = [...index.species, ...index.forms];
+  return rank(picks, query, (s) => [s.nameFr, s.nameEn, String(s.id)], limit).results.map((s) => ({
     id: s.id,
     nameFr: s.nameFr,
     pokemonId: s.pokemonId,

@@ -87,6 +87,8 @@ export function SpeciesPicker({ label, initial = null, error, autoFocus, spoiler
         {label}
       </label>
       <input type="hidden" name="speciesId" value={selected?.id ?? ""} />
+      {/* Forme choisie (Rattata d'Alola) : l'espèce seule ne suffit pas à la distinguer. */}
+      <input type="hidden" name="pokemonId" value={selected?.pokemonId ?? ""} />
       {selected ? (
         <div className="flex items-center gap-3 rounded-md border border-line-strong bg-surface p-1.5 pr-2">
           <span className={`${spriteBox} size-10 rounded-sm`}>
@@ -124,7 +126,7 @@ export function SpeciesPicker({ label, initial = null, error, autoFocus, spoiler
           {open && hits.length > 0 && (
             <ul id={`${id}-list`} role="listbox" className="absolute z-10 mt-1.5 w-full overflow-hidden rounded-md border border-line bg-surface p-1 shadow-float">
               {hits.map((species, index) => (
-                <li key={species.id} role="option" aria-selected={index === active}>
+                <li key={species.pokemonId} role="option" aria-selected={index === active}>
                   <button
                     type="button"
                     onMouseDown={(event) => event.preventDefault()}

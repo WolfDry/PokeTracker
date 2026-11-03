@@ -31,5 +31,5 @@ async function Form({ searchParams }: Pick<PageProps<"/shiny/nouvelle">, "search
   const { games, initial } = await loadShinyFormProps(searchParams);
   // La page déjà visitée est gardée en vie par le routeur : sans `key`, revenir avec une autre
   // `?espece=` réafficherait l'espèce choisie la fois précédente.
-  return <NewHuntForm key={`${initial.species?.id ?? ""}-${initial.versionId ?? ""}`} games={games} initial={initial} />;
+  return <NewHuntForm key={`${initial.species?.pokemonId ?? ""}-${initial.versionId ?? ""}`} games={games} initial={initial} />;
 }

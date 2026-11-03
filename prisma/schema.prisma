@@ -256,6 +256,8 @@ model Pokemon {
   encounters Encounter[]
   pastTypes  PokemonPastType[]
   moves      PokemonMove[]
+  shinyHunts    ShinyHunt[]
+  shinyCaptures ShinyCapture[]
 
   @@index([speciesId])
 }
@@ -491,6 +493,8 @@ model ShinyHunt {
   userId      String
   speciesId   Int
   versionId   Int
+  /// Forme chassée (Rattata d'Alola) ; null = forme par défaut de l'espèce.
+  pokemonId   Int?
   count       Int        @default(0)
   /// Méthode de chasse libre : "Masuda", "Chaîne", "Full odds", …
   method      String?
@@ -502,6 +506,7 @@ model ShinyHunt {
   user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   species Species       @relation(fields: [speciesId], references: [id])
   version Version       @relation(fields: [versionId], references: [id])
+  pokemon Pokemon?      @relation(fields: [pokemonId], references: [id])
   capture ShinyCapture?
 
   @@index([userId, status])
@@ -513,6 +518,8 @@ model ShinyCapture {
   userId     String
   speciesId  Int
   versionId  Int
+  /// Forme obtenue (Rattata d'Alola) ; null = forme par défaut de l'espèce.
+  pokemonId  Int?
   huntId     String?  @unique
   /// Nombre de rencontres au moment de la capture, si connu.
   encounters Int?
@@ -524,6 +531,7 @@ model ShinyCapture {
   user    User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   species Species    @relation(fields: [speciesId], references: [id])
   version Version    @relation(fields: [versionId], references: [id])
+  pokemon Pokemon?   @relation(fields: [pokemonId], references: [id])
   hunt    ShinyHunt? @relation(fields: [huntId], references: [id])
 
   @@index([userId])

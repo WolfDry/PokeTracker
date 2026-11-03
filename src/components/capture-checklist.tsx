@@ -53,7 +53,7 @@ export function CaptureChecklist({ versionId, entries, captured, coverageNote, c
       const message = `Supprimer ${many ? `les ${meta.count} shinies` : "le shiny"} de ${entry.species.nameFr} de ce jeu, avec ${many ? "leurs chasses et leurs détails" : "sa chasse et ses détails"} ?`;
       if (!window.confirm(message)) return;
     }
-    captures.toggle(entry.species.id);
+    captures.toggle(entry.species.id, entry.species.pokemonId);
   };
 
   return (
@@ -140,7 +140,7 @@ export function CaptureChecklist({ versionId, entries, captured, coverageNote, c
                     </Link>
                     {shiny && caught && meta && meta.count > 1 && <span className="t-small text-ink-2">×{meta.count}</span>}
                     {shiny && !readOnly && !caught && (
-                      <ShinyHuntLink gameSlug={shiny.gameSlug} speciesId={entry.species.id} hunt={meta?.hunt ?? null} />
+                      <ShinyHuntLink gameSlug={shiny.gameSlug} speciesId={entry.species.id} pokemonId={entry.species.pokemonId} hunt={meta?.hunt ?? null} />
                     )}
                   </div>
                   {readOnly ? (
@@ -187,14 +187,15 @@ export function CaptureChecklist({ versionId, entries, captured, coverageNote, c
 }
 
 /** Shiny manquant : sa chasse en cours, ou de quoi en lancer une, jeu et espèce préremplis. */
-function ShinyHuntLink({ gameSlug, speciesId, hunt }: { gameSlug: string; speciesId: number; hunt: ShinyDexMeta["hunt"] }) {
+/** `pokemonId` : forme affichée dans le dex (Rattata d'Alola dans le Pokédex d'Alola), reprise par le formulaire. */
+function ShinyHuntLink({ gameSlug, speciesId, pokemonId, hunt }: { gameSlug: string; speciesId: number; pokemonId: number; hunt: ShinyDexMeta["hunt"] }) {
   const className = "inline-flex h-6 items-center rounded-full px-2.5 text-xs font-semibold transition-colors";
   return hunt ? (
     <Link href={`/shiny/chasse/${hunt.id}`} className={`${className} bg-game-soft text-game-text hover:bg-game-line`}>
       Chasse en cours · {numberFr.format(hunt.count)}
     </Link>
   ) : (
-    <Link href={`/shiny/nouvelle?jeu=${gameSlug}&espece=${speciesId}`} className={`${className} border border-line text-ink-2 hover:border-line-strong hover:text-ink`}>
+    <Link href={`/shiny/nouvelle?jeu=${gameSlug}&espece=${speciesId}&forme=${pokemonId}`} className={`${className} border border-line text-ink-2 hover:border-line-strong hover:text-ink`}>
       Chasser
     </Link>
   );

@@ -37,6 +37,7 @@ export type Shiny = {
 };
 
 const speciesSelect = { id: true, nameFr: true, pokemons: { where: { isDefault: true }, select: { id: true }, take: 1 } } as const;
+const formSelect = { select: { id: true, nameFr: true } } as const;
 const versionSelect = { id: true, slug: true, nameFr: true } as const;
 const huntSelect = {
   id: true,
@@ -47,6 +48,7 @@ const huntSelect = {
   updatedAt: true,
   completedAt: true,
   species: { select: speciesSelect },
+  pokemon: formSelect,
   version: { select: versionSelect },
   capture: { select: { id: true, nickname: true, caughtAt: true } },
 } as const;
@@ -59,11 +61,18 @@ const shinySelect = {
   caughtAt: true,
   huntId: true,
   species: { select: speciesSelect },
+  pokemon: formSelect,
   version: { select: versionSelect },
 } as const;
 
 type SpeciesRow = { id: number; nameFr: string; pokemons: { id: number }[] };
-const toSpecies = (s: SpeciesRow): ShinySpecies => ({ id: s.id, nameFr: s.nameFr, pokemonId: s.pokemons[0]?.id ?? s.id });
+type FormRow = { id: number; nameFr: string | null } | null;
+/** Espèce d'une chasse ou d'un shiny, sous sa forme (sprite et nom « Rattata d'Alola ») ; forme par défaut si aucune. */
+const toSpecies = (s: SpeciesRow, form: FormRow): ShinySpecies => ({
+  id: s.id,
+  nameFr: form?.nameFr ?? s.nameFr,
+  pokemonId: form?.id ?? s.pokemons[0]?.id ?? s.id,
+});
 
 /** Chasses de l'utilisateur, les plus récemment touchées en premier. */
 export async function getHunts(userId: string, status?: HuntStatus): Promise<Hunt[]> {
@@ -72,12 +81,12 @@ export async function getHunts(userId: string, status?: HuntStatus): Promise<Hun
     orderBy: { updatedAt: "desc" },
     select: huntSelect,
   });
-  return rows.map((row) => ({ ...row, species: toSpecies(row.species) }));
+  return rows.map((row) => ({ ...row, species: toSpecies(row.species, row.pokemon) }));
 }
 
 export async function getHunt(userId: string, huntId: string): Promise<Hunt | null> {
   const row = await prisma.shinyHunt.findFirst({ where: { id: huntId, userId }, select: huntSelect });
-  return row && { ...row, species: toSpecies(row.species) };
+  return row && { ...row, species: toSpecies(row.species, row.pokemon) };
 }
 
 /** Chasses en cours d'une espèce, pour la fiche Pokémon. */
@@ -87,7 +96,7 @@ export async function getSpeciesHunts(userId: string, speciesId: number): Promis
     orderBy: { updatedAt: "desc" },
     select: huntSelect,
   });
-  return rows.map((row) => ({ ...row, species: toSpecies(row.species) }));
+  return rows.map((row) => ({ ...row, species: toSpecies(row.species, row.pokemon) }));
 }
 
 /** Shinies obtenus, les plus récents en premier. */
@@ -97,13 +106,13 @@ export async function getShinies(userId: string, speciesId?: number): Promise<Sh
     orderBy: [{ caughtAt: "desc" }, { id: "desc" }],
     select: shinySelect,
   });
-  return rows.map((row) => ({ ...row, species: toSpecies(row.species) }));
+  return rows.map((row) => ({ ...row, species: toSpecies(row.species, row.pokemon) }));
 }
 
 /** Chasses en cours dans un jeu, les plus récemment touchées en premier. */
 export async function getGameHunts(userId: string, versionId: number): Promise<Hunt[]> {
   const rows = await prisma.shinyHunt.findMany({ where: { userId, versionId, status: "ACTIVE" }, orderBy: { updatedAt: "desc" }, select: huntSelect });
-  return rows.map((row) => ({ ...row, species: toSpecies(row.species) }));
+  return rows.map((row) => ({ ...row, species: toSpecies(row.species, row.pokemon) }));
 }
 
 /** État d'une espèce dans le shiny dex d'un jeu. */
@@ -156,11 +165,12 @@ export async function getNationalShinies(userId: string): Promise<{ speciesIds: 
  * Coche ou décoche une espèce dans le shiny dex d'un jeu. Cocher ajoute un shiny sans détails s'il n'y en a
  * pas déjà un ; décocher supprime tous les shinies de l'espèce dans ce jeu, et les chasses dont ils sont issus.
  */
-export async function setShinyObtained(userId: string, versionId: number, speciesId: number, obtained: boolean) {
+export async function setShinyObtained(userId: string, versionId: number, speciesId: number, obtained: boolean, pokemonId: number | null = null) {
   await prisma.$transaction(async (tx) => {
     const shinies = await tx.shinyCapture.findMany({ where: { userId, versionId, speciesId }, select: { id: true, huntId: true } });
     if (obtained) {
-      if (shinies.length === 0) await tx.shinyCapture.create({ data: { userId, versionId, speciesId } });
+      // La forme affichée dans le dex du jeu (Rattata d'Alola dans le Pokédex d'Alola).
+      if (shinies.length === 0) await tx.shinyCapture.create({ data: { userId, versionId, speciesId, pokemonId } });
       return;
     }
     await tx.shinyCapture.deleteMany({ where: { id: { in: shinies.map((s) => s.id) } } });
@@ -169,7 +179,7 @@ export async function setShinyObtained(userId: string, versionId: number, specie
   });
 }
 
-export async function createHunt(userId: string, data: { speciesId: number; versionId: number; method: string | null; count: number }) {
+export async function createHunt(userId: string, data: { speciesId: number; pokemonId: number | null; versionId: number; method: string | null; count: number }) {
   return prisma.shinyHunt.create({ data: { userId, ...data }, select: { id: true } });
 }
 
@@ -203,7 +213,7 @@ export async function completeHunt(
     const encounters = count ?? hunt.count;
     await tx.shinyHunt.update({ where: { id: hunt.id }, data: { status: "COMPLETED", completedAt: data.caughtAt, count: encounters } });
     return tx.shinyCapture.create({
-      data: { userId, speciesId: hunt.speciesId, versionId: hunt.versionId, huntId: hunt.id, encounters, method: hunt.method, ...data },
+      data: { userId, speciesId: hunt.speciesId, pokemonId: hunt.pokemonId, versionId: hunt.versionId, huntId: hunt.id, encounters, method: hunt.method, ...data },
       select: { id: true },
     });
   });
@@ -222,7 +232,7 @@ export async function deleteHunt(userId: string, huntId: string) {
 
 export async function createShiny(
   userId: string,
-  data: { speciesId: number; versionId: number; encounters: number | null; method: string | null; nickname: string | null; note: string | null; caughtAt: Date },
+  data: { speciesId: number; pokemonId: number | null; versionId: number; encounters: number | null; method: string | null; nickname: string | null; note: string | null; caughtAt: Date },
 ) {
   return prisma.shinyCapture.create({ data: { userId, ...data }, select: { id: true } });
 }

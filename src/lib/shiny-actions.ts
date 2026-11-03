@@ -14,13 +14,14 @@ import {
   setHuntStatus,
   setShinyObtained,
 } from "@/lib/data/shiny";
+import { getPokemonForm } from "@/lib/data/species";
 import { getCurrentUser } from "@/lib/session";
 import { MAX_HUNT_COUNT } from "@/lib/shiny";
 
 // Server Actions des chasses shiny. Les formulaires (nouvelle chasse, clôture, ajout manuel)
 // passent par useActionState ; le compteur appelle `setHuntCountAction` avec un délai.
 
-export type ShinyField = "speciesId" | "versionId" | "method" | "count" | "encounters" | "nickname" | "note" | "caughtAt";
+export type ShinyField = "speciesId" | "pokemonId" | "versionId" | "method" | "count" | "encounters" | "nickname" | "note" | "caughtAt";
 
 export type ShinyFormState = {
   error?: string;
@@ -68,9 +69,21 @@ const caughtAt = z.preprocess(
   z.coerce.date({ error: "Date invalide." }).refine((date) => date.getTime() <= Date.now() + DAY, { error: "La date est dans le futur." }),
 );
 
-const huntSchema = z.object({ speciesId, versionId, method, count: optionalCount });
+// Forme choisie (Rattata d'Alola) ; vide = forme par défaut.
+const pokemonId = z.preprocess(blankToNull, z.coerce.number().int().positive().nullable());
+
+const huntSchema = z.object({ speciesId, pokemonId, versionId, method, count: optionalCount });
 const completeSchema = z.object({ huntId: z.string().min(1), count: optionalCount, nickname, note, caughtAt });
-const shinySchema = z.object({ speciesId, versionId, method, encounters: optionalCount, nickname, note, caughtAt });
+const shinySchema = z.object({ speciesId, pokemonId, versionId, method, encounters: optionalCount, nickname, note, caughtAt });
+
+const UNKNOWN_FORM = "Forme inconnue pour ce Pokémon.";
+
+/** La forme doit appartenir à l'espèce et exister hors combat (pas de Méga) ; `null` = forme par défaut. */
+async function isValidForm(speciesId: number, pokemonId: number | null) {
+  if (pokemonId === null) return true;
+  const form = await getPokemonForm(pokemonId);
+  return form !== null && form.speciesId === speciesId && !form.isBattleOnly;
+}
 
 function fieldErrors(error: z.ZodError): Partial<Record<ShinyField, string>> {
   const flat = z.flattenError(error).fieldErrors as Partial<Record<ShinyField, string[]>>;
@@ -93,7 +106,7 @@ export async function searchSpeciesAction(query: string): Promise<SpeciesPick[]>
 }
 
 export async function createHuntAction(_prev: ShinyFormState, formData: FormData): Promise<ShinyFormState> {
-  const fields: ShinyField[] = ["speciesId", "versionId", "method", "count"];
+  const fields: ShinyField[] = ["speciesId", "pokemonId", "versionId", "method", "count"];
   const user = await getCurrentUser();
   if (!user) return { error: NOT_SIGNED_IN, values: values(formData, fields) };
 
@@ -103,7 +116,9 @@ export async function createHuntAction(_prev: ShinyFormState, formData: FormData
   let huntId: string;
   try {
     const { speciesId, versionId, method, count } = parsed.data;
-    huntId = (await createHunt(user.id, { speciesId, versionId, method, count: count ?? 0 })).id;
+    const { pokemonId } = parsed.data;
+    if (!(await isValidForm(speciesId, pokemonId))) return { fieldErrors: { speciesId: UNKNOWN_FORM }, values: values(formData, fields) };
+    huntId = (await createHunt(user.id, { speciesId, pokemonId, versionId, method, count: count ?? 0 })).id;
   } catch (error) {
     console.error("[shiny]", error);
     return { error: isForeignKeyError(error) ? "Pokémon ou jeu inconnu." : FAILED, values: values(formData, fields) };
@@ -169,7 +184,7 @@ export async function deleteHuntAction(huntId: string): Promise<void> {
 
 /** Ajout d'un shiny sans chasse (full odds, œuf, échange…). */
 export async function addShinyAction(_prev: ShinyFormState, formData: FormData): Promise<ShinyFormState> {
-  const fields: ShinyField[] = ["speciesId", "versionId", "method", "encounters", "nickname", "note", "caughtAt"];
+  const fields: ShinyField[] = ["speciesId", "pokemonId", "versionId", "method", "encounters", "nickname", "note", "caughtAt"];
   const user = await getCurrentUser();
   if (!user) return { error: NOT_SIGNED_IN, values: values(formData, fields) };
 
@@ -177,6 +192,9 @@ export async function addShinyAction(_prev: ShinyFormState, formData: FormData):
   if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error), values: values(formData, fields) };
 
   try {
+    if (!(await isValidForm(parsed.data.speciesId, parsed.data.pokemonId))) {
+      return { fieldErrors: { speciesId: UNKNOWN_FORM }, values: values(formData, fields) };
+    }
     await createShiny(user.id, parsed.data);
   } catch (error) {
     console.error("[shiny]", error);
@@ -186,14 +204,16 @@ export async function addShinyAction(_prev: ShinyFormState, formData: FormData):
 }
 
 /** Coche / décoche une espèce dans le shiny dex d'un jeu. L'UI est optimiste : le résultat sert à annuler en cas d'échec. */
-export async function toggleShinyAction(versionId: number, speciesId: number, obtained: boolean): Promise<ShinyActionResult> {
+export async function toggleShinyAction(versionId: number, speciesId: number, obtained: boolean, pokemonId?: number): Promise<ShinyActionResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: NOT_SIGNED_IN };
-  if (!Number.isInteger(versionId) || !Number.isInteger(speciesId) || typeof obtained !== "boolean") {
+  const form = pokemonId ?? null;
+  if (!Number.isInteger(versionId) || !Number.isInteger(speciesId) || typeof obtained !== "boolean" || (form !== null && !Number.isInteger(form))) {
     return { ok: false, error: "Requête invalide." };
   }
   try {
-    await setShinyObtained(user.id, versionId, speciesId, obtained);
+    if (!(await isValidForm(speciesId, form))) return { ok: false, error: UNKNOWN_FORM };
+    await setShinyObtained(user.id, versionId, speciesId, obtained, form);
     return { ok: true };
   } catch (error) {
     console.error("[shiny]", error);

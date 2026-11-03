@@ -185,6 +185,22 @@ export async function getEvolutionFamily(speciesId: number): Promise<FamilyNode 
   return build(root);
 }
 
+export type PokemonForm = { id: number; speciesId: number; isDefault: boolean; isBattleOnly: boolean; nameFr: string };
+
+/** Une forme (Rattata d'Alola), avec son nom complet : celui de l'espèce pour la forme par défaut. */
+export async function getPokemonForm(pokemonId: number): Promise<PokemonForm | null> {
+  cacheLife("max");
+  cacheTag("reference");
+
+  const pokemon = await prisma.pokemon.findUnique({
+    where: { id: pokemonId },
+    select: { id: true, speciesId: true, isDefault: true, isBattleOnly: true, nameFr: true, species: { select: { nameFr: true } } },
+  });
+  if (!pokemon) return null;
+  const { species, nameFr, ...form } = pokemon;
+  return { ...form, nameFr: nameFr ?? species.nameFr };
+}
+
 export async function getSpeciesById(id: number) {
   cacheLife("max");
   cacheTag("reference");

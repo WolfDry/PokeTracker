@@ -4,7 +4,7 @@ import { useCallback, useState, useTransition } from "react";
 import { type CaptureActionResult, toggleCaptureAction } from "@/lib/capture-actions";
 
 /** Server Action qui enregistre une coche : captures (par défaut) ou shiny dex. */
-export type ToggleAction = (versionId: number, speciesId: number, value: boolean) => Promise<CaptureActionResult>;
+export type ToggleAction = (versionId: number, speciesId: number, value: boolean, pokemonId?: number) => Promise<CaptureActionResult>;
 
 /**
  * État « attrapé » d'un jeu côté client, mis à jour de façon optimiste :
@@ -31,12 +31,13 @@ export function useCaptures(versionId: number, initial: number[], action: Toggle
     });
 
   const toggle = useCallback(
-    (speciesId: number) => {
+    /** `pokemonId` : forme affichée, enregistrée par le shiny dex (les captures l'ignorent). */
+    (speciesId: number, pokemonId?: number) => {
       const value = !captured.has(speciesId);
       setOne(speciesId, value);
       setError(null);
       startTransition(async () => {
-        const result = await action(versionId, speciesId, value);
+        const result = await action(versionId, speciesId, value, pokemonId);
         if (!result.ok) {
           setOne(speciesId, !value);
           setError(result.error);
