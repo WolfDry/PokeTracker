@@ -8,6 +8,7 @@ Compagnon d'aventure Pokémon : Pokédex par jeu, rencontres par jeu × lieu, su
 | --- | --- | --- |
 | Stack | **Next.js (App Router) + TypeScript + Prisma + PostgreSQL + Tailwind** | Un seul projet, SSR pour les pages de référence, API intégrée pour le suivi utilisateur |
 | Auth | **Better Auth** (email + mot de passe) | Inscription/connexion par mot de passe prête à l'emploi, s'intègre à Prisma |
+| Accès | **Connexion obligatoire** depuis nov. 2026 (`src/proxy.ts`) | L'app est centrée sur la partie de l'utilisateur ; seules `/connexion` et `/inscription` restent publiques |
 | Hébergement | En ligne (Vercel + Postgres managé type Neon, ou VPS Docker) | Postgres dès le départ, pas de migration à prévoir |
 | Langue | **Français partout** (UI, Pokémon, lieux) — noms EN conservés en base pour la recherche | Couverture FR de PokeAPI : 1025/1025 espèces, 1070/1096 lieux |
 | Source de données | **CSV bruts du repo PokeAPI importés dans notre base** — jamais d'appel à l'API en prod | Zéro latence, zéro rate-limit, schéma à notre main |
@@ -55,8 +56,9 @@ CSV utilisés : `versions`, `version_groups`, `version_names`, `generations`, `r
 
 - `User` (géré par Better Auth)
 - `Capture` : (user, species, version) **unique** → un Pokémon capturé dans plusieurs jeux = plusieurs lignes ; `caughtAt`
-- `ShinyHunt` : (user, species, version) + `count`, `method` (optionnel : Masuda, chaîne, full-odds…), `status` (`active` | `completed` | `abandoned`), `startedAt`, `completedAt`
-- `ShinyCapture` : shiny obtenu (user, species, version, `huntId` optionnel, date, nombre de rencontres final)
+- `ShinyHunt` : (user, species, version) + `pokemonId` (forme chassée, ex. Rattata d'Alola ; null = forme par défaut), `count`, `method` (optionnel : Masuda, chaîne, full-odds…), `status` (`active` | `completed` | `abandoned`), `startedAt`, `completedAt`
+- `ShinyCapture` : shiny obtenu (user, species, version, `pokemonId` facultatif, `huntId` optionnel, date, nombre de rencontres final)
+- `Team` : équipe nommée (user, version, `name`, `slots`) ; plusieurs par jeu. `slots` reprend le format de l'URL de la page Équipe (« 6.53.394-0-25 » : forme.capacités par emplacement, 0 = vide)
 
 ## 3. Phases
 
@@ -139,10 +141,26 @@ Chaque phase se termine par une vérification concrète avant de passer à la su
 - GitHub Actions : `ci.yml` (lint + types à chaque push) et `import-data.yml` (import PokeAPI sur la base de prod à la demande, puis `POST /api/revalidate` avec `REVALIDATE_SECRET`)
 - ✔ URL publique : à valider après la mise en ligne (comptes Vercel/Neon et secrets à créer de ton côté)
 
+### Phase 9 — Hub par jeu 🚧 (nov. 2026)
+
+L'app s'organise autour du jeu choisi sur l'accueil : `/jeu/[slug]` donne un résumé et trois onglets.
+
+- Connexion obligatoire : `src/proxy.ts` renvoie vers `/connexion?next=` sans cookie de session (contrôle optimiste) ; la vérification sûre reste dans `requireUser` / `getCurrentUser`. Bouton « afficher le mot de passe », déconnexion dans l'en-tête
+- Layout `/jeu/[slug]` : en-tête à la teinte et à la mascotte du jeu (comme l'accueil), onglets Résumé · Living dex · Shiny dex · Équipe (rangée sous l'en-tête dès la tablette, barre fixe en bas sur mobile) ; pas d'équipe pour le National
+- Résumé : une carte par fonctionnalité avec son avancement (barres par Pokédex, chasses en cours, dernière équipe)
+- Living dex (`/jeu/[slug]/captures?dex=`) : la checklist de `/captures/[jeu]` ; au National, lecture seule (« attrapé dans : … », une espèce compte dès qu'elle l'est dans un jeu)
+- Shiny dex (`/jeu/[slug]/shiny?dex=`) : chasses en cours du jeu, puis checklist chromatique (cocher = shiny sans détails ; décocher supprime les shinies du jeu et leurs chasses, confirmation s'ils ont des détails ; « Chasser » prérempli avec la forme affichée). Mode spoiler (store `spoiler-store.ts`, masqué par défaut) : un shiny pas encore obtenu s'affiche en sprite normal partout (`SpoilerSprite`)
+- Formes : chasses et shinies enregistrent la forme (`pokemonId`) ; les sélecteurs de Pokémon proposent les formes jouables (hors Méga / Gigamax)
+- Équipes (`/jeu/[slug]/equipe`, `/nouvelle`, `/[id]`) : plusieurs équipes nommées par jeu, builder de la page Équipe réutilisé, sauvegarde explicite (jamais automatique), modifications en cours conservées dans l'URL, copie et suppression ; le lien copié ouvre une nouvelle équipe préremplie
+- Chasses dans le jeu : `/jeu/[slug]/shiny/nouvelle?espece=&forme=` (jeu fixé ; choix du jeu au National) et `/jeu/[slug]/shiny/chasse/[id]` (redirige vers le jeu de la chasse) ; création → la chasse, clôture et suppression → shiny dex du jeu. Liens centralisés dans `huntHref` / `newHuntHref` (`src/lib/shiny.ts`) ; la fiche Pokémon lance la chasse dans le jeu en cours
+- Les anciennes routes (`/captures`, `/shiny`, `/equipe`) restent en place, navigation masquée, en attendant leur suppression. Encore liées depuis l'app : `/shiny/ajouter` (fiche Pokémon) et `/shiny`, `/shiny/galerie` (page Compte)
+- ✔ À vérifier connecté : coches living dex / shiny dex, mode spoiler, chasse d'une forme régionale, cycle de vie d'une équipe (création, sauvegarde, rechargement avec modifications, copie, suppression)
+
 ## 4. Plus tard (hors v1)
 
 - Deuxième source de rencontres pour BDSP / PLA / ÉV / Z-A (PKHeX MIT pour lieux+niveaux, ou CSV maison contributif)
-- Formes alternatives (régionales, Méga…) dans le Pokédex
+- Formes alternatives (régionales, Méga…) dans le Pokédex (déjà gérées pour les chasses et shinies)
+- Shiny-lock : PokeAPI n'a pas la donnée, liste à tenir à la main (comme les mascottes de l'accueil)
 - Odds shiny affichés selon la méthode et le jeu
 - Export/import des données utilisateur
 - Bilingue FR/EN
