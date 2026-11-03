@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { type ReactNode, useMemo, useRef, useState } from "react";
 import { CheckIcon, CloseIcon, LinkIcon, PlusIcon } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
 import { PokemonSprite } from "@/components/pokemon-sprite";
@@ -23,20 +23,32 @@ export type TeamSlot = { pokemonId: number; moves: TeamMove[] } | null;
 
 type Props = {
   data: TeamBuilderData;
-  /** Jeux proposés dans le sélecteur, par génération. */
-  games: TeamGameGroup[];
-  /** Formes et capacités par emplacement, lues dans l'URL (`?equipe=6.53.394-0-25`). */
+  /** Jeux proposés dans le sélecteur, par génération. Absent dans l'onglet d'un jeu : ni en-tête ni sélecteur. */
+  games?: TeamGameGroup[];
+  /** Formes et capacités par emplacement, lues dans l'URL (`?equipe=6.53.394-0-25`) ou dans l'équipe sauvegardée. */
   initialTeam: TeamSlot[];
+  /**
+   * Adresses sans le paramètre `equipe` : `current` suit l'équipe dans la barre d'adresse, `share` sert au lien copié.
+   * Par défaut, la page Équipe du jeu (`/equipe?jeu=…`).
+   */
+  paths?: { current: string; share: string };
+  /** Appelé à chaque modification de l'équipe (sauvegarde explicite dans l'onglet d'un jeu). */
+  onTeamChange?: (team: TeamSlot[]) => void;
+  /** Barre affichée au-dessus des emplacements (nom de l'équipe, sauvegarde). */
+  toolbar?: ReactNode;
 };
 
-const teamHref = (gameSlug: string, team: TeamSlot[]) => {
+/** `base` + l'équipe en paramètre `equipe`, omis si elle est vide. */
+const teamHref = (base: string, team: TeamSlot[]) => {
   const encoded = encodeTeam(team.map((slot) => slot && { pokemonId: slot.pokemonId, moveIds: slot.moves.map((m) => m.id) }));
-  return `/equipe?jeu=${gameSlug}${encoded ? `&equipe=${encoded}` : ""}`;
+  return encoded ? `${base}${base.includes("?") ? "&" : "?"}equipe=${encoded}` : base;
 };
+const legacyPath = (gameSlug: string) => `/equipe?jeu=${gameSlug}`;
 
 /** Six emplacements à remplir avec les Pokémon du jeu et leurs attaques, puis l'analyse des types de l'équipe. L'équipe vit dans l'URL. */
-export function TeamBuilder({ data, games, initialTeam }: Props) {
+export function TeamBuilder({ data, games, initialTeam, paths, onTeamChange, toolbar }: Props) {
   const router = useRouter();
+  const { current: currentPath, share: sharePath } = paths ?? { current: legacyPath(data.game.slug), share: legacyPath(data.game.slug) };
   const [team, setTeam] = useState(initialTeam);
   const [picking, setPicking] = useState<number | null>(null);
   const [editingMoves, setEditingMoves] = useState<number | null>(null);
@@ -53,7 +65,8 @@ export function TeamBuilder({ data, games, initialTeam }: Props) {
   // L'URL suit l'équipe (lien partageable, retour arrière conservé) sans recharger la page.
   const update = (next: TeamSlot[]) => {
     setTeam(next);
-    window.history.replaceState(null, "", teamHref(data.game.slug, next));
+    window.history.replaceState(null, "", teamHref(currentPath, next));
+    onTeamChange?.(next);
   };
   // Changer de Pokémon vide ses attaques : elles dépendent de ce qu'il peut apprendre.
   const setSlot = (slot: number, pokemonId: number | null) =>
@@ -63,7 +76,7 @@ export function TeamBuilder({ data, games, initialTeam }: Props) {
   const copyLink = async () => {
     try {
       // L'URL de l'équipe affichée : celle de la barre d'adresse peut encore citer des Pokémon absents du jeu.
-      await navigator.clipboard.writeText(new URL(teamHref(data.game.slug, team), window.location.origin).href);
+      await navigator.clipboard.writeText(new URL(teamHref(sharePath, team), window.location.origin).href);
       setCopied(true);
       clearTimeout(copyTimer.current);
       copyTimer.current = setTimeout(() => setCopied(false), 2000);
@@ -74,25 +87,28 @@ export function TeamBuilder({ data, games, initialTeam }: Props) {
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        eyebrow={`${data.game.generation.nameFr} · ${data.game.region}`}
-        title="Équipe"
-        intro={
-          <p className="t-small">
-            {data.options.length} Pokémon disponibles dans {data.game.nameFr}. Clique sur un emplacement pour choisir un Pokémon, puis ses attaques.
-          </p>
-        }
-        actions={
-          <ToolbarSelect
-            label="Jeu"
-            value={data.game.slug}
-            // Changer de jeu recharge la liste et la table des types ; l'équipe suit si ses Pokémon y sont.
-            onChange={(slug) => router.push(teamHref(slug, team))}
-            options={[]}
-            groups={games.map((g) => ({ label: g.nameFr, options: g.versions.map((v) => ({ value: v.slug, label: v.nameFr })) }))}
-          />
-        }
-      />
+      {games && (
+        <PageHeader
+          eyebrow={`${data.game.generation.nameFr} · ${data.game.region}`}
+          title="Équipe"
+          intro={
+            <p className="t-small">
+              {data.options.length} Pokémon disponibles dans {data.game.nameFr}. Clique sur un emplacement pour choisir un Pokémon, puis ses attaques.
+            </p>
+          }
+          actions={
+            <ToolbarSelect
+              label="Jeu"
+              value={data.game.slug}
+              // Changer de jeu recharge la liste et la table des types ; l'équipe suit si ses Pokémon y sont.
+              onChange={(slug) => router.push(teamHref(legacyPath(slug), team))}
+              options={[]}
+              groups={games.map((g) => ({ label: g.nameFr, options: g.versions.map((v) => ({ value: v.slug, label: v.nameFr })) }))}
+            />
+          }
+        />
+      )}
+      {toolbar}
 
       <section className="space-y-3" aria-labelledby="team-slots">
         <div className="flex flex-wrap items-center justify-between gap-2">

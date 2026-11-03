@@ -6,6 +6,8 @@ import { MAX_MOVES, type TeamMove } from "@/lib/moves";
 // ou à défaut ceux du Pokémon (une attaque de son type, STAB).
 
 export const TEAM_SIZE = 6;
+/** Longueur maximale du nom d'une équipe sauvegardée. */
+export const TEAM_NAME_MAX = 40;
 
 type Chart = Pick<TeamBuilderData, "types" | "chart">;
 

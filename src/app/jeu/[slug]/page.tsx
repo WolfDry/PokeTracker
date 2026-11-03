@@ -3,11 +3,13 @@ import Link from "next/link";
 import { type ComponentType, type ReactNode, Suspense } from "react";
 import { ArrowRightIcon, BallIcon, StarIcon, TeamIcon } from "@/components/icons";
 import { ProgressBar } from "@/components/progress-bar";
+import { TeamSprites } from "@/components/team-sprites";
 import { cardLink } from "@/components/ui";
 import { getDexProgress, getNationalCaptures } from "@/lib/data/captures";
 import { getGame, getNationalSpeciesCount } from "@/lib/data/games";
 import { getVersionPokedexes } from "@/lib/data/pokedex";
 import { getGameHunts, getHunts, getNationalShinies, getShinyDex } from "@/lib/data/shiny";
+import { getTeams } from "@/lib/data/teams";
 import type { Game } from "@/lib/game";
 import { requireUser } from "@/lib/session";
 
@@ -52,7 +54,17 @@ export default async function GamePage({ params }: PageProps<"/jeu/[slug]">) {
     },
   ];
   if (game.kind !== "national") {
-    features.push({ href: `${base}/equipe`, title: "Équipe", text: "Compose ton équipe de six, choisis ses attaques et sauvegarde-la.", icon: TeamIcon });
+    features.push({
+      href: `${base}/equipe`,
+      title: "Équipe",
+      text: "Compose tes équipes de six, choisis leurs attaques et sauvegarde-les.",
+      icon: TeamIcon,
+      summary: (
+        <Suspense fallback={<ProgressFallback />}>
+          <TeamsSummary slug={game.slug} versionId={game.id} />
+        </Suspense>
+      ),
+    });
   }
 
   return (
@@ -115,6 +127,25 @@ async function ShinyDexProgress({ game }: { game: Game }) {
       <p className="t-small text-ink-2">
         {huntCount === 0 ? "Aucune chasse en cours." : `${huntCount} chasse${huntCount > 1 ? "s" : ""} en cours.`}
       </p>
+    </div>
+  );
+}
+
+/** Nombre d'équipes sauvegardées et la dernière modifiée. */
+async function TeamsSummary({ slug, versionId }: { slug: string; versionId: number }) {
+  const user = await requireUser(`/jeu/${slug}`);
+  const teams = await getTeams(user.id, versionId);
+  if (teams.length === 0) return <p className="t-small text-ink-2">Aucune équipe sauvegardée.</p>;
+  const [last] = teams;
+  return (
+    <div className="space-y-2">
+      <p className="flex items-baseline justify-between gap-3 text-sm">
+        <span className="truncate font-semibold">{last.name}</span>
+        <span className="shrink-0 text-ink-2">
+          {teams.length} équipe{teams.length > 1 ? "s" : ""}
+        </span>
+      </p>
+      <TeamSprites slots={last.slots} />
     </div>
   );
 }

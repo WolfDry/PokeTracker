@@ -82,6 +82,7 @@ model Version {
   captures      Capture[]
   shinyHunts    ShinyHunt[]
   shinyCaptures ShinyCapture[]
+  teams         Team[]
 }
 
 enum CoverageStatus {
@@ -537,6 +538,23 @@ model ShinyCapture {
   @@index([userId])
 }
 
+/// Équipe nommée composée pour un jeu ; un utilisateur peut en garder plusieurs par jeu.
+model Team {
+  id        String   @id @default(cuid())
+  userId    String
+  versionId Int
+  name      String
+  /// Six emplacements au format de l'URL de la page Équipe : « 6.53.394-0-25 » (forme.capacités, 0 = vide).
+  slots     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  version Version @relation(fields: [versionId], references: [id])
+
+  @@index([userId, versionId])
+}
+
 // ---------------------------------------------------------------------------
 // Auth (Better Auth) — modèles générés par `npx @better-auth/cli generate`
 // ---------------------------------------------------------------------------
@@ -555,6 +573,7 @@ model User {
   captures      Capture[]
   shinyHunts    ShinyHunt[]
   shinyCaptures ShinyCapture[]
+  teams         Team[]
 
   @@unique([email])
   @@map("user")
