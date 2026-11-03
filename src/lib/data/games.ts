@@ -2,7 +2,7 @@
 
 import { cacheLife, cacheTag } from "next/cache";
 import { isDlcVersion, isHiddenVersion } from "@/lib/data/filters";
-import { GAME_EXTRAS } from "@/lib/data/game-catalog";
+import { GAME_EXTRAS, type GameTint, NATIONAL_MASCOT, NATIONAL_TINT } from "@/lib/data/game-catalog";
 import { type Game, NATIONAL_GAME, NATIONAL_SLUG } from "@/lib/game";
 import { prisma } from "@/lib/prisma";
 
@@ -163,6 +163,21 @@ export async function getHomeTimeline() {
         }),
     }))
     .filter((generation) => generation.games.length > 0);
+}
+
+export type GameBranding = { mascot: number | null; mascotDex: number | null; tint: GameTint | null; subtitle: string };
+
+/** Habillage des pages d'un jeu, comme sur l'accueil : mascotte (et son n° national), teinte, légende « Génération I · Kanto ». */
+export async function getGameBranding(slug: string): Promise<GameBranding | null> {
+  cacheLife("max");
+  cacheTag("reference");
+
+  if (slug === NATIONAL_SLUG) return { mascot: NATIONAL_MASCOT, mascotDex: NATIONAL_MASCOT, tint: NATIONAL_TINT, subtitle: "Toutes générations" };
+  for (const generation of await getHomeTimeline()) {
+    const game = generation.games.find((v) => v.slug === slug);
+    if (game) return { mascot: game.mascot, mascotDex: game.mascotDex, tint: game.tint, subtitle: `Génération ${generation.numeral} · ${generation.region}` };
+  }
+  return null;
 }
 
 /** Nombre d'espèces du Pokédex National (afficheur de la carte National). */

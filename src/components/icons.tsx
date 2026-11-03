@@ -52,6 +52,15 @@ export const LogoutIcon = (p: IconProps) => (
   </Icon>
 );
 
+export const OverviewIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="3" y="3" width="5.5" height="5.5" rx="1.25" />
+    <rect x="11.5" y="3" width="5.5" height="5.5" rx="1.25" />
+    <rect x="3" y="11.5" width="5.5" height="5.5" rx="1.25" />
+    <rect x="11.5" y="11.5" width="5.5" height="5.5" rx="1.25" />
+  </Icon>
+);
+
 export const CheckIcon = (p: IconProps) => (
   <Icon size={14} {...p}>
     <path d="m4 10.5 4 4 8-9" />
