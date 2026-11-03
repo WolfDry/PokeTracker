@@ -13,20 +13,24 @@ import type { PokedexGridEntry } from "@/lib/data/pokedex";
 export type ChecklistEntry = PokedexGridEntry & { locations: SpeciesLocation[] };
 
 type Props = {
-  versionId: number;
+  /** Jeu où cocher ; `null` = living dex National, en lecture seule (on coche dans chaque jeu). */
+  versionId: number | null;
   entries: ChecklistEntry[];
   captured: number[];
   /** Message si PokeAPI n'a pas les rencontres de ce jeu. */
   coverageNote: string | null;
+  /** National : jeux où chaque espèce est attrapée, affichés à la place des lieux. */
+  caughtIn?: Record<number, string[]>;
 };
 
 const MAX_LOCATIONS = 3;
 
 const formatLevel = (min: number, max: number) => (min === max ? `Niv. ${min}` : `Niv. ${min}–${max}`);
 
-/** Liste des Pokémon d'un Pokédex avec où les trouver dans ce jeu, cochables. */
-export function CaptureChecklist({ versionId, entries, captured, coverageNote }: Props) {
-  const captures = useCaptures(versionId, captured);
+/** Liste des Pokémon d'un Pokédex avec où les trouver dans ce jeu, cochables (ou, au National, où ils sont attrapés). */
+export function CaptureChecklist({ versionId, entries, captured, coverageNote, caughtIn }: Props) {
+  const readOnly = versionId === null;
+  const captures = useCaptures(versionId ?? 0, captured);
   const [tab, setTab] = useState<"missing" | "caught">("missing");
 
   const caughtCount = entries.filter((e) => captures.captured.has(e.species.id)).length;
@@ -61,17 +65,26 @@ export function CaptureChecklist({ versionId, entries, captured, coverageNote }:
             const extra = entry.locations.length - MAX_LOCATIONS;
             return (
               <li key={entry.species.id} className="flex items-start gap-3 px-4 py-3">
-                <button
-                  type="button"
-                  onClick={() => captures.toggle(entry.species.id)}
-                  aria-pressed={caught}
-                  aria-label={`${caught ? "Retirer" : "Marquer"} ${entry.species.nameFr} ${caught ? "des captures" : "comme attrapé"}`}
-                  className="-m-2 grid size-11 shrink-0 place-items-center self-center"
-                >
-                  <span className={checkCircle(caught)}>
-                    <CheckIcon />
+                {readOnly ? (
+                  <span className="-m-2 grid size-11 shrink-0 place-items-center self-center">
+                    <span className={`${checkCircle(caught)} pointer-events-none`}>
+                      <CheckIcon />
+                    </span>
+                    <span className="sr-only">{caught ? "Attrapé" : "Manquant"}</span>
                   </span>
-                </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => captures.toggle(entry.species.id)}
+                    aria-pressed={caught}
+                    aria-label={`${caught ? "Retirer" : "Marquer"} ${entry.species.nameFr} ${caught ? "des captures" : "comme attrapé"}`}
+                    className="-m-2 grid size-11 shrink-0 place-items-center self-center"
+                  >
+                    <span className={checkCircle(caught)}>
+                      <CheckIcon />
+                    </span>
+                  </button>
+                )}
                 <span className={`${spriteBox} size-12 rounded-sm`}>
                   <PokemonSprite pokemonId={entry.species.pokemonId} fallbackId={entry.species.id} alt="" size={48} />
                 </span>
@@ -80,7 +93,11 @@ export function CaptureChecklist({ versionId, entries, captured, coverageNote }:
                     <span className="t-small font-normal text-ink-3">{dexNumber(entry.number)}</span>
                     {entry.species.nameFr}
                   </Link>
-                  {entry.locations.length === 0 ? (
+                  {readOnly ? (
+                    <p className="t-small text-ink-2">
+                      {caught ? `Attrapé dans : ${caughtIn?.[entry.species.id]?.join(", ") ?? "—"}` : "Pas encore attrapé dans un jeu."}
+                    </p>
+                  ) : entry.locations.length === 0 ? (
                     <p className="t-small text-ink-2">
                       {coverageNote ? "Lieux inconnus pour ce jeu." : "Pas de rencontre sauvage connue : évolution, échange, cadeau ou événement."}
                     </p>

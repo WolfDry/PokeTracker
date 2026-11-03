@@ -23,6 +23,18 @@ export async function getCapturedSpeciesIds(userId: string, versionId: number): 
   return rows.map((r) => r.speciesId);
 }
 
+/** Living dex National : espèces attrapées dans au moins un jeu, et les jeux où chacune l'est (dans l'ordre des jeux). */
+export async function getNationalCaptures(userId: string): Promise<{ speciesIds: number[]; caughtIn: Record<number, string[]> }> {
+  const rows = await prisma.capture.findMany({
+    where: { userId },
+    orderBy: { versionId: "asc" },
+    select: { speciesId: true, version: { select: { nameFr: true } } },
+  });
+  const caughtIn: Record<number, string[]> = {};
+  for (const row of rows) (caughtIn[row.speciesId] ??= []).push(row.version.nameFr);
+  return { speciesIds: Object.keys(caughtIn).map(Number), caughtIn };
+}
+
 /** Avancement des Pokédex d'un jeu pour l'utilisateur. */
 export async function getDexProgress(userId: string, versionId: number): Promise<DexProgress[]> {
   const [captured, pokedexes] = await Promise.all([getCapturedSpeciesIds(userId, versionId), getVersionPokedexes(versionId)]);
