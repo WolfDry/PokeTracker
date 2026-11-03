@@ -107,7 +107,7 @@ export function NewHuntForm({ games, initial }: { games: GameOption[]; initial?:
   return (
     <form action={action} className="space-y-5" noValidate>
       {state.error && <FormError>{state.error}</FormError>}
-      <SpeciesPicker label="Pokémon" initial={initial?.species} error={state.fieldErrors?.speciesId} autoFocus={!initial?.species} />
+      <SpeciesPicker label="Pokémon" initial={initial?.species} error={state.fieldErrors?.speciesId} autoFocus={!initial?.species} spoilerSafe />
       <GameSelect games={games} defaultValue={versionId} error={state.fieldErrors?.versionId} />
       <MethodField defaultValue={state.values?.method} error={state.fieldErrors?.method} />
       <Field name="count" label="Rencontres déjà faites" error={state.fieldErrors?.count} hint="Laisse 0 pour une nouvelle chasse.">

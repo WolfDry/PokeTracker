@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useEffect, useId } from "react";
 import { ChevronRightIcon, MinusIcon, PlusIcon, StarIcon } from "@/components/icons";
-import { PokemonSprite } from "@/components/pokemon-sprite";
 import { CompleteHuntForm } from "@/components/shiny-forms";
+import { SpoilerSprite } from "@/components/spoiler-sprite";
 import { card, cardLink, input, secondaryButton, spriteBox, textLink } from "@/components/ui";
 import { useHuntCounter, type SaveStatus } from "@/components/use-hunt-counter";
 import type { Hunt } from "@/lib/data/shiny";
@@ -142,7 +142,7 @@ export function HuntCard({ hunt }: { hunt: Hunt }) {
   return (
     <li className={`${cardLink} flex items-center gap-3 p-3`}>
       <Link href={`/shiny/chasse/${hunt.id}`} className={`${spriteBox} size-14`}>
-        <PokemonSprite pokemonId={hunt.species.pokemonId} alt="" size={56} shiny />
+        <SpoilerSprite pokemonId={hunt.species.pokemonId} alt="" size={56} />
       </Link>
       <div className="min-w-0 flex-1">
         <Link href={`/shiny/chasse/${hunt.id}`} className="block truncate font-semibold hover:underline">

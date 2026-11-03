@@ -6,6 +6,7 @@ import { ConfirmButton } from "@/components/confirm-button";
 import { HuntCounter } from "@/components/hunt-counter";
 import { StarIcon } from "@/components/icons";
 import { PokemonSprite } from "@/components/pokemon-sprite";
+import { SpoilerSprite } from "@/components/spoiler-sprite";
 import { card, dangerButton, secondaryButton, smallButton, spriteBox } from "@/components/ui";
 import { getHunt } from "@/lib/data/shiny";
 import { requireUser } from "@/lib/session";
@@ -30,7 +31,12 @@ export default async function Page({ params }: PageProps<"/shiny/chasse/[id]">) 
 
       <header className="flex items-center gap-5">
         <span className={`${spriteBox} size-[88px] rounded-lg`}>
-          <PokemonSprite pokemonId={hunt.species.pokemonId} alt={`${hunt.species.nameFr} chromatique`} size={88} shiny />
+          {/* Tant que la chasse n'est pas terminée, le shiny reste soumis au mode spoiler. */}
+          {hunt.status === "COMPLETED" ? (
+            <PokemonSprite pokemonId={hunt.species.pokemonId} alt={`${hunt.species.nameFr} chromatique`} size={88} shiny />
+          ) : (
+            <SpoilerSprite pokemonId={hunt.species.pokemonId} alt={hunt.species.nameFr} size={88} />
+          )}
         </span>
         <div className="min-w-0 space-y-1">
           <p className="t-caption">{hunt.version.nameFr}</p>

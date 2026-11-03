@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState, useTransition } from "react";
 import { PokemonSprite } from "@/components/pokemon-sprite";
+import { SpoilerSprite } from "@/components/spoiler-sprite";
 import { dexNumber, fieldLabel, ghostButton, input, inputError, smallButton, spriteBox } from "@/components/ui";
 import type { SpeciesPick } from "@/lib/data/search";
 import { searchSpeciesAction } from "@/lib/shiny-actions";
@@ -12,6 +13,8 @@ type Props = {
   initial?: SpeciesPick | null;
   error?: string;
   autoFocus?: boolean;
+  /** Shiny pas encore obtenu (nouvelle chasse) : sprites soumis au mode spoiler. */
+  spoilerSafe?: boolean;
 };
 
 const SEARCH_DELAY = 150;
@@ -20,7 +23,7 @@ const SEARCH_DELAY = 150;
  * Champ « Pokémon » des formulaires shiny : recherche par nom ou numéro avec suggestions,
  * l'espèce choisie est envoyée dans un champ caché `speciesId`.
  */
-export function SpeciesPicker({ label, initial = null, error, autoFocus }: Props) {
+export function SpeciesPicker({ label, initial = null, error, autoFocus, spoilerSafe = false }: Props) {
   const id = useId();
   const [selected, setSelected] = useState<SpeciesPick | null>(initial);
   const [query, setQuery] = useState("");
@@ -87,7 +90,7 @@ export function SpeciesPicker({ label, initial = null, error, autoFocus }: Props
       {selected ? (
         <div className="flex items-center gap-3 rounded-md border border-line-strong bg-surface p-1.5 pr-2">
           <span className={`${spriteBox} size-10 rounded-sm`}>
-            <PokemonSprite pokemonId={selected.pokemonId} alt="" size={40} shiny />
+            {spoilerSafe ? <SpoilerSprite pokemonId={selected.pokemonId} alt="" size={40} /> : <PokemonSprite pokemonId={selected.pokemonId} alt="" size={40} shiny />}
           </span>
           <span className="flex flex-1 items-baseline gap-2 font-semibold">
             <span className="t-small font-normal text-ink-3">{dexNumber(selected.id, 4)}</span>
@@ -129,7 +132,7 @@ export function SpeciesPicker({ label, initial = null, error, autoFocus }: Props
                     onMouseEnter={() => setActive(index)}
                     className={`flex w-full items-center gap-3 rounded-sm px-2 py-1.5 text-left ${index === active ? "bg-surface-2" : ""}`}
                   >
-                    <PokemonSprite pokemonId={species.pokemonId} alt="" size={36} shiny />
+                    {spoilerSafe ? <SpoilerSprite pokemonId={species.pokemonId} alt="" size={36} /> : <PokemonSprite pokemonId={species.pokemonId} alt="" size={36} shiny />}
                     <span className="t-small text-ink-3">{dexNumber(species.id, 4)}</span>
                     <span className="font-medium">{species.nameFr}</span>
                   </button>

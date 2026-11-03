@@ -29,5 +29,7 @@ export default function Page({ searchParams }: PageProps<"/shiny/nouvelle">) {
 async function Form({ searchParams }: Pick<PageProps<"/shiny/nouvelle">, "searchParams">) {
   await requireUser("/shiny/nouvelle");
   const { games, initial } = await loadShinyFormProps(searchParams);
-  return <NewHuntForm games={games} initial={initial} />;
+  // La page déjà visitée est gardée en vie par le routeur : sans `key`, revenir avec une autre
+  // `?espece=` réafficherait l'espèce choisie la fois précédente.
+  return <NewHuntForm key={`${initial.species?.id ?? ""}-${initial.versionId ?? ""}`} games={games} initial={initial} />;
 }

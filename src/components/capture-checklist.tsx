@@ -7,7 +7,8 @@ import { PokemonSprite } from "@/components/pokemon-sprite";
 import { ProgressBar } from "@/components/progress-bar";
 import { card, checkCircle, chip, chipCount, dexNumber, spriteBox, textLink } from "@/components/ui";
 import { useCaptures } from "@/components/use-captures";
-import { useShinySpoilers } from "@/components/use-shiny-spoilers";
+import { SpoilerSprite } from "@/components/spoiler-sprite";
+import { useSpoilerStore } from "@/store/spoiler-store";
 import type { SpeciesLocation } from "@/lib/data/encounters";
 import type { PokedexGridEntry } from "@/lib/data/pokedex";
 import type { ShinyDexMeta } from "@/lib/data/shiny";
@@ -37,7 +38,7 @@ const formatLevel = (min: number, max: number) => (min === max ? `Niv. ${min}` :
 export function CaptureChecklist({ versionId, entries, captured, coverageNote, caughtIn, shiny }: Props) {
   const readOnly = versionId === null;
   const captures = useCaptures(versionId ?? 0, captured, shiny ? toggleShinyAction : undefined);
-  const spoilers = useShinySpoilers();
+  const spoilers = useSpoilerStore();
   const [tab, setTab] = useState<"missing" | "caught">("missing");
   const caughtLabel = shiny ? "Obtenus" : "Attrapés";
 
@@ -69,12 +70,12 @@ export function CaptureChecklist({ versionId, entries, captured, coverageNote, c
           {shiny && (
             <button
               type="button"
-              className={chip(spoilers.revealed)}
-              aria-pressed={spoilers.revealed}
-              onClick={spoilers.toggle}
-              title={spoilers.revealed ? "Afficher les manquants en couleurs normales" : "Afficher les manquants en shiny"}
+              className={chip(spoilers.shinyRevealed)}
+              aria-pressed={spoilers.shinyRevealed}
+              onClick={spoilers.toggleShinyRevealed}
+              title={spoilers.shinyRevealed ? "Afficher les manquants en couleurs normales" : "Afficher les manquants en shiny"}
             >
-              {spoilers.revealed ? <EyeIcon size={16} /> : <EyeOffIcon size={16} />}
+              {spoilers.shinyRevealed ? <EyeIcon size={16} /> : <EyeOffIcon size={16} />}
               Spoilers
             </button>
           )}
@@ -125,7 +126,11 @@ export function CaptureChecklist({ versionId, entries, captured, coverageNote, c
                 )}
                 <span className={`${spriteBox} size-12 rounded-sm`}>
                   {/* Mode spoiler : un shiny manquant garde son sprite normal tant qu'il n'est pas révélé. */}
-                  <PokemonSprite pokemonId={entry.species.pokemonId} fallbackId={entry.species.id} alt="" size={48} shiny={Boolean(shiny) && (caught || spoilers.revealed)} />
+                  {shiny && !caught ? (
+                    <SpoilerSprite pokemonId={entry.species.pokemonId} fallbackId={entry.species.id} alt="" size={48} />
+                  ) : (
+                    <PokemonSprite pokemonId={entry.species.pokemonId} fallbackId={entry.species.id} alt="" size={48} shiny={Boolean(shiny)} />
+                  )}
                 </span>
                 <div className="min-w-0 flex-1 space-y-1 py-1">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">

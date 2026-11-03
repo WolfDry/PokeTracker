@@ -29,5 +29,6 @@ export default function Page({ searchParams }: PageProps<"/shiny/ajouter">) {
 async function Form({ searchParams }: Pick<PageProps<"/shiny/ajouter">, "searchParams">) {
   await requireUser("/shiny/ajouter");
   const { games, initial } = await loadShinyFormProps(searchParams);
-  return <AddShinyForm games={games} initial={initial} />;
+  // Même raison que « Nouvelle chasse » : la `key` repart de l'espèce et du jeu de l'URL.
+  return <AddShinyForm key={`${initial.species?.id ?? ""}-${initial.versionId ?? ""}`} games={games} initial={initial} />;
 }
