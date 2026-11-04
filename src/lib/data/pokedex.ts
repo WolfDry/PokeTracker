@@ -11,6 +11,8 @@ export type PokedexGridEntry = {
     /** Forme affichée (sprite et types) : la forme régionale de la région du Pokédex s'il y en a une, sinon la forme par défaut. */
     pokemonId: number;
     types: { slug: string; nameFr: string }[];
+    /** Espèce dont elle évolue (« Évolution de Héricendre » dans l'itinéraire du living dex). */
+    evolvesFromNameFr?: string | null;
   };
 };
 
@@ -71,6 +73,7 @@ export async function getPokedexBySlug(slug: string) {
               id: true,
               slug: true,
               nameFr: true,
+              evolvesFrom: { select: { nameFr: true } },
               pokemons: {
                 orderBy: { id: "asc" },
                 select: {
@@ -100,6 +103,7 @@ export async function getPokedexBySlug(slug: string) {
         nameFr: entry.species.nameFr,
         pokemonId: pokemon.id,
         types: [pokemon.type1, pokemon.type2].filter((t) => t !== null),
+        evolvesFromNameFr: entry.species.evolvesFrom?.nameFr ?? null,
       },
     };
   });

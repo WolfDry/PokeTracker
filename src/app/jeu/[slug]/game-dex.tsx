@@ -3,8 +3,9 @@ import "server-only";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ChecklistEntry } from "@/components/capture-checklist";
+import type { RouteLocation } from "@/components/living-dex-shared";
 import { chip } from "@/components/ui";
-import { getVersionSpeciesLocations, type SpeciesLocation } from "@/lib/data/encounters";
+import { getVersionLocations, getVersionSpeciesLocations, type SpeciesLocation } from "@/lib/data/encounters";
 import { getVersionBySlug } from "@/lib/data/games";
 import { getPokedexBySlug } from "@/lib/data/pokedex";
 
@@ -33,6 +34,12 @@ export async function loadGameDex(slug: string, searchParams: SearchParams) {
   const entries: ChecklistEntry[] = pokedex.entries.map((entry) => ({ ...entry, locations: locations[entry.species.id] ?? [] }));
   const coverageNote = coverage?.status === "FULL" ? null : (coverage?.note ?? "Lieux de rencontre indisponibles pour ce jeu.");
   return { version, pokedexes, current, title: `Pokédex ${pokedex.nameFr}`, entries, coverageNote };
+}
+
+/** Lieux du jeu dans l'ordre où on les découvre, avec leur région : le fil de l'itinéraire du living dex. */
+export async function loadGameRoute(slug: string): Promise<RouteLocation[]> {
+  const locations = await getVersionLocations(slug);
+  return locations?.groups.flatMap((group) => group.locations.map((location) => ({ id: location.id, region: group.region }))) ?? [];
 }
 
 /** Choix du Pokédex quand le jeu en a plusieurs (Paldea, Kitakami, Myrtille…). */

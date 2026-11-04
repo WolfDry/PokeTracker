@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { CaptureChecklist, type ChecklistEntry } from "@/components/capture-checklist";
-import { SectionHeader } from "@/components/page-header";
+import type { ChecklistEntry } from "@/components/capture-checklist";
+import { LivingDex } from "@/components/living-dex";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { getCapturedSpeciesIds, getNationalCaptures } from "@/lib/data/captures";
 import { getGame } from "@/lib/data/games";
 import { getPokedexBySlug } from "@/lib/data/pokedex";
 import { requireUser } from "@/lib/session";
-import { DexChips, loadGameDex } from "../game-dex";
+import { DexChips, loadGameDex, loadGameRoute } from "../game-dex";
 
 export async function generateMetadata({ params }: PageProps<"/jeu/[slug]/captures">): Promise<Metadata> {
   const { slug } = await params;
@@ -29,17 +29,17 @@ export default async function Page({ params, searchParams }: PageProps<"/jeu/[sl
   );
 }
 
-/** Living dex d'un jeu : un Pokédex du jeu à la fois, cochable, avec où trouver chaque Pokémon. */
+/** Living dex d'un jeu : un Pokédex du jeu à la fois, en mosaïque, en boîtes ou lieu par lieu, cochable. */
 async function VersionDex({ slug, searchParams }: { slug: string; searchParams: PageProps<"/jeu/[slug]/captures">["searchParams"] }) {
   const user = await requireUser(`/jeu/${slug}/captures`);
   const { version, pokedexes, current, title, entries, coverageNote } = await loadGameDex(slug, searchParams);
-  const captured = await getCapturedSpeciesIds(user.id, version.id);
+  const [captured, route] = await Promise.all([getCapturedSpeciesIds(user.id, version.id), loadGameRoute(slug)]);
 
+  // `key` : changer de Pokédex repart d'une sélection et de boîtes neuves (la page reste montée entre deux visites).
   return (
     <div className="space-y-5">
       <DexChips pokedexes={pokedexes} current={current} href={(dex) => `/jeu/${slug}/captures?dex=${dex}`} />
-      <SectionHeader title={title} aside={`${entries.length} Pokémon`} />
-      <CaptureChecklist versionId={version.id} entries={entries} captured={captured} coverageNote={coverageNote} />
+      <LivingDex key={current.slug} versionId={version.id} title={title} entries={entries} captured={captured} coverageNote={coverageNote} route={route} />
     </div>
   );
 }
@@ -53,15 +53,14 @@ async function NationalDex({ slug }: { slug: string }) {
   const entries: ChecklistEntry[] = pokedex.entries.map((entry) => ({ ...entry, locations: [] }));
 
   return (
-    <div className="space-y-5">
-      <SectionHeader title="Pokédex National" aside={`${entries.length} Pokémon`} />
-      <CaptureChecklist
-        versionId={null}
-        entries={entries}
-        captured={speciesIds}
-        caughtIn={caughtIn}
-        coverageNote="Le National cumule tes jeux : une espèce compte dès qu'elle est attrapée dans l'un d'eux. Coche tes captures depuis le living dex de chaque jeu."
-      />
-    </div>
+    <LivingDex
+      versionId={null}
+      title="Pokédex National"
+      entries={entries}
+      captured={speciesIds}
+      caughtIn={caughtIn}
+      route={[]}
+      coverageNote="Le National cumule tes jeux : une espèce compte dès qu'elle est attrapée dans l'un d'eux. Coche tes captures depuis le living dex de chaque jeu."
+    />
   );
 }

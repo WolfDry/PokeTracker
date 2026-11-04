@@ -61,6 +61,38 @@ export const OverviewIcon = (p: IconProps) => (
   </Icon>
 );
 
+/** Living dex, vue Mosaïque : une grille serrée (le Résumé a déjà les quatre carrés). */
+export const MosaicIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="2.75" y="2.75" width="4" height="4" rx="1" />
+    <rect x="8" y="2.75" width="4" height="4" rx="1" />
+    <rect x="13.25" y="2.75" width="4" height="4" rx="1" />
+    <rect x="2.75" y="8" width="4" height="4" rx="1" />
+    <rect x="8" y="8" width="4" height="4" rx="1" />
+    <rect x="13.25" y="8" width="4" height="4" rx="1" />
+    <rect x="2.75" y="13.25" width="4" height="4" rx="1" />
+    <rect x="8" y="13.25" width="4" height="4" rx="1" />
+    <rect x="13.25" y="13.25" width="4" height="4" rx="1" />
+  </Icon>
+);
+
+/** Living dex, vue Boîtes : une boîte du PC, bandeau de titre et cases. */
+export const BoxesIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="2.5" y="4" width="15" height="12.5" rx="2" />
+    <path d="M2.5 8.5h15M7.5 8.5v8M12.5 8.5v8" />
+  </Icon>
+);
+
+/** Living dex, vue Itinéraire : un chemin d'un point à un autre. */
+export const RouteIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="5" cy="4.5" r="2" />
+    <circle cx="15" cy="15.5" r="2" />
+    <path d="M7 4.5h5.5a3 3 0 0 1 0 6h-5a3 3 0 0 0 0 6H13" />
+  </Icon>
+);
+
 export const CheckIcon = (p: IconProps) => (
   <Icon size={14} {...p}>
     <path d="m4 10.5 4 4 8-9" />
