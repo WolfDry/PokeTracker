@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { CaptureChecklist, type ChecklistEntry } from "@/components/capture-checklist";
+import type { ChecklistEntry } from "@/components/capture-checklist";
 import { HuntCard } from "@/components/hunt-counter";
 import { PlusIcon } from "@/components/icons";
+import { LivingDex } from "@/components/living-dex";
 import { SectionHeader } from "@/components/page-header";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { notice, secondaryButton, smallButton, textLink } from "@/components/ui";
@@ -13,7 +14,7 @@ import { getPokedexBySlug } from "@/lib/data/pokedex";
 import { getGameHunts, getHunts, getNationalShinies, getShinyDex, type Hunt } from "@/lib/data/shiny";
 import { requireUser } from "@/lib/session";
 import { newHuntHref } from "@/lib/shiny";
-import { DexChips, loadGameDex } from "../game-dex";
+import { DexChips, loadGameDex, loadGameRoute } from "../game-dex";
 
 export async function generateMetadata({ params }: PageProps<"/jeu/[slug]/shiny">): Promise<Metadata> {
   const { slug } = await params;
@@ -34,19 +35,28 @@ export default async function Page({ params, searchParams }: PageProps<"/jeu/[sl
   );
 }
 
-/** Shiny dex d'un jeu : ses chasses en cours, puis la checklist chromatique d'un Pokédex du jeu. */
+/** Shiny dex d'un jeu : ses chasses en cours, puis un Pokédex du jeu en chromatique, en mosaïque ou en boîtes. */
 async function VersionShinyDex({ slug, searchParams }: { slug: string; searchParams: PageProps<"/jeu/[slug]/shiny">["searchParams"] }) {
   const user = await requireUser(`/jeu/${slug}/shiny`);
   const { version, pokedexes, current, title, entries, coverageNote } = await loadGameDex(slug, searchParams);
-  const [hunts, { speciesIds, meta }] = await Promise.all([getGameHunts(user.id, version.id), getShinyDex(user.id, version.id)]);
+  const [hunts, { speciesIds, meta }, route] = await Promise.all([getGameHunts(user.id, version.id), getShinyDex(user.id, version.id), loadGameRoute(slug)]);
 
   return (
     <div className="space-y-10">
       <Hunts hunts={hunts} newHuntHref={newHuntHref(slug)} />
       <section className="space-y-5">
         <DexChips pokedexes={pokedexes} current={current} href={(dex) => `/jeu/${slug}/shiny?dex=${dex}`} />
-        <SectionHeader title={title} aside={`${entries.length} Pokémon`} />
-        <CaptureChecklist versionId={version.id} entries={entries} captured={speciesIds} coverageNote={coverageNote} shiny={{ gameSlug: slug, meta }} />
+        {/* `key` : changer de Pokédex repart d'une sélection et de boîtes neuves. `route` ne sert qu'à l'ordre des lieux du panneau. */}
+        <LivingDex
+          key={current.slug}
+          versionId={version.id}
+          title={title}
+          entries={entries}
+          captured={speciesIds}
+          coverageNote={coverageNote}
+          route={route}
+          shiny={{ gameSlug: slug, meta }}
+        />
       </section>
     </div>
   );
@@ -68,12 +78,13 @@ async function NationalShinyDex({ slug }: { slug: string }) {
     <div className="space-y-10">
       <Hunts hunts={hunts} newHuntHref={newHuntHref(slug)} showGame />
       <section className="space-y-5">
-        <SectionHeader title="Pokédex National" aside={`${entries.length} Pokémon`} />
-        <CaptureChecklist
+        <LivingDex
           versionId={null}
+          title="Pokédex National"
           entries={entries}
           captured={speciesIds}
           caughtIn={caughtIn}
+          route={[]}
           shiny={{ gameSlug: slug, meta: {} }}
           coverageNote="Le National cumule tes jeux : une espèce compte dès qu'elle est obtenue en shiny dans l'un d'eux. Coche tes shinies depuis le shiny dex de chaque jeu."
         />

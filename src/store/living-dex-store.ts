@@ -4,9 +4,12 @@ import { persist } from "zustand/middleware";
 /** Vues du living dex : tout le Pokédex en mosaïque (par défaut), rangé en boîtes de 30, ou lieu par lieu. */
 export type LivingDexView = "mosaique" | "boites" | "itineraire";
 
+/** Pages qui ont des vues, chacune avec la sienne : le living dex et le shiny dex (sans itinéraire). */
+export type DexPage = "captures" | "shiny";
+
 type LivingDexStore = {
-  view: LivingDexView;
-  setView: (view: LivingDexView) => void;
+  views: Record<DexPage, LivingDexView>;
+  setView: (page: DexPage, view: LivingDexView) => void;
 };
 
 // Même schéma que les autres stores : mémorisé dans le navigateur, relu après l'hydratation (`skipHydration`)
@@ -14,14 +17,22 @@ type LivingDexStore = {
 export const useLivingDexStore = create<LivingDexStore>()(
   persist(
     (set) => ({
-      view: "mosaique",
-      setView: (view) => set({ view }),
+      views: { captures: "mosaique", shiny: "mosaique" },
+      setView: (page, view) => set((state) => ({ views: { ...state.views, [page]: view } })),
     }),
     {
       name: "poketracker:living-dex",
-      version: 1,
+      version: 2,
       skipHydration: true,
-      partialize: (state) => ({ view: state.view }),
+      partialize: (state) => ({ views: state.views }),
+      // v1 : une seule vue, celle du living dex.
+      migrate: (persisted, version) => {
+        if (version < 2) {
+          const view = (persisted as { view?: LivingDexView } | null)?.view ?? "mosaique";
+          return { views: { captures: view, shiny: "mosaique" } };
+        }
+        return persisted as Pick<LivingDexStore, "views">;
+      },
     },
   ),
 );

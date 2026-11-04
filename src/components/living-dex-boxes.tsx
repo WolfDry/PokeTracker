@@ -1,9 +1,9 @@
 "use client";
 
 import type { ChecklistEntry } from "@/components/capture-checklist";
-import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
-import { BOX_SIZE, pickLabel, roundButton } from "@/components/living-dex-shared";
-import { PokemonSprite } from "@/components/pokemon-sprite";
+import { ChevronLeftIcon, ChevronRightIcon, StarIcon } from "@/components/icons";
+import { BOX_SIZE, pickLabel, roundButton, type Wording } from "@/components/living-dex-shared";
+import { DexSprite } from "@/components/living-dex-sprite";
 import { dexNumber } from "@/components/ui";
 
 type Props = {
@@ -11,8 +11,12 @@ type Props = {
   captured: Set<number>;
   /** Recherche et filtre : les cases qui ne correspondent pas s'estompent, le rangement reste visible. */
   matches: (entry: ChecklistEntry) => boolean;
+  /** Shiny dex : chasse en cours sur un shiny manquant, repérée d'une étoile. */
+  isHunting: (entry: ChecklistEntry) => boolean;
   selectedId: number | undefined;
   quick: boolean;
+  shiny: boolean;
+  wording: Wording;
   /** Première des deux boîtes affichées (0 = boîte 1). */
   start: number;
   onStart: (box: number) => void;
@@ -20,7 +24,7 @@ type Props = {
 };
 
 /** Le Pokédex rangé en boîtes de 30, deux à la fois, avec la carte de toutes les boîtes au-dessus. */
-export function LivingDexBoxes({ entries, captured, matches, selectedId, quick, start, onStart, onPick }: Props) {
+export function LivingDexBoxes({ entries, captured, matches, isHunting, selectedId, quick, shiny, wording, start, onStart, onPick }: Props) {
   const boxes = Array.from({ length: Math.ceil(entries.length / BOX_SIZE) }, (_, index) => {
     const content = entries.slice(index * BOX_SIZE, (index + 1) * BOX_SIZE);
     return { index, entries: content, caught: content.filter((entry) => captured.has(entry.species.id)).length };
@@ -106,25 +110,21 @@ export function LivingDexBoxes({ entries, captured, matches, selectedId, quick, 
                 {box.entries.map((entry) => {
                   const caught = captured.has(entry.species.id);
                   const selected = entry.species.id === selectedId;
+                  const hunting = isHunting(entry);
                   return (
                     <li key={entry.species.id}>
                       <button
                         type="button"
                         onClick={() => onPick(entry)}
                         aria-pressed={quick ? caught : selected}
-                        aria-label={pickLabel(entry.species.nameFr, caught, quick)}
+                        aria-label={pickLabel(entry.species.nameFr, caught, quick, wording, hunting)}
                         title={`${dexNumber(entry.number)} · ${entry.species.nameFr}`}
-                        className={`grid aspect-square w-full place-items-center rounded-xl transition ${
+                        className={`relative grid aspect-square w-full place-items-center rounded-xl transition ${
                           caught ? "pokedex-screen" : "border border-line bg-surface-2 hover:border-line-strong"
                         } ${selected ? "outline-2 outline-offset-2 outline-game" : ""} ${matches(entry) ? "" : "opacity-25"}`}
                       >
-                        <PokemonSprite
-                          pokemonId={entry.species.pokemonId}
-                          fallbackId={entry.species.id}
-                          alt=""
-                          size={64}
-                          className={`size-[80%] object-contain ${caught ? "" : "sprite-silhouette"}`}
-                        />
+                        {hunting && <StarIcon size={12} className="absolute top-1 left-1 fill-shiny text-shiny" />}
+                        <DexSprite entry={entry} caught={caught} shiny={shiny} size={64} className={`size-[80%] object-contain ${caught ? "" : "sprite-silhouette"}`} />
                       </button>
                     </li>
                   );

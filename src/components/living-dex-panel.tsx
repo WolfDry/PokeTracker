@@ -4,12 +4,16 @@ import Link from "next/link";
 import { useEffect } from "react";
 import type { ChecklistEntry } from "@/components/capture-checklist";
 import { ChevronLeftIcon, ChevronRightIcon, CloseIcon } from "@/components/icons";
-import { BOX_SIZE, formatLevel, roundButton } from "@/components/living-dex-shared";
-import { PokemonSprite } from "@/components/pokemon-sprite";
+import { BOX_SIZE, formatLevel, roundButton, type Wording } from "@/components/living-dex-shared";
+import { DexSprite } from "@/components/living-dex-sprite";
 import { TypeBadge } from "@/components/type-badge";
 import { dexNumber, gameButton, pillButton, textLink } from "@/components/ui";
+import type { ShinyDexMeta } from "@/lib/data/shiny";
+import { huntHref, newHuntHref } from "@/lib/shiny";
 
 const MAX_LOCATIONS = 3;
+
+const numberFr = new Intl.NumberFormat("fr-FR");
 
 type Props = {
   entry: ChecklistEntry;
@@ -22,6 +26,9 @@ type Props = {
   coverageNote: string | null;
   /** Rang de chaque lieu dans la progression du jeu : les lieux s'affichent dans l'ordre où on les atteint. */
   ranks: Map<number, number>;
+  wording: Wording;
+  /** Shiny dex : sprite chromatique (mode spoiler), nombre de shinies obtenus, chasse en cours ou à lancer. */
+  shiny?: { gameSlug: string; meta: ShinyDexMeta | undefined };
   onToggle: () => void;
   onStep: (delta: number) => void;
   /** Mobile : tiroir ouvert au choix d'un Pokémon. Dès `lg`, le panneau est toujours là, collé à droite. */
@@ -30,11 +37,13 @@ type Props = {
 };
 
 /** Pokémon sélectionné dans la mosaïque ou les boîtes : son écran, de quoi le cocher et où le trouver. */
-export function LivingDexPanel({ entry, index, caught, readOnly, caughtIn, coverageNote, ranks, onToggle, onStep, open, onClose }: Props) {
+export function LivingDexPanel({ entry, index, caught, readOnly, caughtIn, coverageNote, ranks, wording, shiny, onToggle, onStep, open, onClose }: Props) {
   const { species } = entry;
   const rank = (id: number) => ranks.get(id) ?? ranks.size;
   const locations = [...entry.locations].sort((a, b) => rank(a.id) - rank(b.id));
   const extra = locations.length - MAX_LOCATIONS;
+  const count = shiny?.meta?.count ?? 0;
+  const hunt = shiny?.meta?.hunt ?? null;
 
   // Tiroir mobile : Échap le referme.
   useEffect(() => {
@@ -64,9 +73,9 @@ export function LivingDexPanel({ entry, index, caught, readOnly, caughtIn, cover
               caught ? "bg-game text-on-game" : "border border-line-strong bg-surface text-ink-2"
             }`}
           >
-            {caught ? "Attrapé" : "Manquant"}
+            {caught ? `${wording.caught}${count > 1 ? ` ×${count}` : ""}` : "Manquant"}
           </span>
-          <PokemonSprite key={species.pokemonId} pokemonId={species.pokemonId} fallbackId={species.id} alt={species.nameFr} size={160} className="size-[156px] object-contain" />
+          <DexSprite key={species.pokemonId} entry={entry} caught={caught} shiny={Boolean(shiny)} alt={species.nameFr} size={160} className="size-[156px] object-contain" />
         </div>
 
         <div className="flex items-center justify-between gap-2">
@@ -98,15 +107,26 @@ export function LivingDexPanel({ entry, index, caught, readOnly, caughtIn, cover
         </div>
 
         {!readOnly && (
-          <button type="button" onClick={onToggle} className={`${caught ? pillButton : gameButton} w-full`}>
-            {caught ? "Retirer des captures" : "Marquer comme attrapé"}
-          </button>
+          <div className="flex flex-col gap-2">
+            <button type="button" onClick={onToggle} className={`${caught ? pillButton : gameButton} w-full`}>
+              {caught ? wording.unmarkButton : wording.markButton}
+            </button>
+            {/* Shiny manquant : sa chasse en cours, ou de quoi en lancer une, jeu et forme préremplis. */}
+            {shiny && !caught && (
+              <Link
+                href={hunt ? huntHref(shiny.gameSlug, hunt.id) : newHuntHref(shiny.gameSlug, { speciesId: species.id, pokemonId: species.pokemonId })}
+                className={`${pillButton} w-full`}
+              >
+                {hunt ? `Chasse en cours · ${numberFr.format(hunt.count)}` : "Chasser"}
+              </Link>
+            )}
+          </div>
         )}
 
         <div className="border-t border-line pt-3.5">
-          <p className="mb-1.5 t-caption font-bold">{readOnly ? "Attrapé dans" : "Où le trouver"}</p>
+          <p className="mb-1.5 t-caption font-bold">{readOnly ? wording.caughtIn : "Où le trouver"}</p>
           {readOnly ? (
-            <p className="t-small text-ink-2">{caught ? (caughtIn?.join(", ") ?? "—") : "Pas encore attrapé dans un jeu."}</p>
+            <p className="t-small text-ink-2">{caught ? (caughtIn?.join(", ") ?? "—") : wording.notYet}</p>
           ) : locations.length === 0 ? (
             <p className="t-small text-ink-2">
               {coverageNote
