@@ -109,6 +109,27 @@ export async function getShinies(userId: string, speciesId?: number): Promise<Sh
   return rows.map((row) => ({ ...row, species: toSpecies(row.species, row.pokemon) }));
 }
 
+/** Derniers shinies obtenus dans un jeu (`null` : tous jeux confondus), les plus récents en premier. */
+export async function getRecentShinies(userId: string, versionId: number | null, take: number): Promise<Shiny[]> {
+  const rows = await prisma.shinyCapture.findMany({
+    where: versionId === null ? { userId } : { userId, versionId },
+    orderBy: [{ caughtAt: "desc" }, { id: "desc" }],
+    take,
+    select: shinySelect,
+  });
+  return rows.map((row) => ({ ...row, species: toSpecies(row.species, row.pokemon) }));
+}
+
+/** Espèces obtenues en shiny dans un jeu (`null` : dans au moins un jeu). */
+export async function getShinySpeciesIds(userId: string, versionId: number | null): Promise<number[]> {
+  const rows = await prisma.shinyCapture.findMany({
+    where: versionId === null ? { userId } : { userId, versionId },
+    distinct: ["speciesId"],
+    select: { speciesId: true },
+  });
+  return rows.map((row) => row.speciesId);
+}
+
 /** Chasses en cours dans un jeu, les plus récemment touchées en premier. */
 export async function getGameHunts(userId: string, versionId: number): Promise<Hunt[]> {
   const rows = await prisma.shinyHunt.findMany({ where: { userId, versionId, status: "ACTIVE" }, orderBy: { updatedAt: "desc" }, select: huntSelect });

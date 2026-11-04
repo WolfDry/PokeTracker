@@ -132,3 +132,12 @@ export async function getVersionPokedexes(versionId: number): Promise<VersionPok
   }
   return pokedexes.map((p) => ({ id: p.id, slug: p.slug, nameFr: p.nameFr, speciesIds: p.entries.map((e) => e.speciesId) }));
 }
+
+/** Espèce de chaque forme demandée (`[id de la forme, id de l'espèce]`), pour relier un membre d'équipe à son shiny dex. */
+export async function getPokemonSpecies(pokemonIds: number[]): Promise<[number, number][]> {
+  cacheLife("max");
+  cacheTag("reference");
+
+  const rows = await prisma.pokemon.findMany({ where: { id: { in: pokemonIds } }, select: { id: true, speciesId: true } });
+  return rows.map((row) => [row.id, row.speciesId]);
+}

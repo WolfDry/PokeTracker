@@ -164,3 +164,34 @@ export function HuntCard({ hunt }: { hunt: Hunt }) {
     </li>
   );
 }
+
+/**
+ * Chasse dans le résumé d'un jeu (dans un `.game-tint`) : le sprite dans un écran du Pokédex, sans nom
+ * (il reste dans le lien), le compteur en afficheur et +1. L'état d'enregistrement n'apparaît qu'en cas d'échec.
+ */
+export function HuntSummaryRow({ hunt }: { hunt: Hunt }) {
+  const counter = useHuntCounter(hunt.id, hunt.count);
+  return (
+    <li className="space-y-1">
+      <div className="flex items-center gap-3.5">
+        <Link
+          href={huntHref(hunt.version.slug, hunt.id)}
+          aria-label={`Chasse : ${hunt.species.nameFr}`}
+          className="grid size-[84px] shrink-0 place-items-center rounded-[10px_10px_10px_22px] pokedex-screen"
+        >
+          <SpoilerSprite pokemonId={hunt.species.pokemonId} alt="" size={96} className="size-[76px] object-contain" />
+        </Link>
+        <output className="min-w-0 flex-1 truncate font-mono text-[26px] leading-8 font-bold tracking-[-0.04em]">{numberFr.format(counter.count)}</output>
+        <button
+          type="button"
+          onClick={() => counter.add(1)}
+          aria-label={`+1 pour ${hunt.species.nameFr}`}
+          className="grid size-11 shrink-0 place-items-center rounded-full bg-game font-mono text-sm font-bold text-on-game transition-opacity hover:opacity-90"
+        >
+          +1
+        </button>
+      </div>
+      {counter.status === "error" && <StatusLine status={counter.status} error={counter.error} retry={counter.retry} />}
+    </li>
+  );
+}

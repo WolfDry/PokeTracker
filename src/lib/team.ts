@@ -161,6 +161,15 @@ export function encodeTeam(team: TeamSlotIds[]) {
   return parts.join("-");
 }
 
+/** Les six formes d'une équipe sauvegardée (« 6.53.394-0-25 »), `null` pour un emplacement vide. */
+export function teamPokemonIds(slots: string): (number | null)[] {
+  const parts = slots ? slots.split("-") : [];
+  return Array.from({ length: TEAM_SIZE }, (_, i) => {
+    const id = Number((parts[i] ?? "").split(".")[0]);
+    return Number.isInteger(id) && id > 0 ? id : null;
+  });
+}
+
 /** Les formes absentes de `available` laissent leur emplacement vide ; les capacités restent à valider côté serveur. */
 export function decodeTeam(value: string | string[] | undefined, available: Set<number>): TeamSlotIds[] {
   const parts = typeof value === "string" ? value.split("-").slice(0, TEAM_SIZE) : [];

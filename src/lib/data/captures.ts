@@ -35,6 +35,20 @@ export async function getNationalCaptures(userId: string): Promise<{ speciesIds:
   return { speciesIds: Object.keys(caughtIn).map(Number), caughtIn };
 }
 
+export type RecentCapture = { speciesId: number; nameFr: string; pokemonId: number };
+
+/** Dernières espèces cochées dans un jeu (`null` : tous jeux confondus, chaque espèce une fois), la plus récente en premier. */
+export async function getRecentCaptures(userId: string, versionId: number | null, take: number): Promise<RecentCapture[]> {
+  const rows = await prisma.capture.findMany({
+    where: versionId === null ? { userId } : { userId, versionId },
+    orderBy: [{ caughtAt: "desc" }, { id: "desc" }],
+    distinct: ["speciesId"],
+    take,
+    select: { species: { select: { id: true, nameFr: true, pokemons: { where: { isDefault: true }, select: { id: true }, take: 1 } } } },
+  });
+  return rows.map(({ species }) => ({ speciesId: species.id, nameFr: species.nameFr, pokemonId: species.pokemons[0]?.id ?? species.id }));
+}
+
 /** Avancement des Pokédex d'un jeu pour l'utilisateur. */
 export async function getDexProgress(userId: string, versionId: number): Promise<DexProgress[]> {
   const [captured, pokedexes] = await Promise.all([getCapturedSpeciesIds(userId, versionId), getVersionPokedexes(versionId)]);
