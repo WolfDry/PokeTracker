@@ -5,7 +5,7 @@ import { CheckIcon, CloseIcon, SearchIcon } from "@/components/icons";
 import { ToolbarSelect } from "@/components/toolbar-select";
 import { TypeBadge } from "@/components/type-badge";
 import { checkCircle, ghostButton, input, primaryButton } from "@/components/ui";
-import { CATEGORY_LABELS, type LearnableMove, learnMethodLabel, MAX_MOVES, type TeamMove, toTeamMove } from "@/lib/moves";
+import { CATEGORY_LABELS, type LearnableMove, learnersLabel, MAX_MOVES, type TeamMove, toTeamMove } from "@/lib/moves";
 import { normalize } from "@/lib/search";
 import { learnableMovesAction } from "@/lib/team-actions";
 
@@ -48,6 +48,8 @@ export function TeamMovePicker({ slot, gameSlug, gameName, pokemon, selected, on
   }, [gameSlug, pokemon.pokemonId]);
 
   const moves = useMemo(() => (state.status === "ready" ? state.moves : []), [state]);
+  // Qui apprend chaque attaque n'est précisé que si une évolution précédente en apprend au moins une.
+  const withNames = useMemo(() => moves.some((m) => m.learners.some((l) => !l.self)), [moves]);
   const types = useMemo(() => {
     const map = new Map(moves.map((m) => [m.type.slug, m.type.nameFr]));
     return [...map].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label, "fr"));
@@ -141,8 +143,8 @@ export function TeamMovePicker({ slot, gameSlug, gameName, pokemon, selected, on
                     <span className="min-w-0 flex-1">
                       <span className="block font-semibold">{move.nameFr}</span>
                       <span className="block t-small text-ink-2">
-                        {CATEGORY_LABELS[move.category]} · {learnMethodLabel(move.method, move.level)}
-                        {move.fixedDamage && " · dégâts fixes"}
+                        {CATEGORY_LABELS[move.category]}
+                        {move.fixedDamage && " · dégâts fixes"} · {learnersLabel(move.learners, withNames)}
                       </span>
                     </span>
                     <TypeBadge type={move.type} />

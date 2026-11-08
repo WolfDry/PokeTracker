@@ -15,8 +15,21 @@ export type TeamMove = {
   fixedDamage: boolean;
 };
 
-/** Capacité qu'une forme peut apprendre dans le jeu, avec la façon la plus simple de l'apprendre. */
-export type LearnableMove = TeamMove & { method: string; level: number | null };
+/** Une forme de la lignée qui apprend la capacité, avec la façon la plus simple pour elle de l'apprendre. */
+export type MoveLearner = {
+  nameFr: string;
+  /** La forme choisie elle-même (sinon une évolution précédente : Salamèche, Reptincel pour Dracaufeu). */
+  self: boolean;
+  method: string;
+  level: number | null;
+};
+
+/**
+ * Capacité que la forme peut connaître dans le jeu : apprise par elle-même ou par une évolution précédente
+ * (un Pokémon garde ses capacités en évoluant). `learners` : la forme d'abord, puis ses évolutions précédentes,
+ * de la plus proche à la plus lointaine.
+ */
+export type LearnableMove = TeamMove & { learners: MoveLearner[] };
 
 /** Nombre de capacités d'un Pokémon. */
 export const MAX_MOVES = 4;
@@ -71,4 +84,19 @@ export function learnMethodLabel(method: string, level: number | null) {
   if (method === "tutor") return "Tuteur";
   if (method === "egg") return "Œuf";
   return "Spécial";
+}
+
+/**
+ * Qui apprend la capacité et comment, les formes qui l'apprennent de la même façon regroupées :
+ * « Dracaufeu, Salamèche : Niv. 46 · Reptincel : Niv. 43 ». Sans les noms (`withNames` faux), juste les méthodes.
+ */
+export function learnersLabel(learners: MoveLearner[], withNames: boolean) {
+  const groups = new Map<string, string[]>();
+  for (const learner of learners) {
+    const label = learnMethodLabel(learner.method, learner.level);
+    groups.set(label, [...(groups.get(label) ?? []), learner.nameFr]);
+  }
+  return [...groups]
+    .map(([label, names]) => (withNames ? `${names.join(", ")} : ${label}` : label))
+    .join(" · ");
 }
