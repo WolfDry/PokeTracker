@@ -46,8 +46,8 @@ const normalize = (text: string) => text.normalize("NFD").replace(/\p{Diacritic}
 /**
  * Living dex (ou shiny dex) d'un jeu en plusieurs vues, au choix mémorisé dans le navigateur pour chaque page :
  * la mosaïque de tout le Pokédex (par défaut), les boîtes de 30 du PC, et l'itinéraire lieu par lieu (living dex
- * seulement). La recherche, les coches et le Pokémon sélectionné sont communs ; le panneau de détail sert la
- * mosaïque et les boîtes.
+ * seulement). La recherche, les coches, la coche rapide, le Pokémon sélectionné et son panneau de détail sont
+ * communs aux trois vues.
  */
 export function LivingDex({ versionId, title, entries, captured, coverageNote, caughtIn, route, shiny }: Props) {
   const readOnly = versionId === null;
@@ -173,47 +173,46 @@ export function LivingDex({ versionId, title, entries, captured, coverageNote, c
               className="h-10 w-full rounded-full border border-line-strong bg-surface pr-3 pl-[38px] text-sm text-ink placeholder:text-ink-3 field-focus"
             />
           </label>
-          {view === "itineraire" ? (
-            <button type="button" className={`${chip(hideDone)} ml-auto`} aria-pressed={hideDone} onClick={() => setHideDone(!hideDone)}>
-              Replier les lieux terminés
-            </button>
-          ) : (
-            <>
-              <div role="group" aria-label="Afficher" className="flex flex-wrap gap-2">
-                {filters.map((f) => (
-                  <button key={f.id} type="button" className={chip(filter === f.id)} aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
-                    {f.label} <span className={chipCount(filter === f.id)}>{f.count}</span>
-                  </button>
-                ))}
-              </div>
-              <div className="ml-auto flex flex-wrap gap-2">
-                {shiny && (
-                  <button
-                    type="button"
-                    className={chip(spoilers.shinyRevealed)}
-                    aria-pressed={spoilers.shinyRevealed}
-                    onClick={spoilers.toggleShinyRevealed}
-                    title={spoilers.shinyRevealed ? "Afficher les manquants en couleurs normales" : "Afficher les manquants en shiny"}
-                  >
-                    {spoilers.shinyRevealed ? <EyeIcon size={16} /> : <EyeOffIcon size={16} />}
-                    Spoilers
-                  </button>
-                )}
-                {!readOnly && (
-                  <button
-                    type="button"
-                    className={chip(quick)}
-                    aria-pressed={quick}
-                    onClick={() => setQuick(!quick)}
-                    title="Un clic sur un Pokémon le coche au lieu de l'afficher"
-                  >
-                    <CheckIcon size={16} strokeWidth={2} />
-                    Coche rapide
-                  </button>
-                )}
-              </div>
-            </>
+          {view !== "itineraire" && (
+            <div role="group" aria-label="Afficher" className="flex flex-wrap gap-2">
+              {filters.map((f) => (
+                <button key={f.id} type="button" className={chip(filter === f.id)} aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
+                  {f.label} <span className={chipCount(filter === f.id)}>{f.count}</span>
+                </button>
+              ))}
+            </div>
           )}
+          <div className="ml-auto flex flex-wrap gap-2">
+            {view === "itineraire" && (
+              <button type="button" className={chip(hideDone)} aria-pressed={hideDone} onClick={() => setHideDone(!hideDone)}>
+                Replier les lieux terminés
+              </button>
+            )}
+            {shiny && (
+              <button
+                type="button"
+                className={chip(spoilers.shinyRevealed)}
+                aria-pressed={spoilers.shinyRevealed}
+                onClick={spoilers.toggleShinyRevealed}
+                title={spoilers.shinyRevealed ? "Afficher les manquants en couleurs normales" : "Afficher les manquants en shiny"}
+              >
+                {spoilers.shinyRevealed ? <EyeIcon size={16} /> : <EyeOffIcon size={16} />}
+                Spoilers
+              </button>
+            )}
+            {!readOnly && (
+              <button
+                type="button"
+                className={chip(quick)}
+                aria-pressed={quick}
+                onClick={() => setQuick(!quick)}
+                title="Un clic sur un Pokémon le coche au lieu de l'afficher"
+              >
+                <CheckIcon size={16} strokeWidth={2} />
+                Coche rapide
+              </button>
+            )}
+          </div>
         </div>
         {captures.error && (
           <p role="alert" className="t-small text-danger">
@@ -254,10 +253,21 @@ export function LivingDex({ versionId, title, entries, captured, coverageNote, c
             />
           )}
           {view === "itineraire" && (
-            <LivingDexRoute entries={entries.filter(matchesQuery)} captured={captures.captured} route={route} hideDone={hideDone} coverageNote={coverageNote} onToggle={toggle} />
+            <LivingDexRoute
+              entries={entries.filter(matchesQuery)}
+              captured={captures.captured}
+              route={route}
+              hideDone={hideDone}
+              coverageNote={coverageNote}
+              selectedId={selected?.species.id}
+              quick={quick && !readOnly}
+              wording={wording}
+              onPick={pick}
+              onToggle={toggle}
+            />
           )}
         </div>
-        {view !== "itineraire" && selected && (
+        {selected && (
           <LivingDexPanel
             entry={selected}
             index={selectedIndex}

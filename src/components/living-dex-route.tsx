@@ -3,7 +3,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { ChecklistEntry } from "@/components/capture-checklist";
-import { formatLevel, type RouteLocation, toggleLabel } from "@/components/living-dex-shared";
+import { CheckIcon } from "@/components/icons";
+import { formatLevel, pickLabel, type RouteLocation, toggleLabel, type Wording } from "@/components/living-dex-shared";
 import { PokemonSprite } from "@/components/pokemon-sprite";
 import { spriteBox } from "@/components/ui";
 import type { SpeciesLocation } from "@/lib/data/encounters";
@@ -16,6 +17,12 @@ type Props = {
   /** Lieux où tout est attrapé réduits à leur nom. */
   hideDone: boolean;
   coverageNote: string | null;
+  selectedId: number | undefined;
+  /** « Coche rapide » : un clic coche le Pokémon au lieu de l'afficher dans le panneau. */
+  quick: boolean;
+  wording: Wording;
+  onPick: (entry: ChecklistEntry) => void;
+  /** Le rond d'une carte à attraper la coche directement, quel que soit le mode. */
   onToggle: (entry: ChecklistEntry) => void;
 };
 
@@ -42,8 +49,11 @@ function buildStops(entries: ChecklistEntry[], route: RouteLocation[]): Stop[] {
   });
 }
 
-/** Le living dex lieu par lieu, dans l'ordre du jeu : ce qu'il reste à attraper à chaque arrêt, cochable sur place. */
-export function LivingDexRoute({ entries, captured, route, hideDone, coverageNote, onToggle }: Props) {
+/**
+ * Le living dex lieu par lieu, dans l'ordre du jeu : ce qu'il reste à attraper à chaque arrêt. Un clic montre le
+ * Pokémon dans le panneau, ou le coche sur place en « Coche rapide » ; le rond d'une carte la coche toujours.
+ */
+export function LivingDexRoute({ entries, captured, route, hideDone, coverageNote, selectedId, quick, wording, onPick, onToggle }: Props) {
   const stops = buildStops(entries, route);
   const offRoute = entries.filter((entry) => entry.locations.length === 0 && !captured.has(entry.species.id));
   if (stops.length === 0 && offRoute.length === 0) return <p className="text-ink-2">Aucun Pokémon ne correspond.</p>;
@@ -100,6 +110,10 @@ export function LivingDexRoute({ entries, captured, route, hideDone, coverageNot
                       <MissingCard
                         entry={entry}
                         detail={`${here.methods.join(", ")} · ${formatLevel(here.minLevel, here.maxLevel)}`}
+                        selected={entry.species.id === selectedId}
+                        quick={quick}
+                        wording={wording}
+                        onPick={() => onPick(entry)}
                         onToggle={() => onToggle(entry)}
                       />
                     </li>
@@ -113,10 +127,13 @@ export function LivingDexRoute({ entries, captured, route, hideDone, coverageNot
                     <button
                       key={entry.species.id}
                       type="button"
-                      onClick={() => onToggle(entry)}
-                      aria-label={toggleLabel(entry.species.nameFr, true)}
+                      onClick={() => onPick(entry)}
+                      aria-pressed={quick ? true : entry.species.id === selectedId}
+                      aria-label={pickLabel(entry.species.nameFr, true, quick, wording)}
                       title={entry.species.nameFr}
-                      className="grid size-9 place-items-center rounded-full bg-surface-2 transition-colors hover:bg-line"
+                      className={`grid size-9 place-items-center rounded-full bg-surface-2 transition-colors hover:bg-line ${
+                        entry.species.id === selectedId ? "outline-2 outline-offset-2 outline-game" : ""
+                      }`}
                     >
                       <PokemonSprite pokemonId={entry.species.pokemonId} fallbackId={entry.species.id} alt="" size={32} className="size-[30px] object-contain" />
                     </button>
@@ -150,6 +167,10 @@ export function LivingDexRoute({ entries, captured, route, hideDone, coverageNot
                           ? `Évolution de ${entry.species.evolvesFromNameFr}`
                           : "Œuf, cadeau, échange ou événement"
                     }
+                    selected={entry.species.id === selectedId}
+                    quick={quick}
+                    wording={wording}
+                    onPick={() => onPick(entry)}
                     onToggle={() => onToggle(entry)}
                   />
                 </li>
@@ -172,23 +193,63 @@ function RouteRail({ dot, last = false }: { dot?: ReactNode; last?: boolean }) {
   );
 }
 
-/** Pokémon à attraper : un clic le coche. */
-function MissingCard({ entry, detail, onToggle }: { entry: ChecklistEntry; detail: string; onToggle: () => void }) {
+/**
+ * Pokémon à attraper : un clic sur la carte l'affiche dans le panneau (ou le coche en « Coche rapide ») ; le rond,
+ * bouton à part, le coche toujours.
+ */
+function MissingCard({
+  entry,
+  detail,
+  selected,
+  quick,
+  wording,
+  onPick,
+  onToggle,
+}: {
+  entry: ChecklistEntry;
+  detail: string;
+  selected: boolean;
+  quick: boolean;
+  wording: Wording;
+  onPick: () => void;
+  onToggle: () => void;
+}) {
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-label={toggleLabel(entry.species.nameFr, false)}
-      className="group flex w-full min-w-0 items-center gap-3 rounded-2xl border border-line bg-surface py-2 pr-3 pl-2 text-left transition-colors hover:border-line-strong"
+    <div
+      className={`flex w-full min-w-0 items-center rounded-2xl border bg-surface pr-1 transition-colors ${
+        selected ? "border-game ring-1 ring-game ring-inset" : "border-line hover:border-line-strong"
+      }`}
     >
-      <span className={`${spriteBox} size-12 rounded-[14px]`}>
-        <PokemonSprite pokemonId={entry.species.pokemonId} fallbackId={entry.species.id} alt="" size={48} className="size-[42px] object-contain" />
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-sm leading-5 font-bold">{entry.species.nameFr}</span>
-        <span className="truncate text-xs text-ink-2">{detail}</span>
-      </span>
-      <span aria-hidden className="size-[22px] shrink-0 rounded-full border-[1.5px] border-line-strong transition-colors group-hover:border-ink" />
-    </button>
+      <button
+        type="button"
+        onClick={onPick}
+        aria-pressed={quick ? false : selected}
+        aria-label={pickLabel(entry.species.nameFr, false, quick, wording)}
+        className="flex min-w-0 flex-1 items-center gap-3 self-stretch rounded-l-2xl py-2 pl-2 text-left"
+      >
+        <span className={`${spriteBox} size-12 rounded-[14px]`}>
+          <PokemonSprite pokemonId={entry.species.pokemonId} fallbackId={entry.species.id} alt="" size={48} className="size-[42px] object-contain" />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="text-sm leading-5 font-bold">{entry.species.nameFr}</span>
+          <span className="truncate text-xs text-ink-2">{detail}</span>
+        </span>
+      </button>
+      {/* 44 px de cible autour du rond de 22 px. */}
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-label={toggleLabel(entry.species.nameFr, false, wording)}
+        title={wording.markButton}
+        className="group grid size-11 shrink-0 place-items-center rounded-full"
+      >
+        <span
+          aria-hidden
+          className="grid size-[22px] place-items-center rounded-full border-[1.5px] border-line-strong text-ink transition-colors group-hover:border-ink"
+        >
+          <CheckIcon size={12} strokeWidth={3} className="opacity-0 transition-opacity group-hover:opacity-100" />
+        </span>
+      </button>
+    </div>
   );
 }
