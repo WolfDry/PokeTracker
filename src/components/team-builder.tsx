@@ -201,6 +201,14 @@ export function TeamBuilder({ data, games, initialTeam, paths, onTeamChange, too
             ),
           )}
         </ol>
+        <TeamSuggestions
+          data={data}
+          team={members}
+          onAdd={(pokemonId) => {
+            const slot = team.indexOf(null);
+            if (slot >= 0) setSlot(slot, pokemonId);
+          }}
+        />
       </section>
 
       {count === 0 ? (
@@ -214,14 +222,6 @@ export function TeamBuilder({ data, games, initialTeam, paths, onTeamChange, too
               types de chaque Pokémon ; les talents (Lévitation, Absorb Eau…) ne sont pas pris en compte.
             </p>
           </div>
-          <TeamSuggestions
-            data={data}
-            team={members}
-            onAdd={(pokemonId) => {
-              const slot = team.indexOf(null);
-              if (slot >= 0) setSlot(slot, pokemonId);
-            }}
-          />
         </>
       )}
 
