@@ -1,6 +1,6 @@
 # PokeTracker — Feuille de route
 
-Compagnon d'aventure Pokémon : Pokédex par jeu, rencontres par jeu × lieu, suivi des captures et des chasses shiny, multi-utilisateur.
+Compagnon d'aventure Pokémon : Pokédex par jeu, rencontres par jeu × lieu, suivi des captures et des shasses shiny, multi-utilisateur.
 
 ## 1. Décisions
 
@@ -106,7 +106,7 @@ Chaque phase se termine par une vérification concrète avant de passer à la su
 
 ### Phase 5 — Authentification ✅ (13 sept. 2026)
 
-- Better Auth (e-mail + mot de passe) piloté par des Server Actions (`src/lib/auth-actions.ts`) : `/inscription`, `/connexion?next=`, déconnexion depuis l'en-tête, `/compte` (e-mail, date d'inscription, modification du pseudo, compteurs captures / chasses / shinies)
+- Better Auth (e-mail + mot de passe) piloté par des Server Actions (`src/lib/auth-actions.ts`) : `/inscription`, `/connexion?next=`, déconnexion depuis l'en-tête, `/compte` (e-mail, date d'inscription, modification du pseudo, compteurs captures / shasses / shinies)
 - Validation Zod et messages d'erreur en français (codes Better Auth traduits) ; les formulaires fonctionnent sans JavaScript
 - `src/lib/session.ts` : `getCurrentUser()` (dédupliqué par requête, cookies posés pendant une action pris en compte) et `requireUser(next)` qui redirige vers la connexion ; `/captures` et `/shiny` protégées, toutes les données de référence restent publiques
 - Cache Components : la session se lit dans un `<Suspense>` (menu de l'en-tête, pages protégées), toutes les pages restent en pré-rendu partiel
@@ -124,14 +124,14 @@ Chaque phase se termine par une vérification concrète avant de passer à la su
 
 ### Phase 7 — Shiny ✅ (14 sept. 2026)
 
-- `/shiny` : chasses en cours regroupées par jeu (carte avec +1 rapide), chasses en pause (Reprendre / Supprimer), aperçu des derniers shinies
+- `/shiny` : shasses en cours regroupées par jeu (carte avec +1 rapide), shasses en pause (Reprendre / Supprimer), aperçu des derniers shinies
 - `/shiny/nouvelle` (`?espece=&jeu=` pour présélectionner depuis une fiche) : Pokémon (recherche avec suggestions, `searchSpeciesAction`), jeu, méthode libre (suggestions), rencontres déjà faites
-- `/shiny/chasse/[id]` : compteur −1 / +1, saisie directe, clavier (+ / Espace / ↑ et − / ↓), pause, suppression ; « Shiny trouvé ! » → formulaire (surnom, date, note) qui clôture la chasse en `ShinyCapture` avec le compte affiché
+- `/shiny/shasse/[id]` : compteur −1 / +1, saisie directe, clavier (+ / Espace / ↑ et − / ↓), pause, suppression ; « Shiny trouvé ! » → formulaire (surnom, date, note) qui clôture la shasse en `ShinyCapture` avec le compte affiché
 - Sauvegarde du compteur : valeur absolue envoyée après 600 ms sans clic (`setHuntCountAction`, une requête à la fois) ; si l'onglet passe en arrière-plan avant, `navigator.sendBeacon` vers `POST /api/shiny/count` (même origine, session vérifiée). En cas d'échec le compte local est conservé et on propose de réessayer
-- `/shiny/galerie` : shinies par jeu (surnom, méthode, rencontres, date, note), suppression avec confirmation ; `/shiny/ajouter` pour un shiny obtenu sans chasse
-- Fiche Pokémon : section « Shiny » (chasses en cours, shinies obtenus, liens Lancer une chasse / Ajouter un shiny)
+- `/shiny/galerie` : shinies par jeu (surnom, méthode, rencontres, date, note), suppression avec confirmation ; `/shiny/ajouter` pour un shiny obtenu sans shasse
+- Fiche Pokémon : section « Shiny » (shasses en cours, shinies obtenus, liens Lancer une shasse / Ajouter un shiny)
 - Données utilisateur dans `src/lib/data/shiny.ts` (sans cache, chaque écriture filtrée sur `userId`)
-- ✔ Deux chasses Pikachu en parallèle (Rouge 251, Jaune 40) listées sous leur jeu avec des compteurs indépendants ; 5 clics rapides = 1 requête ; beacon vérifié en base ; clôture à 254 rencontres (le +1 fait juste avant l'envoi est pris en compte) → galerie
+- ✔ Deux shasses Pikachu en parallèle (Rouge 251, Jaune 40) listées sous leur jeu avec des compteurs indépendants ; 5 clics rapides = 1 requête ; beacon vérifié en base ; clôture à 254 rencontres (le +1 fait juste avant l'envoi est pris en compte) → galerie
 
 ### Phase 8 — Finitions & déploiement ✅ (14 sept. 2026, mise en ligne à faire par toi)
 
@@ -147,19 +147,19 @@ L'app s'organise autour du jeu choisi sur l'accueil : `/jeu/[slug]` donne un ré
 
 - Connexion obligatoire : `src/proxy.ts` renvoie vers `/connexion?next=` sans cookie de session (contrôle optimiste) ; la vérification sûre reste dans `requireUser` / `getCurrentUser`. Bouton « afficher le mot de passe », déconnexion dans l'en-tête
 - Layout `/jeu/[slug]` : en-tête à la teinte et à la mascotte du jeu (comme l'accueil), onglets Résumé · Living dex · Shiny dex · Équipe (rangée sous l'en-tête dès la tablette, barre fixe en bas sur mobile) ; pas d'équipe pour le National
-- Résumé : une carte par fonctionnalité avec son avancement (barres par Pokédex, chasses en cours, dernière équipe)
+- Résumé : une carte par fonctionnalité avec son avancement (barres par Pokédex, shasses en cours, dernière équipe)
 - Living dex (`/jeu/[slug]/captures?dex=`) : trois vues au choix, mémorisé dans le navigateur (store `living-dex-store.ts`) — **Mosaïque** (par défaut : tout le Pokédex en sprites, manquants estompés, panneau de détail collant), **Boîtes** (boîtes de 30 en silhouettes, carte des boîtes, ouvertes sur la boîte du Pokémon sélectionné) et **Itinéraire** (lieux dans l'ordre du jeu, « Prochain arrêt », groupe « Hors des hautes herbes ») ; recherche, filtres et « Coche rapide » communs ; sur mobile, le panneau s'ouvre en tiroir. Au National, lecture seule (« attrapé dans : … », une espèce compte dès qu'elle l'est dans un jeu), sans itinéraire
-- Shiny dex (`/jeu/[slug]/shiny?dex=`) : chasses en cours du jeu, puis le Pokédex en chromatique avec les vues du living dex sauf l'itinéraire (Mosaïque, Boîtes ; vue mémorisée à part ; étoile sur les chasses en cours, « Chasser » dans le panneau) (cocher = shiny sans détails ; décocher supprime les shinies du jeu et leurs chasses, confirmation s'ils ont des détails ; « Chasser » prérempli avec la forme affichée). Mode spoiler (store `spoiler-store.ts`, masqué par défaut) : un shiny pas encore obtenu s'affiche en sprite normal partout (`SpoilerSprite`)
-- Formes : chasses et shinies enregistrent la forme (`pokemonId`) ; les sélecteurs de Pokémon proposent les formes jouables (hors Méga / Gigamax)
+- Shiny dex (`/jeu/[slug]/shiny?dex=`) : shasses en cours du jeu, puis le Pokédex en chromatique avec les vues du living dex sauf l'itinéraire (Mosaïque, Boîtes ; vue mémorisée à part ; étoile sur les shasses en cours, « Shasser » dans le panneau) (cocher = shiny sans détails ; décocher supprime les shinies du jeu et leurs shasses, confirmation s'ils ont des détails ; « Shasser » prérempli avec la forme affichée). Mode spoiler (store `spoiler-store.ts`, masqué par défaut) : un shiny pas encore obtenu s'affiche en sprite normal partout (`SpoilerSprite`)
+- Formes : shasses et shinies enregistrent la forme (`pokemonId`) ; les sélecteurs de Pokémon proposent les formes jouables (hors Méga / Gigamax)
 - Équipes (`/jeu/[slug]/equipe`, `/nouvelle`, `/[id]`) : plusieurs équipes nommées par jeu, builder de la page Équipe réutilisé, sauvegarde explicite (jamais automatique), modifications en cours conservées dans l'URL, copie et suppression ; le lien copié ouvre une nouvelle équipe préremplie
-- Chasses dans le jeu : `/jeu/[slug]/shiny/nouvelle?espece=&forme=` (jeu fixé ; choix du jeu au National) et `/jeu/[slug]/shiny/chasse/[id]` (redirige vers le jeu de la chasse) ; création → la chasse, clôture et suppression → shiny dex du jeu. Liens centralisés dans `huntHref` / `newHuntHref` (`src/lib/shiny.ts`) ; la fiche Pokémon lance la chasse dans le jeu en cours
+- Shasses dans le jeu : `/jeu/[slug]/shiny/nouvelle?espece=&forme=` (jeu fixé ; choix du jeu au National) et `/jeu/[slug]/shiny/shasse/[id]` (redirige vers le jeu de la shasse) ; création → la shasse, clôture et suppression → shiny dex du jeu. Liens centralisés dans `huntHref` / `newHuntHref` (`src/lib/shiny.ts`) ; la fiche Pokémon lance la shasse dans le jeu en cours
 - Les anciennes routes (`/captures`, `/shiny`, `/equipe`) restent en place, navigation masquée, en attendant leur suppression. Encore liées depuis l'app : `/shiny/ajouter` (fiche Pokémon) et `/shiny`, `/shiny/galerie` (page Compte)
-- ✔ À vérifier connecté : coches living dex / shiny dex, mode spoiler, chasse d'une forme régionale, cycle de vie d'une équipe (création, sauvegarde, rechargement avec modifications, copie, suppression)
+- ✔ À vérifier connecté : coches living dex / shiny dex, mode spoiler, shasse d'une forme régionale, cycle de vie d'une équipe (création, sauvegarde, rechargement avec modifications, copie, suppression)
 
 ## 4. Plus tard (hors v1)
 
 - Deuxième source de rencontres pour BDSP / PLA / ÉV / Z-A (PKHeX MIT pour lieux+niveaux, ou CSV maison contributif)
-- Formes alternatives (régionales, Méga…) dans le Pokédex (déjà gérées pour les chasses et shinies)
+- Formes alternatives (régionales, Méga…) dans le Pokédex (déjà gérées pour les shasses et shinies)
 - Shiny-lock : PokeAPI n'a pas la donnée, liste à tenir à la main (comme les mascottes de l'accueil)
 - Odds shiny affichés selon la méthode et le jeu
 - Export/import des données utilisateur

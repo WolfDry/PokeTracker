@@ -26,7 +26,7 @@ type Props = {
   coverageNote: string | null;
   /** National : jeux où chaque espèce est attrapée, affichés à la place des lieux. */
   caughtIn?: Record<number, string[]>;
-  /** Shiny dex : sprites chromatiques, coches enregistrées comme shinies, chasses en cours. */
+  /** Shiny dex : sprites chromatiques, coches enregistrées comme shinies, shasses en cours. */
   shiny?: { gameSlug: string; meta: Record<number, ShinyDexMeta> };
 };
 
@@ -48,10 +48,10 @@ export function CaptureChecklist({ versionId, entries, captured, coverageNote, c
 
   const toggle = (entry: ChecklistEntry) => {
     const meta = shiny?.meta[entry.species.id];
-    // Décocher un shiny supprime ses fiches (et la chasse dont il vient) : on confirme s'il y a de quoi perdre.
+    // Décocher un shiny supprime ses fiches (et la shasse dont il vient) : on confirme s'il y a de quoi perdre.
     if (shiny && captures.captured.has(entry.species.id) && meta?.detailed) {
       const many = meta.count > 1;
-      const message = `Supprimer ${many ? `les ${meta.count} shinies` : "le shiny"} de ${entry.species.nameFr} de ce jeu, avec ${many ? "leurs chasses et leurs détails" : "sa chasse et ses détails"} ?`;
+      const message = `Supprimer ${many ? `les ${meta.count} shinies` : "le shiny"} de ${entry.species.nameFr} de ce jeu, avec ${many ? "leurs shasses et leurs détails" : "sa shasse et ses détails"} ?`;
       if (!window.confirm(message)) return;
     }
     captures.toggle(entry.species.id, entry.species.pokemonId);
@@ -187,17 +187,17 @@ export function CaptureChecklist({ versionId, entries, captured, coverageNote, c
   );
 }
 
-/** Shiny manquant : sa chasse en cours, ou de quoi en lancer une, jeu et espèce préremplis. */
+/** Shiny manquant : sa shasse en cours, ou de quoi en lancer une, jeu et espèce préremplis. */
 /** `pokemonId` : forme affichée dans le dex (Rattata d'Alola dans le Pokédex d'Alola), reprise par le formulaire. */
 function ShinyHuntLink({ gameSlug, speciesId, pokemonId, hunt }: { gameSlug: string; speciesId: number; pokemonId: number; hunt: ShinyDexMeta["hunt"] }) {
   const className = "inline-flex h-6 items-center rounded-full px-2.5 text-xs font-semibold transition-colors";
   return hunt ? (
     <Link href={huntHref(gameSlug, hunt.id)} className={`${className} bg-game-soft text-game-text hover:bg-game-line`}>
-      Chasse en cours · {numberFr.format(hunt.count)}
+      Shasse en cours · {numberFr.format(hunt.count)}
     </Link>
   ) : (
     <Link href={newHuntHref(gameSlug, { speciesId, pokemonId })} className={`${className} border border-line text-ink-2 hover:border-line-strong hover:text-ink`}>
-      Chasser
+      Shasser
     </Link>
   );
 }

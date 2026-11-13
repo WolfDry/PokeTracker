@@ -190,7 +190,7 @@ export async function getNationalSpeciesCount() {
 
 export type HomeGeneration = Awaited<ReturnType<typeof getHomeTimeline>>[number];
 
-/** Jeux proposés dans les formulaires (chasse shiny, ajout d'un shiny) : par génération, sans les extensions. */
+/** Jeux proposés dans les formulaires (shasse shiny, ajout d'un shiny) : par génération, sans les extensions. */
 export async function getGameOptions() {
   cacheLife("max");
   cacheTag("reference");

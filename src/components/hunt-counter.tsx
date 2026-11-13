@@ -39,7 +39,7 @@ function StatusLine({ status, error, retry }: { status: SaveStatus; error: strin
 const kbd = "inline-block min-w-[22px] rounded-[6px] border border-b-2 border-line-strong bg-surface px-1.5 text-center text-xs leading-5 text-ink-2";
 
 /**
- * Compteur principal d'une chasse : gros chiffre, −1 / +1, saisie directe, raccourcis clavier,
+ * Compteur principal d'une shasse : gros chiffre, −1 / +1, saisie directe, raccourcis clavier,
  * et le formulaire de clôture (« Shiny trouvé ! ») qui envoie le compte affiché.
  */
 export function HuntCounter({ hunt }: { hunt: Hunt }) {
@@ -137,7 +137,7 @@ export function HuntCounter({ hunt }: { hunt: Hunt }) {
   );
 }
 
-/** Carte compacte d'une chasse en cours (page Shiny) : +1 rapide et lien vers le compteur. */
+/** Carte compacte d'une shasse en cours (page Shiny) : +1 rapide et lien vers le compteur. */
 export function HuntCard({ hunt }: { hunt: Hunt }) {
   const counter = useHuntCounter(hunt.id, hunt.count);
   return (
@@ -166,7 +166,7 @@ export function HuntCard({ hunt }: { hunt: Hunt }) {
 }
 
 /**
- * Chasse dans le résumé d'un jeu (dans un `.game-tint`) : le sprite dans un écran du Pokédex, sans nom
+ * Shasse dans le résumé d'un jeu (dans un `.game-tint`) : le sprite dans un écran du Pokédex, sans nom
  * (il reste dans le lien), le compteur en afficheur et +1. L'état d'enregistrement n'apparaît qu'en cas d'échec.
  */
 export function HuntSummaryRow({ hunt }: { hunt: Hunt }) {
@@ -176,7 +176,7 @@ export function HuntSummaryRow({ hunt }: { hunt: Hunt }) {
       <div className="flex items-center gap-3.5">
         <Link
           href={huntHref(hunt.version.slug, hunt.id)}
-          aria-label={`Chasse : ${hunt.species.nameFr}`}
+          aria-label={`Shasse : ${hunt.species.nameFr}`}
           className="grid size-[84px] shrink-0 place-items-center rounded-[10px_10px_10px_22px] pokedex-screen"
         >
           <SpoilerSprite pokemonId={hunt.species.pokemonId} alt="" size={96} className="size-[76px] object-contain" />

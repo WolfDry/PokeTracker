@@ -28,7 +28,7 @@ type Props = {
   caughtIn?: Record<number, string[]>;
   /** Lieux du jeu dans l'ordre de progression : ordre des lieux du panneau, et vue Itinéraire (sauf au shiny dex). */
   route: RouteLocation[];
-  /** Shiny dex : sprites chromatiques, coches enregistrées comme shinies, chasses ; pas d'itinéraire. */
+  /** Shiny dex : sprites chromatiques, coches enregistrées comme shinies, shasses ; pas d'itinéraire. */
   shiny?: { gameSlug: string; meta: Record<number, ShinyDexMeta> };
 };
 
@@ -81,7 +81,7 @@ export function LivingDex({ versionId, title, entries, captured, coverageNote, c
   const selected = entries[selectedIndex];
 
   const isCaught = (entry: ChecklistEntry) => captures.captured.has(entry.species.id);
-  // Chasse en cours sur un shiny manquant : repérée dans la mosaïque et les boîtes.
+  // Shasse en cours sur un shiny manquant : repérée dans la mosaïque et les boîtes.
   const isHunting = (entry: ChecklistEntry) => Boolean(shiny?.meta[entry.species.id]?.hunt) && !isCaught(entry);
   const caughtCount = entries.filter(isCaught).length;
   const total = entries.length;
@@ -94,10 +94,10 @@ export function LivingDex({ versionId, title, entries, captured, coverageNote, c
   const toggle = (entry: ChecklistEntry) => {
     if (readOnly) return;
     const meta = shiny?.meta[entry.species.id];
-    // Décocher un shiny supprime ses fiches (et la chasse dont il vient) : on confirme s'il y a de quoi perdre.
+    // Décocher un shiny supprime ses fiches (et la shasse dont il vient) : on confirme s'il y a de quoi perdre.
     if (shiny && isCaught(entry) && meta?.detailed) {
       const many = meta.count > 1;
-      const message = `Supprimer ${many ? `les ${meta.count} shinies` : "le shiny"} de ${entry.species.nameFr} de ce jeu, avec ${many ? "leurs chasses et leurs détails" : "sa chasse et ses détails"} ?`;
+      const message = `Supprimer ${many ? `les ${meta.count} shinies` : "le shiny"} de ${entry.species.nameFr} de ce jeu, avec ${many ? "leurs shasses et leurs détails" : "sa shasse et ses détails"} ?`;
       if (!window.confirm(message)) return;
     }
     captures.toggle(entry.species.id, entry.species.pokemonId);
@@ -149,9 +149,8 @@ export function LivingDex({ versionId, title, entries, captured, coverageNote, c
               type="button"
               aria-pressed={view === id}
               onClick={() => changeView(id)}
-              className={`inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-full px-3 text-sm font-bold whitespace-nowrap transition-colors sm:flex-none sm:px-4 ${
-                view === id ? "bg-ink text-on-ink" : "text-ink-2 hover:text-ink"
-              }`}
+              className={`inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-full px-3 text-sm font-bold whitespace-nowrap transition-colors sm:flex-none sm:px-4 ${view === id ? "bg-ink text-on-ink" : "text-ink-2 hover:text-ink"
+                }`}
             >
               <Icon size={18} className="hidden sm:block" />
               {label}
@@ -289,7 +288,7 @@ export function LivingDex({ versionId, title, entries, captured, coverageNote, c
   );
 }
 
-/** Tout le Pokédex d'un coup d'œil : attrapés en couleurs, manquants estompés ; étoile sur une chasse en cours. */
+/** Tout le Pokédex d'un coup d'œil : attrapés en couleurs, manquants estompés ; étoile sur une shasse en cours. */
 function Mosaic({
   entries,
   isCaught,
@@ -327,9 +326,8 @@ function Mosaic({
               aria-pressed={quick ? caught : selected}
               aria-label={pickLabel(entry.species.nameFr, caught, quick, wording, hunting)}
               title={entry.species.nameFr}
-              className={`relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border bg-surface px-1 pt-1.5 pb-1 transition-colors ${
-                selected ? "border-game ring-1 ring-game ring-inset" : "border-line hover:border-line-strong"
-              }`}
+              className={`relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border bg-surface px-1 pt-1.5 pb-1 transition-colors ${selected ? "border-game ring-1 ring-game ring-inset" : "border-line hover:border-line-strong"
+                }`}
             >
               {caught && (
                 <span aria-hidden className="absolute top-1.5 right-1.5 grid size-4 place-items-center rounded-full bg-game text-on-game">

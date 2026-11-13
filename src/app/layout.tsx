@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     template: "%s · PokeTracker",
   },
   description:
-    "Compagnon d'aventure Pokémon : Pokédex par jeu, lieux de rencontre, suivi des captures et des chasses shiny.",
+    "Compagnon d'aventure Pokémon : Pokédex par jeu, lieux de rencontre, suivi des captures et des shasses.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -101,7 +101,7 @@ function MethodField({ defaultValue, error }: { defaultValue?: string; error?: s
 
 const initialState: ShinyFormState = {};
 
-/** `fixedVersionId` : chasse lancée depuis l'onglet d'un jeu, le jeu n'est pas à choisir. */
+/** `fixedVersionId` : shasse lancée depuis l'onglet d'un jeu, le jeu n'est pas à choisir. */
 export function NewHuntForm({ games, initial, fixedVersionId }: { games: GameOption[]; initial?: ShinyFormInitial; fixedVersionId?: number }) {
   const [state, action, pending] = useActionState(createHuntAction, initialState);
   const versionId = state.values?.versionId ? Number(state.values.versionId) : initial?.versionId;
@@ -115,11 +115,11 @@ export function NewHuntForm({ games, initial, fixedVersionId }: { games: GameOpt
         <GameSelect games={games} defaultValue={versionId} error={state.fieldErrors?.versionId} />
       )}
       <MethodField defaultValue={state.values?.method} error={state.fieldErrors?.method} />
-      <Field name="count" label="Rencontres déjà faites" error={state.fieldErrors?.count} hint="Laisse 0 pour une nouvelle chasse.">
+      <Field name="count" label="Rencontres déjà faites" error={state.fieldErrors?.count} hint="Laisse 0 pour une nouvelle shasse.">
         {(props) => <input {...props} type="number" inputMode="numeric" min={0} step={1} defaultValue={state.values?.count ?? "0"} />}
       </Field>
       <button type="submit" disabled={pending} className={submitClass}>
-        {pending ? "Création…" : "Lancer la chasse"}
+        {pending ? "Création…" : "Lancer la shasse"}
       </button>
     </form>
   );
@@ -145,7 +145,7 @@ export function AddShinyForm({ games, initial }: { games: GameOption[]; initial?
   );
 }
 
-/** Clôture d'une chasse : le compteur affiché est envoyé avec le formulaire (`count`), même s'il n'est pas encore sauvegardé. */
+/** Clôture d'une shasse : le compteur affiché est envoyé avec le formulaire (`count`), même s'il n'est pas encore sauvegardé. */
 export function CompleteHuntForm({ huntId, count }: { huntId: string; count: number }) {
   const [state, action, pending] = useActionState(completeHuntAction, initialState);
   return (
@@ -155,13 +155,13 @@ export function CompleteHuntForm({ huntId, count }: { huntId: string; count: num
       {state.error && <FormError>{state.error}</FormError>}
       <ShinyDetailsFields state={state} />
       <button type="submit" disabled={pending} className={submitClass}>
-        {pending ? "Enregistrement…" : `Terminer la chasse à ${count.toLocaleString("fr-FR")} rencontres`}
+        {pending ? "Enregistrement…" : `Terminer la shasse à ${count.toLocaleString("fr-FR")} rencontres`}
       </button>
     </form>
   );
 }
 
-/** Surnom, date et note : communs à la clôture d'une chasse et à l'ajout manuel. */
+/** Surnom, date et note : communs à la clôture d'une shasse et à l'ajout manuel. */
 function ShinyDetailsFields({ state }: { state: ShinyFormState }) {
   return (
     <>

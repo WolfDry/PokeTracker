@@ -5,19 +5,19 @@ import { HuntDetail } from "@/components/hunt-detail";
 import { getHunt } from "@/lib/data/shiny";
 import { requireUser } from "@/lib/session";
 
-export const metadata: Metadata = { title: "Chasse shiny" };
+export const metadata: Metadata = { title: "Shasse shiny" };
 
-// Ancienne adresse d'une chasse, gardée en attendant la suppression des routes /shiny : même contenu que
-// /jeu/[jeu]/shiny/chasse/[id].
-export default async function Page({ params }: PageProps<"/shiny/chasse/[id]">) {
+// Ancienne adresse d'une shasse, gardée en attendant la suppression des routes /shiny : même contenu que
+// /jeu/[jeu]/shiny/shasse/[id].
+export default async function Page({ params }: PageProps<"/shiny/shasse/[id]">) {
   const { id } = await params;
-  const user = await requireUser(`/shiny/chasse/${id}`);
+  const user = await requireUser(`/shiny/shasse/${id}`);
   const hunt = await getHunt(user.id, id);
   if (!hunt) notFound();
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
-      <Breadcrumb items={[{ href: "/shiny", label: "Shiny" }, { label: "Chasse" }]} />
+      <Breadcrumb items={[{ href: "/shiny", label: "Shiny" }, { label: "Shasse" }]} />
       <HuntDetail hunt={hunt} />
     </div>
   );

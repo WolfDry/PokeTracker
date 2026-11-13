@@ -9,11 +9,11 @@ import { searchSpeciesAction } from "@/lib/shiny-actions";
 
 type Props = {
   label: string;
-  /** Espèce présélectionnée (lien « Chasser en shiny » depuis une fiche). */
+  /** Espèce présélectionnée (lien « Shasser en shiny » depuis une fiche). */
   initial?: SpeciesPick | null;
   error?: string;
   autoFocus?: boolean;
-  /** Shiny pas encore obtenu (nouvelle chasse) : sprites soumis au mode spoiler. */
+  /** Shiny pas encore obtenu (nouvelle shasse) : sprites soumis au mode spoiler. */
   spoilerSafe?: boolean;
 };
 

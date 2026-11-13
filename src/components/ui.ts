@@ -14,13 +14,12 @@ export const ghostButton = `${buttonBase} h-10 px-3 text-ink-2 hover:bg-surface-
 export const dangerButton = `${buttonBase} h-10 px-4 border border-line text-danger hover:bg-surface-2`;
 /** Variante compacte à combiner : `${secondaryButton} ${smallButton}`. */
 export const smallButton = "h-8 px-3 text-[13px] rounded-sm";
-/** Variante large (clôture de chasse, formulaires) : `${primaryButton} ${largeButton}`. */
+/** Variante large (clôture de shasse, formulaires) : `${primaryButton} ${largeButton}`. */
 export const largeButton = "h-12 px-6 text-[15px] rounded-[14px]";
 
 /** Chip de filtre ; sélectionnée = encre pleine. */
 export const chip = (active: boolean) =>
-  `inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium whitespace-nowrap transition-colors ${
-    active ? "border-ink bg-ink text-on-ink" : "border-line bg-surface text-ink-2 hover:border-line-strong hover:text-ink"
+  `inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium whitespace-nowrap transition-colors ${active ? "border-ink bg-ink text-on-ink" : "border-line bg-surface text-ink-2 hover:border-line-strong hover:text-ink"
   }`;
 /** Compteur dans une chip : `<span className={chipCount(active)}>151</span>`. */
 export const chipCount = (active: boolean) => (active ? "text-on-ink/70" : "text-ink-3");
@@ -57,8 +56,7 @@ export const notice = `${card} px-4 py-3 text-ink-2`;
 
 /** Case ronde « attrapé ». */
 export const checkCircle = (checked: boolean) =>
-  `grid size-6 shrink-0 place-items-center rounded-full transition-colors ${
-    checked ? "bg-ink text-on-ink" : "border-[1.5px] border-line-strong text-transparent hover:border-ink hover:text-ink-3"
+  `grid size-6 shrink-0 place-items-center rounded-full transition-colors ${checked ? "bg-ink text-on-ink" : "border-[1.5px] border-line-strong text-transparent hover:border-ink hover:text-ink-3"
   }`;
 
 /** Numéro de Pokédex : « 001 » en retrait. */

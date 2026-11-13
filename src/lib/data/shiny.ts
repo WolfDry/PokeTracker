@@ -3,9 +3,9 @@ import "server-only";
 import type { HuntStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 
-// Chasses et shinies d'un utilisateur : données personnelles, lues à la requête — jamais en
+// Shasses et shinies d'un utilisateur : données personnelles, lues à la requête — jamais en
 // `use cache`. Toujours appelé avec l'id de l'utilisateur connecté ; chaque écriture filtre sur
-// `userId` pour qu'on ne puisse pas toucher la chasse d'un autre en devinant son id.
+// `userId` pour qu'on ne puisse pas toucher la shasse d'un autre en devinant son id.
 
 export type ShinySpecies = { id: number; nameFr: string; pokemonId: number };
 export type ShinyVersion = { id: number; slug: string; nameFr: string };
@@ -20,7 +20,7 @@ export type Hunt = {
   completedAt: Date | null;
   species: ShinySpecies;
   version: ShinyVersion;
-  /** Shiny obtenu à la clôture de la chasse. */
+  /** Shiny obtenu à la clôture de la shasse. */
   capture: { id: string; nickname: string | null; caughtAt: Date } | null;
 };
 
@@ -67,14 +67,14 @@ const shinySelect = {
 
 type SpeciesRow = { id: number; nameFr: string; pokemons: { id: number }[] };
 type FormRow = { id: number; nameFr: string | null } | null;
-/** Espèce d'une chasse ou d'un shiny, sous sa forme (sprite et nom « Rattata d'Alola ») ; forme par défaut si aucune. */
+/** Espèce d'une shasse ou d'un shiny, sous sa forme (sprite et nom « Rattata d'Alola ») ; forme par défaut si aucune. */
 const toSpecies = (s: SpeciesRow, form: FormRow): ShinySpecies => ({
   id: s.id,
   nameFr: form?.nameFr ?? s.nameFr,
   pokemonId: form?.id ?? s.pokemons[0]?.id ?? s.id,
 });
 
-/** Chasses de l'utilisateur, les plus récemment touchées en premier. */
+/** Shasses de l'utilisateur, les plus récemment touchées en premier. */
 export async function getHunts(userId: string, status?: HuntStatus): Promise<Hunt[]> {
   const rows = await prisma.shinyHunt.findMany({
     where: status ? { userId, status } : { userId },
@@ -89,7 +89,7 @@ export async function getHunt(userId: string, huntId: string): Promise<Hunt | nu
   return row && { ...row, species: toSpecies(row.species, row.pokemon) };
 }
 
-/** Chasses en cours d'une espèce, pour la fiche Pokémon. */
+/** Shasses en cours d'une espèce, pour la fiche Pokémon. */
 export async function getSpeciesHunts(userId: string, speciesId: number): Promise<Hunt[]> {
   const rows = await prisma.shinyHunt.findMany({
     where: { userId, speciesId, status: "ACTIVE" },
@@ -130,7 +130,7 @@ export async function getShinySpeciesIds(userId: string, versionId: number | nul
   return rows.map((row) => row.speciesId);
 }
 
-/** Chasses en cours dans un jeu, les plus récemment touchées en premier. */
+/** Shasses en cours dans un jeu, les plus récemment touchées en premier. */
 export async function getGameHunts(userId: string, versionId: number): Promise<Hunt[]> {
   const rows = await prisma.shinyHunt.findMany({ where: { userId, versionId, status: "ACTIVE" }, orderBy: { updatedAt: "desc" }, select: huntSelect });
   return rows.map((row) => ({ ...row, species: toSpecies(row.species, row.pokemon) }));
@@ -140,13 +140,13 @@ export async function getGameHunts(userId: string, versionId: number): Promise<H
 export type ShinyDexMeta = {
   /** Shinies obtenus dans ce jeu. */
   count: number;
-  /** Au moins un shiny issu d'une chasse ou renseigné : on confirme avant de le supprimer en décochant. */
+  /** Au moins un shiny issu d'une shasse ou renseigné : on confirme avant de le supprimer en décochant. */
   detailed: boolean;
-  /** Chasse en cours sur l'espèce dans ce jeu. */
+  /** Shasse en cours sur l'espèce dans ce jeu. */
   hunt: { id: string; count: number } | null;
 };
 
-/** Shiny dex d'un jeu : espèces obtenues, et pour chaque espèce concernée ses shinies et sa chasse en cours. */
+/** Shiny dex d'un jeu : espèces obtenues, et pour chaque espèce concernée ses shinies et sa shasse en cours. */
 export async function getShinyDex(userId: string, versionId: number): Promise<{ speciesIds: number[]; meta: Record<number, ShinyDexMeta> }> {
   const [shinies, hunts] = await Promise.all([
     prisma.shinyCapture.findMany({
@@ -162,7 +162,7 @@ export async function getShinyDex(userId: string, versionId: number): Promise<{ 
     m.count += 1;
     m.detailed ||= Boolean(shiny.huntId || shiny.encounters !== null || shiny.method || shiny.nickname || shiny.note);
   }
-  // La chasse la plus récente si plusieurs sont menées sur la même espèce.
+  // La shasse la plus récente si plusieurs sont menées sur la même espèce.
   for (const hunt of hunts) entry(hunt.speciesId).hunt ??= { id: hunt.id, count: hunt.count };
   return { speciesIds: [...new Set(shinies.map((s) => s.speciesId))], meta };
 }
@@ -184,7 +184,7 @@ export async function getNationalShinies(userId: string): Promise<{ speciesIds: 
 
 /**
  * Coche ou décoche une espèce dans le shiny dex d'un jeu. Cocher ajoute un shiny sans détails s'il n'y en a
- * pas déjà un ; décocher supprime tous les shinies de l'espèce dans ce jeu, et les chasses dont ils sont issus.
+ * pas déjà un ; décocher supprime tous les shinies de l'espèce dans ce jeu, et les shasses dont ils sont issus.
  */
 export async function setShinyObtained(userId: string, versionId: number, speciesId: number, obtained: boolean, pokemonId: number | null = null) {
   await prisma.$transaction(async (tx) => {
@@ -210,7 +210,7 @@ export async function setHuntCount(userId: string, huntId: string, count: number
   return result.count === 1;
 }
 
-/** Met en pause (ABANDONED) ou reprend (ACTIVE) une chasse. */
+/** Met en pause (ABANDONED) ou reprend (ACTIVE) une shasse. */
 export async function setHuntStatus(userId: string, huntId: string, status: "ACTIVE" | "ABANDONED") {
   const result = await prisma.shinyHunt.updateMany({
     where: { id: huntId, userId, status: status === "ACTIVE" ? "ABANDONED" : "ACTIVE" },
@@ -220,7 +220,7 @@ export async function setHuntStatus(userId: string, huntId: string, status: "ACT
 }
 
 /**
- * Clôture une chasse : elle devient un shiny de la galerie, avec son compteur comme nombre de rencontres.
+ * Clôture une shasse : elle devient un shiny de la galerie, avec son compteur comme nombre de rencontres.
  * `count` est la valeur affichée au moment de la clôture (elle peut ne pas être encore sauvegardée).
  */
 export async function completeHunt(
@@ -241,7 +241,7 @@ export async function completeHunt(
   });
 }
 
-/** Supprime une chasse (et le shiny qui en est issu, le cas échéant) ; renvoie le jeu de la chasse, `null` si introuvable. */
+/** Supprime une shasse (et le shiny qui en est issu, le cas échéant) ; renvoie le jeu de la shasse, `null` si introuvable. */
 export async function deleteHunt(userId: string, huntId: string): Promise<{ versionSlug: string } | null> {
   return prisma.$transaction(async (tx) => {
     const hunt = await tx.shinyHunt.findFirst({ where: { id: huntId, userId }, select: { id: true, version: { select: { slug: true } } } });
@@ -259,7 +259,7 @@ export async function createShiny(
   return prisma.shinyCapture.create({ data: { userId, ...data }, select: { id: true } });
 }
 
-/** Supprime un shiny de la galerie ; la chasse dont il est issu disparaît avec lui. */
+/** Supprime un shiny de la galerie ; la shasse dont il est issu disparaît avec lui. */
 export async function deleteShiny(userId: string, shinyId: string) {
   return prisma.$transaction(async (tx) => {
     const shiny = await tx.shinyCapture.findFirst({ where: { id: shinyId, userId }, select: { id: true, huntId: true } });

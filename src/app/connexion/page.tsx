@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Connexion" };
 
 export default function Page({ searchParams }: PageProps<"/connexion">) {
   return (
-    <AuthPage title="Connexion" intro="Retrouve tes captures et tes chasses shiny sur tous tes jeux.">
+    <AuthPage title="Connexion" intro="Retrouve tes captures et tes shasses sur tous tes jeux.">
       <Suspense fallback={<AuthFormSkeleton fields={2} />}>
         <SignIn searchParams={searchParams} />
       </Suspense>

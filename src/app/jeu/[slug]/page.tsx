@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps<"/jeu/[slug]">): Pr
   return { title: game ? game.nameFr : "Jeu introuvable" };
 }
 
-/** Dernières captures et derniers shinies montrés, chasses listées avant le renvoi vers le shiny dex. */
+/** Dernières captures et derniers shinies montrés, shasses listées avant le renvoi vers le shiny dex. */
 const RECENT_COUNT = 4;
 const HUNT_COUNT = 4;
 
@@ -31,7 +31,7 @@ const arrowCircle = "grid size-9 shrink-0 place-items-center rounded-full bg-sur
 
 /**
  * Résumé du jeu en tuiles de tailles inégales (le jeu est vérifié par le layout) : à gauche le living dex
- * (grande tuile) et l'équipe (large et basse), à droite les chasses en cours et les derniers shinies.
+ * (grande tuile) et l'équipe (large et basse), à droite les shasses en cours et les derniers shinies.
  * Les Pokémon sont montrés par leur sprite, sans nom. Le cadre est statique, le contenu lit la session en streaming.
  */
 export default async function GamePage({ params }: PageProps<"/jeu/[slug]">) {
@@ -57,11 +57,11 @@ export default async function GamePage({ params }: PageProps<"/jeu/[slug]">) {
         )}
       </div>
 
-      <section aria-labelledby="resume-chasses" className={`${tile} flex min-w-0 flex-[1_1_300px] flex-col gap-[18px]`}>
+      <section aria-labelledby="resume-shasses" className={`${tile} flex min-w-0 flex-[1_1_300px] flex-col gap-[18px]`}>
         <div className="flex items-center justify-between gap-3">
-          <h2 id="resume-chasses" className="flex items-center gap-2 t-caption font-bold">
+          <h2 id="resume-shasses" className="flex items-center gap-2 t-caption font-bold">
             <StarIcon size={16} className="fill-shiny text-shiny" />
-            Chasses en cours
+            Shasses en cours
           </h2>
           {/* Cercle de 36 px, zone cliquable élargie à 44 px. */}
           <Link href={`/jeu/${slug}/shiny`} aria-label="Ouvrir le shiny dex" className={`${arrowCircle} relative after:absolute after:-inset-1 hover:bg-line`}>
@@ -222,7 +222,7 @@ async function TeamTile({ slug, versionId }: { slug: string; versionId: number }
   );
 }
 
-/** Chasses en cours (toutes pour le National) avec leur compteur, puis les derniers shinies et l'avancement du shiny dex. */
+/** Shasses en cours (toutes pour le National) avec leur compteur, puis les derniers shinies et l'avancement du shiny dex. */
 async function HuntsSummary({ game }: { game: Game }) {
   const user = await requireUser(`/jeu/${game.slug}`);
   const national = game.kind === "national";
@@ -242,16 +242,16 @@ async function HuntsSummary({ game }: { game: Game }) {
           ))}
         </ul>
       ) : (
-        <p className="t-small text-ink-2">Aucune chasse en cours.</p>
+        <p className="t-small text-ink-2">Aucune shasse en cours.</p>
       )}
       {hidden > 0 && (
         <Link href={`/jeu/${game.slug}/shiny`} className="t-small font-semibold text-game-text hover:text-ink">
-          Et {hidden} autre{hidden > 1 ? "s" : ""} chasse{hidden > 1 ? "s" : ""}
+          Et {hidden} autre{hidden > 1 ? "s" : ""} shasse{hidden > 1 ? "s" : ""}
         </Link>
       )}
       <Link href={newHuntHref(game.slug)} className="inline-flex items-center gap-2 self-start text-sm font-semibold text-ink hover:text-game-text">
         <PlusIcon size={16} />
-        Nouvelle chasse
+        Nouvelle shasse
       </Link>
       <div className="flex-1" />
       <div className="flex flex-col gap-2.5 border-t border-line pt-4">

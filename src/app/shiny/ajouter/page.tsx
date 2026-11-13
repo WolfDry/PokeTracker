@@ -15,7 +15,7 @@ export default function Page({ searchParams }: PageProps<"/shiny/ajouter">) {
       <Breadcrumb items={[{ href: "/shiny", label: "Shiny" }, { label: "Ajouter un shiny" }]} />
       <header className="space-y-2">
         <h1 className="t-display">Ajouter un shiny</h1>
-        <p className="text-ink-2">Un shiny obtenu sans chasse comptée : full odds, œuf, échange, événement…</p>
+        <p className="text-ink-2">Un shiny obtenu sans shasse comptée : full odds, œuf, échange, événement…</p>
       </header>
       <div className={`${card} p-6 sm:p-8`}>
         <Suspense fallback={<AuthFormSkeleton fields={6} />}>
@@ -29,6 +29,6 @@ export default function Page({ searchParams }: PageProps<"/shiny/ajouter">) {
 async function Form({ searchParams }: Pick<PageProps<"/shiny/ajouter">, "searchParams">) {
   await requireUser("/shiny/ajouter");
   const { games, initial } = await loadShinyFormProps(searchParams);
-  // Même raison que « Nouvelle chasse » : la `key` repart de l'espèce et du jeu de l'URL.
+  // Même raison que « Nouvelle shasse » : la `key` repart de l'espèce et du jeu de l'URL.
   return <AddShinyForm key={`${initial.species?.pokemonId ?? ""}-${initial.versionId ?? ""}`} games={games} initial={initial} />;
 }

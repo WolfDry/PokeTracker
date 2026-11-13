@@ -1,11 +1,11 @@
-// Constantes des chasses shiny partagées entre le serveur et le client.
+// Constantes des shasses shiny partagées entre le serveur et le client.
 
 export const MAX_HUNT_COUNT = 1_000_000;
 
-/** Page d'une chasse, dans l'onglet Shiny dex de son jeu. */
-export const huntHref = (versionSlug: string, huntId: string) => `/jeu/${versionSlug}/shiny/chasse/${huntId}`;
+/** Page d'une shasse, dans l'onglet Shiny dex de son jeu. */
+export const huntHref = (versionSlug: string, huntId: string) => `/jeu/${versionSlug}/shiny/shasse/${huntId}`;
 
-/** Formulaire de nouvelle chasse d'un jeu (ou du National, avec choix du jeu), espèce et forme présélectionnables. */
+/** Formulaire de nouvelle shasse d'un jeu (ou du National, avec choix du jeu), espèce et forme présélectionnables. */
 export function newHuntHref(gameSlug: string, preset?: { speciesId: number; pokemonId?: number }) {
   const query = preset ? `?espece=${preset.speciesId}${preset.pokemonId ? `&forme=${preset.pokemonId}` : ""}` : "";
   return `/jeu/${gameSlug}/shiny/nouvelle${query}`;

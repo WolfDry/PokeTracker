@@ -48,7 +48,7 @@ export function ShinyCard({ shiny, compact = false }: { shiny: Shiny; compact?: 
         <div className="flex flex-wrap items-center gap-x-3 pt-1 t-small">
           {shiny.huntId && (
             <Link href={huntHref(shiny.version.slug, shiny.huntId)} className={`${textLink} text-ink-2`}>
-              Voir la chasse
+              Voir la shasse
             </Link>
           )}
           <form action={deleteShinyAction.bind(null, shiny.id)} className="ml-auto">

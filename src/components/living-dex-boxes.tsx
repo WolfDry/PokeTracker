@@ -11,7 +11,7 @@ type Props = {
   captured: Set<number>;
   /** Recherche et filtre : les cases qui ne correspondent pas s'estompent, le rangement reste visible. */
   matches: (entry: ChecklistEntry) => boolean;
-  /** Shiny dex : chasse en cours sur un shiny manquant, repérée d'une étoile. */
+  /** Shiny dex : shasse en cours sur un shiny manquant, repérée d'une étoile. */
   isHunting: (entry: ChecklistEntry) => boolean;
   selectedId: number | undefined;
   quick: boolean;
@@ -46,9 +46,8 @@ export function LivingDexBoxes({ entries, captured, matches, isHunting, selected
                 onClick={() => onStart(box.index)}
                 aria-label={`Boîte ${box.index + 1} : ${box.caught} sur ${box.entries.length}`}
                 aria-current={on ? "true" : undefined}
-                className={`flex min-w-0 flex-col items-center gap-1 rounded-xl border bg-surface px-1 py-1.5 transition-colors ${
-                  on ? "border-game ring-1 ring-game ring-inset" : "border-line hover:border-line-strong"
-                }`}
+                className={`flex min-w-0 flex-col items-center gap-1 rounded-xl border bg-surface px-1 py-1.5 transition-colors ${on ? "border-game ring-1 ring-game ring-inset" : "border-line hover:border-line-strong"
+                  }`}
               >
                 <span className="text-[11px] leading-[14px] font-bold text-ink-2">B{box.index + 1}</span>
                 <span aria-hidden className="relative h-5 w-full overflow-hidden rounded-md bg-surface-2">
@@ -119,9 +118,8 @@ export function LivingDexBoxes({ entries, captured, matches, isHunting, selected
                         aria-pressed={quick ? caught : selected}
                         aria-label={pickLabel(entry.species.nameFr, caught, quick, wording, hunting)}
                         title={`${dexNumber(entry.number)} · ${entry.species.nameFr}`}
-                        className={`relative grid aspect-square w-full place-items-center rounded-xl transition ${
-                          caught ? "pokedex-screen" : "border border-line bg-surface-2 hover:border-line-strong"
-                        } ${selected ? "outline-2 outline-offset-2 outline-game" : ""} ${matches(entry) ? "" : "opacity-25"}`}
+                        className={`relative grid aspect-square w-full place-items-center rounded-xl transition ${caught ? "pokedex-screen" : "border border-line bg-surface-2 hover:border-line-strong"
+                          } ${selected ? "outline-2 outline-offset-2 outline-game" : ""} ${matches(entry) ? "" : "opacity-25"}`}
                       >
                         {hunting && <StarIcon size={12} className="absolute top-1 left-1 fill-shiny text-shiny" />}
                         <DexSprite entry={entry} caught={caught} shiny={shiny} size={64} className={`size-[80%] object-contain ${caught ? "" : "sprite-silhouette"}`} />

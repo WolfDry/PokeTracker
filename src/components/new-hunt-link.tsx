@@ -7,7 +7,7 @@ import { newHuntHref } from "@/lib/shiny";
 import { useGameStore } from "@/store/game-store";
 
 /**
- * Lien « Lancer une chasse » d'une page qui ne dépend pas d'un jeu (fiche Pokémon) : la chasse se lance
+ * Lien « Lancer une shasse » d'une page qui ne dépend pas d'un jeu (fiche Pokémon) : la shasse se lance
  * dans le jeu en cours, ou au National (choix du jeu dans le formulaire) si aucun n'est choisi.
  */
 export function NewHuntLink({ speciesId, className, children }: { speciesId: number; className?: string; children: ReactNode }) {

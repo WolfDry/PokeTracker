@@ -101,7 +101,7 @@ export async function searchAll(rawQuery: string) {
 /** Pokémon choisi dans un formulaire : `id` = espèce, `pokemonId` = forme (Rattata d'Alola), `nameFr` = nom de la forme. */
 export type SpeciesPick = { id: number; nameFr: string; pokemonId: number };
 
-/** Espèces et leurs formes jouables, pour les champs de sélection d'un Pokémon (nouvelle chasse, ajout d'un shiny). */
+/** Espèces et leurs formes jouables, pour les champs de sélection d'un Pokémon (nouvelle shasse, ajout d'un shiny). */
 export async function searchSpecies(rawQuery: string, limit = 8): Promise<SpeciesPick[]> {
   cacheLife("days");
   cacheTag("reference");

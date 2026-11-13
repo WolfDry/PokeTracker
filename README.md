@@ -1,6 +1,6 @@
 # PokeTracker
 
-Compagnon d'aventure Pokémon : Pokédex par jeu, lieux de rencontre (zone, méthode, niveaux, taux), suivi des captures et des chasses shiny, multi-utilisateur.
+Compagnon d'aventure Pokémon : Pokédex par jeu, lieux de rencontre (zone, méthode, niveaux, taux), suivi des captures et des shasses shiny, multi-utilisateur.
 
 La feuille de route complète est dans [ROADMAP.md](ROADMAP.md).
 
@@ -60,7 +60,7 @@ de Paldea, capacités de Dracaufeu, couverture par jeu) puis télécharge les im
 ou illustration officielle à défaut, converties en WebP 256×256).
 
 Options : `-- --refresh` (re-télécharger les CSV après une mise à jour PokeAPI),
-`-- --skip-sprites`, `-- --sprites-only`. Relançable sans risque : les captures et chasses
+`-- --skip-sprites`, `-- --sprites-only`. Relançable sans risque : les captures et shasses
 des utilisateurs sont conservées.
 
 Après un import, vider le cache des données de référence :
@@ -106,10 +106,10 @@ Case « attrapé » par jeu sur le Pokédex (`/pokedex/[pokedex]?jeu=…`), la f
 Server Action `toggleCaptureAction` + UI optimiste (`src/components/use-captures.ts`). Les « versions »
 DLC de PokeAPI (Isolarmure, Couronneige…) sont rattachées à leur jeu de base (`DLC_BASE_VERSION`).
 
-## Chasses shiny
+## Shasses shiny
 
-`/shiny` liste les chasses en cours par jeu ; `/shiny/chasse/[id]` est le compteur (−1 / +1, saisie directe,
-clavier), « Shiny trouvé ! » clôture la chasse en `ShinyCapture` ; `/shiny/galerie` et `/shiny/ajouter` pour
+`/shiny` liste les shasses en cours par jeu ; `/shiny/shasse/[id]` est le compteur (−1 / +1, saisie directe,
+clavier), « Shiny trouvé ! » clôture la shasse en `ShinyCapture` ; `/shiny/galerie` et `/shiny/ajouter` pour
 les shinies. Le compteur est sauvegardé en valeur absolue après un court délai (`setHuntCountAction`,
 `src/components/use-hunt-counter.ts`) et, si l'onglet passe en arrière-plan avant, via un beacon vers
 `POST /api/shiny/count`. Les données sont dans `src/lib/data/shiny.ts` (sans cache).
@@ -154,7 +154,7 @@ Le workflow « CI » (lint + types) tourne à chaque push ; le build complet est
 ## Scripts
 
 | Commande | Rôle |
-|---|---|
+| --- | --- |
 | `npm run dev` | Serveur de développement |
 | `npm run build` / `npm start` | Build et serveur de production |
 | `npm run lint` / `npm run typecheck` | Qualité |
@@ -178,7 +178,7 @@ src/lib/prisma.ts      # client Prisma (singleton)
 src/lib/auth.ts        # Better Auth côté serveur
 src/lib/auth-actions.ts# Server Actions : inscription, connexion, déconnexion, pseudo
 src/lib/capture-actions.ts # Server Action : cocher / décocher une capture
-src/lib/shiny-actions.ts # Server Actions : chasses shiny, compteur, galerie
+src/lib/shiny-actions.ts # Server Actions : shasses, compteur, galerie
 src/lib/session.ts     # utilisateur courant (`getCurrentUser`, `requireUser`)
 src/generated/prisma   # client Prisma généré (ignoré par git)
 scripts/import/        # ETL : CSV PokeAPI → base + sprites

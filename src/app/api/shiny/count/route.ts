@@ -3,7 +3,7 @@ import { setHuntCount } from "@/lib/data/shiny";
 import { MAX_HUNT_COUNT } from "@/lib/shiny";
 
 /**
- * Sauvegarde de dernier recours du compteur d'une chasse, envoyée par `navigator.sendBeacon`
+ * Sauvegarde de dernier recours du compteur d'une shasse, envoyée par `navigator.sendBeacon`
  * quand l'onglet passe en arrière-plan ou se ferme avant que la Server Action n'ait pu partir
  * (console en main, on verrouille le téléphone juste après avoir tapé +1).
  * Corps : formulaire `huntId=…&count=…`.

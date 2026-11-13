@@ -36,7 +36,7 @@ async function Account() {
     <>
       <section className="grid gap-3 sm:grid-cols-3">
         <Stat label="Captures" value={captures} href="/captures" />
-        <Stat label="Chasses en cours" value={hunts} href="/shiny" />
+        <Stat label="Shasses en cours" value={hunts} href="/shiny" />
         <Stat label="Shinies attrapés" value={shinies} href="/shiny/galerie" />
       </section>
 

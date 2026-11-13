@@ -56,7 +56,7 @@ async function MyCaptures({ speciesId, versions }: { speciesId: number; versions
 const numberFr = new Intl.NumberFormat("fr-FR");
 const dateFr = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" });
 
-/** Chasses en cours et shinies obtenus pour cette espèce, avec les raccourcis vers les formulaires. */
+/** Shasses en cours et shinies obtenus pour cette espèce, avec les raccourcis vers les formulaires. */
 async function MyShinies({ speciesId }: { speciesId: number }) {
   const user = await getCurrentUser();
   if (!user) return null;
@@ -69,7 +69,7 @@ async function MyShinies({ speciesId }: { speciesId: number }) {
           {hunts.map((hunt) => (
             <li key={hunt.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 t-small">
               <span>
-                Chasse en cours dans {hunt.version.nameFr} : <b className="font-bold text-ink">{numberFr.format(hunt.count)}</b> rencontres
+                Shasse en cours dans {hunt.version.nameFr} : <b className="font-bold text-ink">{numberFr.format(hunt.count)}</b> rencontres
                 {hunt.method && <span className="text-ink-2"> · {hunt.method}</span>}
               </span>
               <Link href={huntHref(hunt.version.slug, hunt.id)} className={`${secondaryButton} ${smallButton} ml-auto`}>
@@ -93,7 +93,7 @@ async function MyShinies({ speciesId }: { speciesId: number }) {
       )}
       <div className="flex flex-wrap gap-2">
         <NewHuntLink speciesId={speciesId} className={`${secondaryButton} ${smallButton}`}>
-          Lancer une chasse shiny
+          Lancer une shasse shiny
         </NewHuntLink>
         <Link href={`/shiny/ajouter?espece=${speciesId}`} className={`${ghostButton} ${smallButton}`}>
           Ajouter un shiny
@@ -152,7 +152,7 @@ export default async function SpeciesPage({ params }: PageProps<"/pokemon/[id]">
         </Suspense>
       </section>
 
-      {/* Chasses shiny et shinies de l'espèce : rien à afficher sans compte. */}
+      {/* Shasses shiny et shinies de l'espèce : rien à afficher sans compte. */}
       <Suspense fallback={null}>
         <MyShinies speciesId={species.id} />
       </Suspense>

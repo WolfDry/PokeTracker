@@ -251,12 +251,12 @@ model Pokemon {
   specialDefense           Int?
   speed                    Int?
 
-  species    Species           @relation(fields: [speciesId], references: [id])
-  type1      Type              @relation("PokemonType1", fields: [type1Id], references: [id])
-  type2      Type?             @relation("PokemonType2", fields: [type2Id], references: [id])
-  encounters Encounter[]
-  pastTypes  PokemonPastType[]
-  moves      PokemonMove[]
+  species       Species           @relation(fields: [speciesId], references: [id])
+  type1         Type              @relation("PokemonType1", fields: [type1Id], references: [id])
+  type2         Type?             @relation("PokemonType2", fields: [type2Id], references: [id])
+  encounters    Encounter[]
+  pastTypes     PokemonPastType[]
+  moves         PokemonMove[]
   shinyHunts    ShinyHunt[]
   shinyCaptures ShinyCapture[]
 
@@ -285,8 +285,8 @@ model PokemonPastType {
 /// Capacité (Charge, Lance-Flammes…) avec ses valeurs actuelles. Celles d'avant un changement
 /// (Morsure Normal en 1re génération, Lance-Flammes à 95 de puissance jusqu'à la 5e) sont dans `MovePastValue`.
 model Move {
-  id           Int     @id
-  slug         String  @unique
+  id           Int    @id
+  slug         String @unique
   nameFr       String
   nameEn       String
   generationId Int
@@ -461,7 +461,7 @@ model EncounterConditionOnEncounter {
 }
 
 // ---------------------------------------------------------------------------
-// Utilisateur : captures et chasses shiny
+// Utilisateur : captures et shasses shiny
 // ---------------------------------------------------------------------------
 
 /// Un Pokémon attrapé par un utilisateur dans un jeu donné.
@@ -488,7 +488,7 @@ enum HuntStatus {
   ABANDONED
 }
 
-/// Chasse shiny en cours (ou terminée) : un compteur par (utilisateur, espèce, jeu).
+/// Shasse shiny en cours (ou terminée) : un compteur par (utilisateur, espèce, jeu).
 model ShinyHunt {
   id          String     @id @default(cuid())
   userId      String
@@ -497,7 +497,7 @@ model ShinyHunt {
   /// Forme chassée (Rattata d'Alola) ; null = forme par défaut de l'espèce.
   pokemonId   Int?
   count       Int        @default(0)
-  /// Méthode de chasse libre : "Masuda", "Chaîne", "Full odds", …
+  /// Méthode de shasse libre : "Masuda", "Chaîne", "Full odds", …
   method      String?
   status      HuntStatus @default(ACTIVE)
   startedAt   DateTime   @default(now())
@@ -513,7 +513,7 @@ model ShinyHunt {
   @@index([userId, status])
 }
 
-/// Shiny obtenu, issu ou non d'une chasse (un shiny full-odds n'a pas de chasse).
+/// Shiny obtenu, issu ou non d'une shasse (un shiny full-odds n'a pas de shasse).
 model ShinyCapture {
   id         String   @id @default(cuid())
   userId     String

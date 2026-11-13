@@ -25,8 +25,8 @@
 //   },
 //   {
 //     href: "/shiny",
-//     title: "Chasse aux shiny",
-//     text: "Compteur de rencontres par chasse et collection de tes shiny attrapés.",
+//     title: "Shasse aux shiny",
+//     text: "Compteur de rencontres par shasse et collection de tes shiny attrapés.",
 //     icon: StarIcon,
 //   },
 //   {

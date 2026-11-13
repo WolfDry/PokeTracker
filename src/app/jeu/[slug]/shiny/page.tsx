@@ -35,7 +35,7 @@ export default async function Page({ params, searchParams }: PageProps<"/jeu/[sl
   );
 }
 
-/** Shiny dex d'un jeu : ses chasses en cours, puis un Pokédex du jeu en chromatique, en mosaïque ou en boîtes. */
+/** Shiny dex d'un jeu : ses shasses en cours, puis un Pokédex du jeu en chromatique, en mosaïque ou en boîtes. */
 async function VersionShinyDex({ slug, searchParams }: { slug: string; searchParams: PageProps<"/jeu/[slug]/shiny">["searchParams"] }) {
   const user = await requireUser(`/jeu/${slug}/shiny`);
   const { version, pokedexes, current, title, entries, coverageNote } = await loadGameDex(slug, searchParams);
@@ -62,7 +62,7 @@ async function VersionShinyDex({ slug, searchParams }: { slug: string; searchPar
   );
 }
 
-/** Shiny dex National : toutes les chasses en cours, et les espèces obtenues dans au moins un jeu. Lecture seule. */
+/** Shiny dex National : toutes les shasses en cours, et les espèces obtenues dans au moins un jeu. Lecture seule. */
 async function NationalShinyDex({ slug }: { slug: string }) {
   const user = await requireUser(`/jeu/${slug}/shiny`);
   const [pokedex, hunts, { speciesIds, caughtIn }] = await Promise.all([
@@ -93,26 +93,26 @@ async function NationalShinyDex({ slug }: { slug: string }) {
   );
 }
 
-/** Chasses en cours, avec leur compteur ; au National, regroupées par jeu. */
+/** Shasses en cours, avec leur compteur ; au National, regroupées par jeu. */
 function Hunts({ hunts, newHuntHref, showGame = false }: { hunts: Hunt[]; newHuntHref: string; showGame?: boolean }) {
   const groups = showGame ? groupByGame(hunts) : [{ version: null, hunts }];
   return (
     <section className="space-y-4">
       <SectionHeader
-        title="Chasses en cours"
+        title="Shasses en cours"
         aside={
           <Link href={newHuntHref} className={`${secondaryButton} ${smallButton}`}>
-            <PlusIcon size={16} /> Nouvelle chasse
+            <PlusIcon size={16} /> Nouvelle shasse
           </Link>
         }
       />
       {hunts.length === 0 ? (
         <p className={notice}>
-          Aucune chasse en cours.{" "}
+          Aucune shasse en cours.{" "}
           <Link href={newHuntHref} className={textLink}>
-            Lance une chasse
+            Lance une shasse
           </Link>{" "}
-          ou choisis « Chasser » sur un Pokémon manquant ci-dessous.
+          ou choisis « Shasser » sur un Pokémon manquant ci-dessous.
         </p>
       ) : (
         <div className="space-y-6">
@@ -132,7 +132,7 @@ function Hunts({ hunts, newHuntHref, showGame = false }: { hunts: Hunt[]; newHun
   );
 }
 
-/** Par jeu, le jeu de la chasse la plus récente en premier. */
+/** Par jeu, le jeu de la shasse la plus récente en premier. */
 function groupByGame(hunts: Hunt[]) {
   const byGame = new Map<number, { version: Hunt["version"]; hunts: Hunt[] }>();
   for (const hunt of hunts) {

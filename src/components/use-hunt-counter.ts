@@ -9,7 +9,7 @@ export type SaveStatus = "saved" | "pending" | "saving" | "error";
 const SAVE_DELAY = 600;
 
 /**
- * Compteur d'une chasse côté client. Le nombre affiché change tout de suite ; la valeur est
+ * Compteur d'une shasse côté client. Le nombre affiché change tout de suite ; la valeur est
  * envoyée au serveur après un court délai (un clic rapide = une seule requête), une requête
  * à la fois, et via un beacon si l'onglet passe en arrière-plan avant l'envoi.
  * En cas d'échec on garde le compte local (c'est lui qui a raison) et on propose de réessayer.

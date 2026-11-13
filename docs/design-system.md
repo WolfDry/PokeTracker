@@ -3,7 +3,7 @@
 > « Une collection, pas un tableau de bord. »
 > Encre chaude sur papier, une seule famille typographique, la couleur réservée aux sprites et aux types. L'interface s'efface pour laisser la place aux Pokémon.
 
-Canvas visuel (fondations, composants, écrans) : https://claude.ai/code/artifact/dae487c0-1d9e-4242-8ab7-1427313482f6
+Canvas visuel (fondations, composants, écrans) : <https://claude.ai/code/artifact/dae487c0-1d9e-4242-8ab7-1427313482f6>
 Implémentation : tokens dans [`src/app/globals.css`](../src/app/globals.css), classes partagées dans [`src/components/ui.ts`](../src/components/ui.ts), icônes dans [`src/components/icons.tsx`](../src/components/icons.tsx).
 
 ## Principes
@@ -53,7 +53,7 @@ Manrope (Google Fonts, `--font-manrope`), une seule famille. Chiffres tabulaires
 | corps | 15/24 | 400 | texte |
 | `t-small` | 13/20 | 400 | métadonnées, listes denses, aide |
 | `t-caption` | 12/16 | 600, +0.06em, capitales, `ink-2` | légende au-dessus d'un titre, en-têtes de tableau, étiquettes |
-| `t-counter` | 72 (96 dès `sm`) | 800, -0.04em | le compteur de chasse : le seul chiffre héroïque |
+| `t-counter` | 72 (96 dès `sm`) | 800, -0.04em | le compteur de shasse : le seul chiffre héroïque |
 
 ## Espacements, rayons, tailles
 
@@ -85,7 +85,7 @@ Composants React de structure : `PageHeader` (légende, titre display, intro, ac
 
 ### Accueil (`CurrentGame`, `GameTimeline`) — DA « Pokédex »
 
-L'accueil (et l'en-tête, partagé) porte la nouvelle direction artistique, validée le 27/10/2026 : l'appareil Pokédex, en **touches de couleur**. Les autres pages gardent pour l'instant la DA « collection » décrite ci-dessus. Maquettes : https://claude.ai/artifact/JEJC3H24fF5LxqDaMy2d3Z
+L'accueil (et l'en-tête, partagé) porte la nouvelle direction artistique, validée le 27/10/2026 : l'appareil Pokédex, en **touches de couleur**. Les autres pages gardent pour l'instant la DA « collection » décrite ci-dessus. Maquettes : <https://claude.ai/artifact/JEJC3H24fF5LxqDaMy2d3Z>
 
 - **Coque** (`--shell`, `--shell-deep`, `--on-shell`) : rouge fixe, celui de l'en-tête et de la génération choisie dans la frise. Voyants : `--led`/`--led-ring` (le grand voyant bleu du logo, reflet compris) et `--led-red`/`--led-yellow`/`--led-green` (les trois petits ; les deux points rouges au-dessus de l'écran).
 - **Teinte du jeu** : chaque jeu a une teinte et un chroma oklch (`hue`, `chroma` dans `game-catalog.ts`, le National prend le rouge de la coque). Un élément `.game-tint` les reçoit en `--game-h`/`--game-c` (`gameTintStyle`) et en dérive `game` (« Continuer », mention « En cours », bordure du jeu en cours), `game-soft` et `game-line` (l'écran), `game-text` (texte teinté sur surface), `on-game`. Sans teinte : neutre.
@@ -101,11 +101,11 @@ Dessous, **la frise des générations**, à la teinte du jeu en cours : une past
 
 ### Résumé d'un jeu (`/jeu/[slug]`) — DA « Pokédex »
 
-Proposition « D · Bento » du canvas https://claude.ai/artifact/TPCJBUNzBCFGDgGmRNUvPX, validée le 04/11/2026. Des tuiles de tailles inégales (coins 24 px, 22 sur mobile, bordure `line` renforcée au survol) en `flex-wrap` : à gauche (`2 1 560px`) le **living dex** en grande tuile puis l'**équipe** large et basse ; à droite (`1 1 300px`), une tuile haute pour les **chasses**. Chaque tuile-lien a une légende `t-caption` (icône + titre) et une flèche dans un rond Surface 2 de 36 px. Pas de nom de Pokémon : des sprites, le nom reste dans `alt` ou dans l'`aria-label` du lien.
+Proposition « D · Bento » du canvas <https://claude.ai/artifact/TPCJBUNzBCFGDgGmRNUvPX>, validée le 04/11/2026. Des tuiles de tailles inégales (coins 24 px, 22 sur mobile, bordure `line` renforcée au survol) en `flex-wrap` : à gauche (`2 1 560px`) le **living dex** en grande tuile puis l'**équipe** large et basse ; à droite (`1 1 300px`), une tuile haute pour les **shasses**. Chaque tuile-lien a une légende `t-caption` (icône + titre) et une flèche dans un rond Surface 2 de 36 px. Pas de nom de Pokémon : des sprites, le nom reste dans `alt` ou dans l'`aria-label` du lien.
 
 - **Living dex** : `142 / 400` en afficheur (72 px, 56 sur mobile) pour le Pokédex principal du jeu (le National tous jeux confondus), barre fine `game` (verte si complet), les autres Pokédex en une ligne `t-small` ; à droite un écran `pokedex-screen` (coin bas gauche 28 px) « DERNIÈRES CAPTURES » avec les quatre dernières espèces cochées, **toujours en sprite normal**, sous leur forme régionale du jeu.
 - **Équipe** (pas pour le National) : nom de la dernière équipe modifiée et nombre d'équipes à droite de la légende, six sprites libres (shiny si l'espèce est obtenue en shiny dans le jeu), emplacement vide en rond pointillé.
-- **Chasses en cours** : jusqu'à quatre (`HuntSummaryRow`) — sprite dans un écran de 84 px (`SpoilerSprite`, lien vers la chasse), compteur en afficheur 26 px, bouton rond `game` « +1 » de 44 px ; l'état d'enregistrement n'apparaît qu'en cas d'échec. Puis « Nouvelle chasse » et, en bas sous un filet, **Derniers shiny** : les quatre derniers obtenus (sprites shiny dans des boîtes Surface 2) et `9 / 400` du shiny dex.
+- **Shasses en cours** : jusqu'à quatre (`HuntSummaryRow`) — sprite dans un écran de 84 px (`SpoilerSprite`, lien vers la shasse), compteur en afficheur 26 px, bouton rond `game` « +1 » de 44 px ; l'état d'enregistrement n'apparaît qu'en cas d'échec. Puis « Nouvelle shasse » et, en bas sous un filet, **Derniers shiny** : les quatre derniers obtenus (sprites shiny dans des boîtes Surface 2) et `9 / 400` du shiny dex.
 
 ### Page Pokédex (`PokedexExplorer`)
 

@@ -18,7 +18,7 @@ import { getPokemonForm } from "@/lib/data/species";
 import { getCurrentUser } from "@/lib/session";
 import { huntHref, MAX_HUNT_COUNT } from "@/lib/shiny";
 
-// Server Actions des chasses shiny. Les formulaires (nouvelle chasse, clôture, ajout manuel)
+// Server Actions des shasses shiny. Les formulaires (nouvelle shasse, clôture, ajout manuel)
 // passent par useActionState ; le compteur appelle `setHuntCountAction` avec un délai.
 
 export type ShinyField = "speciesId" | "pokemonId" | "versionId" | "method" | "count" | "encounters" | "nickname" | "note" | "caughtAt";
@@ -32,8 +32,8 @@ export type ShinyFormState = {
 
 export type ShinyActionResult = { ok: true } | { ok: false; error: string };
 
-const NOT_SIGNED_IN = "Connecte-toi pour gérer tes chasses shiny.";
-const NOT_FOUND = "Chasse introuvable, ou déjà terminée.";
+const NOT_SIGNED_IN = "Connecte-toi pour gérer tes shasses shiny.";
+const NOT_FOUND = "Shasse introuvable, ou déjà terminée.";
 const FAILED = "Impossible d'enregistrer pour le moment.";
 
 const blankToNull = (value: unknown) => (typeof value === "string" && value.trim() === "" ? null : value);
@@ -122,11 +122,11 @@ export async function createHuntAction(_prev: ShinyFormState, formData: FormData
     console.error("[shiny]", error);
     return { error: isForeignKeyError(error) ? "Pokémon ou jeu inconnu." : FAILED, values: values(formData, fields) };
   }
-  // La chasse s'ouvre dans l'onglet Shiny dex de son jeu.
+  // La shasse s'ouvre dans l'onglet Shiny dex de son jeu.
   redirect(huntHref(hunt.version.slug, hunt.id));
 }
 
-/** Enregistre le compteur d'une chasse (valeur absolue, envoyée après un court délai par le client). */
+/** Enregistre le compteur d'une shasse (valeur absolue, envoyée après un court délai par le client). */
 export async function setHuntCountAction(huntId: string, count: number): Promise<ShinyActionResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: NOT_SIGNED_IN };
@@ -163,7 +163,7 @@ export async function completeHuntAction(_prev: ShinyFormState, formData: FormDa
   redirect(`/jeu/${versionSlug}/shiny`);
 }
 
-/** Met une chasse en pause (elle reste listée, reprenable). */
+/** Met une shasse en pause (elle reste listée, reprenable). */
 export async function pauseHuntAction(huntId: string): Promise<void> {
   const user = await getCurrentUser();
   if (!user) redirect("/connexion?next=%2Fshiny");
@@ -185,7 +185,7 @@ export async function deleteHuntAction(huntId: string): Promise<void> {
   redirect(deleted ? `/jeu/${deleted.versionSlug}/shiny` : "/");
 }
 
-/** Ajout d'un shiny sans chasse (full odds, œuf, échange…). */
+/** Ajout d'un shiny sans shasse (full odds, œuf, échange…). */
 export async function addShinyAction(_prev: ShinyFormState, formData: FormData): Promise<ShinyFormState> {
   const fields: ShinyField[] = ["speciesId", "pokemonId", "versionId", "method", "encounters", "nickname", "note", "caughtAt"];
   const user = await getCurrentUser();

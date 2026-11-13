@@ -12,10 +12,10 @@ import { BackToShinyDex } from "../back-link";
 export async function generateMetadata({ params }: PageProps<"/jeu/[slug]/shiny/nouvelle">): Promise<Metadata> {
   const { slug } = await params;
   const game = await getGame(slug);
-  return { title: game ? `Nouvelle chasse — ${game.nameFr}` : "Jeu introuvable" };
+  return { title: game ? `Nouvelle shasse — ${game.nameFr}` : "Jeu introuvable" };
 }
 
-/** Nouvelle chasse : dans un jeu, le jeu est fixé ; au National, on le choisit. `?espece=&forme=` présélectionne le Pokémon. */
+/** Nouvelle shasse : dans un jeu, le jeu est fixé ; au National, on le choisit. `?espece=&forme=` présélectionne le Pokémon. */
 export default async function Page({ params, searchParams }: PageProps<"/jeu/[slug]/shiny/nouvelle">) {
   const { slug } = await params;
   const game = await getGame(slug);
@@ -26,9 +26,9 @@ export default async function Page({ params, searchParams }: PageProps<"/jeu/[sl
     <div className="mx-auto max-w-xl space-y-6">
       <BackToShinyDex slug={slug} />
       <header className="space-y-2">
-        <h2 className="t-h1">Nouvelle chasse</h2>
+        <h2 className="t-h1">Nouvelle shasse</h2>
         <p className="text-ink-2">
-          {fixedVersionId ? "Choisis le Pokémon" : "Choisis le Pokémon et le jeu"}, puis compte tes rencontres. Tu peux mener plusieurs chasses en même temps.
+          {fixedVersionId ? "Choisis le Pokémon" : "Choisis le Pokémon et le jeu"}, puis compte tes rencontres. Tu peux mener plusieurs shasses en même temps.
         </p>
       </header>
       <div className={`${card} p-6 sm:p-8`}>

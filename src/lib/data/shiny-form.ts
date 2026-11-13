@@ -8,7 +8,7 @@ type Param = string | string[] | undefined;
 const toId = (value: Param) => (typeof value === "string" && /^\d+$/.test(value) ? Number(value) : null);
 
 /**
- * Données des formulaires « Nouvelle chasse » et « Ajouter un shiny » : liste des jeux et
+ * Données des formulaires « Nouvelle shasse » et « Ajouter un shiny » : liste des jeux et
  * présélection depuis l'URL (`?espece=19&forme=10091&jeu=sun`, liens des fiches Pokémon et du shiny dex).
  * Une `forme` qui n'appartient pas à l'espèce (ou de combat, comme une Méga) est ignorée.
  * `gameSlug` : jeu imposé par la page (onglet d'un jeu), prioritaire sur `?jeu=`.

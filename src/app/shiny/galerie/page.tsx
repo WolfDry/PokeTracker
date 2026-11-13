@@ -41,7 +41,7 @@ async function Gallery() {
       <p className={notice}>
         Aucun shiny pour l&apos;instant. Termine une{" "}
         <Link href="/shiny" className={textLink}>
-          chasse
+          shasse
         </Link>{" "}
         ou{" "}
         <Link href="/shiny/ajouter" className={textLink}>

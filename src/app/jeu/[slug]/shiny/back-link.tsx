@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowLeftIcon } from "@/components/icons";
 import { ghostButton, smallButton } from "@/components/ui";
 
-/** Retour au shiny dex du jeu, depuis une chasse ou le formulaire de nouvelle chasse. */
+/** Retour au shiny dex du jeu, depuis une shasse ou le formulaire de nouvelle shasse. */
 export function BackToShinyDex({ slug }: { slug: string }) {
   return (
     <Link href={`/jeu/${slug}/shiny`} className={`${ghostButton} ${smallButton} -ml-3`}>

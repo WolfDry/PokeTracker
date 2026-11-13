@@ -9,15 +9,15 @@ import { requireUser } from "@/lib/session";
 import { huntHref } from "@/lib/shiny";
 import { BackToShinyDex } from "../../back-link";
 
-export async function generateMetadata({ params }: PageProps<"/jeu/[slug]/shiny/chasse/[id]">): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps<"/jeu/[slug]/shiny/shasse/[id]">): Promise<Metadata> {
   const { slug } = await params;
   const game = await getGame(slug);
-  return { title: game ? `Chasse shiny — ${game.nameFr}` : "Jeu introuvable" };
+  return { title: game ? `Shasse shiny — ${game.nameFr}` : "Jeu introuvable" };
 }
 
-/** Une chasse, dans l'onglet Shiny dex de son jeu. */
-export default function Page({ params }: PageProps<"/jeu/[slug]/shiny/chasse/[id]">) {
-  // L'id de la chasse n'est connu qu'à la requête : il se lit sous le <Suspense>, la coquille reste statique.
+/** Une shasse, dans l'onglet Shiny dex de son jeu. */
+export default function Page({ params }: PageProps<"/jeu/[slug]/shiny/shasse/[id]">) {
+  // L'id de la shasse n'est connu qu'à la requête : il se lit sous le <Suspense>, la coquille reste statique.
   return (
     <Suspense fallback={<PageSkeleton />}>
       {params.then(({ slug, id }) => (

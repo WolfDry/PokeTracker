@@ -27,7 +27,7 @@ type Props = {
   /** Rang de chaque lieu dans la progression du jeu : les lieux s'affichent dans l'ordre où on les atteint. */
   ranks: Map<number, number>;
   wording: Wording;
-  /** Shiny dex : sprite chromatique (mode spoiler), nombre de shinies obtenus, chasse en cours ou à lancer. */
+  /** Shiny dex : sprite chromatique (mode spoiler), nombre de shinies obtenus, shasse en cours ou à lancer. */
   shiny?: { gameSlug: string; meta: ShinyDexMeta | undefined };
   onToggle: () => void;
   onStep: (delta: number) => void;
@@ -60,18 +60,16 @@ export function LivingDexPanel({ entry, index, caught, readOnly, caughtIn, cover
       {open && <div aria-hidden className="fixed inset-0 z-30 bg-scrim lg:hidden" onClick={onClose} />}
       <aside
         aria-label="Pokémon sélectionné"
-        className={`flex-col gap-3.5 rounded-3xl border border-line bg-surface p-5 lg:sticky lg:top-24 lg:flex lg:min-w-0 lg:flex-[1_1_320px] ${
-          open
-            ? "max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-40 max-lg:mx-auto max-lg:flex max-lg:max-h-[85dvh] max-lg:max-w-xl max-lg:overflow-y-auto max-lg:rounded-b-none max-lg:pb-[max(env(safe-area-inset-bottom),20px)]"
-            : "hidden"
-        }`}
+        className={`flex-col gap-3.5 rounded-3xl border border-line bg-surface p-5 lg:sticky lg:top-24 lg:flex lg:min-w-0 lg:flex-[1_1_320px] ${open
+          ? "max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-40 max-lg:mx-auto max-lg:flex max-lg:max-h-[85dvh] max-lg:max-w-xl max-lg:overflow-y-auto max-lg:rounded-b-none max-lg:pb-[max(env(safe-area-inset-bottom),20px)]"
+          : "hidden"
+          }`}
       >
         <div className="relative grid h-[200px] shrink-0 place-items-center rounded-[16px_16px_16px_40px] pokedex-screen">
           <span className="absolute top-2.5 left-3.5 font-mono text-sm font-bold text-game-text">N° {dexNumber(entry.number)}</span>
           <span
-            className={`absolute top-2.5 right-3 inline-flex h-6 items-center rounded-full px-2.5 text-xs font-bold ${
-              caught ? "bg-game text-on-game" : "border border-line-strong bg-surface text-ink-2"
-            }`}
+            className={`absolute top-2.5 right-3 inline-flex h-6 items-center rounded-full px-2.5 text-xs font-bold ${caught ? "bg-game text-on-game" : "border border-line-strong bg-surface text-ink-2"
+              }`}
           >
             {caught ? `${wording.caught}${count > 1 ? ` ×${count}` : ""}` : "Manquant"}
           </span>
@@ -111,13 +109,13 @@ export function LivingDexPanel({ entry, index, caught, readOnly, caughtIn, cover
             <button type="button" onClick={onToggle} className={`${caught ? pillButton : gameButton} w-full`}>
               {caught ? wording.unmarkButton : wording.markButton}
             </button>
-            {/* Shiny manquant : sa chasse en cours, ou de quoi en lancer une, jeu et forme préremplis. */}
+            {/* Shiny manquant : sa shasse en cours, ou de quoi en lancer une, jeu et forme préremplis. */}
             {shiny && !caught && (
               <Link
                 href={hunt ? huntHref(shiny.gameSlug, hunt.id) : newHuntHref(shiny.gameSlug, { speciesId: species.id, pokemonId: species.pokemonId })}
                 className={`${pillButton} w-full`}
               >
-                {hunt ? `Chasse en cours · ${numberFr.format(hunt.count)}` : "Chasser"}
+                {hunt ? `Shasse en cours · ${numberFr.format(hunt.count)}` : "Shasser"}
               </Link>
             )}
           </div>

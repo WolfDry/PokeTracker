@@ -11,7 +11,7 @@ import { deleteHuntAction, pauseHuntAction, resumeHuntAction } from "@/lib/shiny
 const numberFr = new Intl.NumberFormat("fr-FR");
 const dateFr = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" });
 
-/** Une chasse : compteur si elle est en cours, reprise si elle est en pause, bilan si elle est terminée ; pause et suppression. */
+/** Une shasse : compteur si elle est en cours, reprise si elle est en pause, bilan si elle est terminée ; pause et suppression. */
 export function HuntDetail({ hunt }: { hunt: Hunt }) {
   const encounters = `${numberFr.format(hunt.count)} rencontre${hunt.count > 1 ? "s" : ""}`;
 
@@ -19,7 +19,7 @@ export function HuntDetail({ hunt }: { hunt: Hunt }) {
     <div className="mx-auto max-w-2xl space-y-8">
       <header className="flex items-center gap-5">
         <span className={`${spriteBox} size-[88px] rounded-lg`}>
-          {/* Tant que la chasse n'est pas terminée, le shiny reste soumis au mode spoiler. */}
+          {/* Tant que la shasse n'est pas terminée, le shiny reste soumis au mode spoiler. */}
           {hunt.status === "COMPLETED" ? (
             <PokemonSprite pokemonId={hunt.species.pokemonId} alt={`${hunt.species.nameFr} chromatique`} size={88} shiny />
           ) : (
@@ -44,11 +44,11 @@ export function HuntDetail({ hunt }: { hunt: Hunt }) {
       {hunt.status === "ABANDONED" && (
         <div className={`${card} flex flex-wrap items-center justify-between gap-4 p-6`}>
           <p>
-            Chasse en pause à <b className="font-bold">{encounters}</b>.
+            Shasse en pause à <b className="font-bold">{encounters}</b>.
           </p>
           <form action={resumeHuntAction.bind(null, hunt.id)}>
             <button type="submit" className={secondaryButton}>
-              Reprendre la chasse
+              Reprendre la shasse
             </button>
           </form>
         </div>
@@ -87,12 +87,12 @@ export function HuntDetail({ hunt }: { hunt: Hunt }) {
           <ConfirmButton
             message={
               hunt.status === "COMPLETED"
-                ? `Supprimer cette chasse et le shiny ${hunt.species.nameFr} qui en est issu ?`
-                : `Supprimer la chasse de ${hunt.species.nameFr} dans ${hunt.version.nameFr} (${encounters}) ?`
+                ? `Supprimer cette shasse et le shiny ${hunt.species.nameFr} qui en est issu ?`
+                : `Supprimer la shasse de ${hunt.species.nameFr} dans ${hunt.version.nameFr} (${encounters}) ?`
             }
             className={`${dangerButton} ${smallButton}`}
           >
-            Supprimer la chasse
+            Supprimer la shasse
           </ConfirmButton>
         </form>
       </div>

@@ -23,11 +23,11 @@ export default function Page() {
       <PageHeader
         eyebrow="Collection"
         title="Shiny"
-        intro="Tes chasses en cours et les shinies attrapés."
+        intro="Tes shasses en cours et les shinies attrapés."
         actions={
           <>
             <Link href="/shiny/nouvelle" className={primaryButton}>
-              <PlusIcon size={18} /> Nouvelle chasse
+              <PlusIcon size={18} /> Nouvelle shasse
             </Link>
             <Link href="/shiny/ajouter" className={secondaryButton}>
               Ajouter un shiny
@@ -50,7 +50,7 @@ async function Content() {
   const active = hunts.filter((h) => h.status === "ACTIVE");
   const paused = hunts.filter((h) => h.status === "ABANDONED");
 
-  // Par jeu, le jeu de la chasse la plus récente en premier.
+  // Par jeu, le jeu de la shasse la plus récente en premier.
   const byGame = new Map<number, { version: Hunt["version"]; hunts: Hunt[] }>();
   for (const hunt of active) {
     const group = byGame.get(hunt.version.id) ?? { version: hunt.version, hunts: [] };
@@ -61,12 +61,12 @@ async function Content() {
   return (
     <>
       <section className="space-y-4">
-        <SectionHeader title="Chasses en cours" aside={active.length > 0 ? `${active.length}` : undefined} />
+        <SectionHeader title="Shasses en cours" aside={active.length > 0 ? `${active.length}` : undefined} />
         {active.length === 0 ? (
           <p className={notice}>
-            Aucune chasse en cours.{" "}
+            Aucune shasse en cours.{" "}
             <Link href="/shiny/nouvelle" className={textLink}>
-              Lance ta première chasse
+              Lance ta première shasse
             </Link>{" "}
             : choisis un Pokémon et un jeu, puis compte les rencontres.
           </p>
@@ -88,14 +88,14 @@ async function Content() {
 
       {paused.length > 0 && (
         <section className="space-y-4">
-          <SectionHeader title="Chasses en pause" aside={`${paused.length}`} />
+          <SectionHeader title="Shasses en pause" aside={`${paused.length}`} />
           <ul className={`${card} divide-y divide-line`}>
             {paused.map((hunt) => (
               <li key={hunt.id} className="flex flex-wrap items-center gap-3 px-4 py-3 t-small">
                 <span className={`${spriteBox} size-10 rounded-sm`}>
                   <PokemonSprite pokemonId={hunt.species.pokemonId} alt="" size={40} shiny />
                 </span>
-                <Link href={`/shiny/chasse/${hunt.id}`} className="font-semibold text-ink hover:underline">
+                <Link href={`/shiny/shasse/${hunt.id}`} className="font-semibold text-ink hover:underline">
                   {hunt.species.nameFr}
                 </Link>
                 <span className="text-ink-2">
@@ -109,7 +109,7 @@ async function Content() {
                     </button>
                   </form>
                   <form action={deleteHuntAction.bind(null, hunt.id)}>
-                    <ConfirmButton message={`Supprimer la chasse de ${hunt.species.nameFr} dans ${hunt.version.nameFr} ?`} className={`${dangerButton} ${smallButton} border-0`}>
+                    <ConfirmButton message={`Supprimer la shasse de ${hunt.species.nameFr} dans ${hunt.version.nameFr} ?`} className={`${dangerButton} ${smallButton} border-0`}>
                       Supprimer
                     </ConfirmButton>
                   </form>
@@ -133,7 +133,7 @@ async function Content() {
         />
         {shinies.length === 0 ? (
           <p className="t-small text-ink-2">
-            Aucun shiny pour l&apos;instant. Ils arrivent ici à la fin d&apos;une chasse, ou{" "}
+            Aucun shiny pour l&apos;instant. Ils arrivent ici à la fin d&apos;une shasse, ou{" "}
             <Link href="/shiny/ajouter" className={textLink}>
               ajoute-en un
             </Link>{" "}
