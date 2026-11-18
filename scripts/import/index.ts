@@ -17,7 +17,7 @@ import { bool, humanize, int, loadCsv, localized, uniqueBy, type Row } from "./c
 import { createPool, insertRows, type Rows } from "./db";
 import { evolutionConditionFr, formConditionFr } from "./evolutions";
 import { conditionValueLabelFr, LOCATION_LABELS_FR, METHOD_LABELS_FR, VERSION_LABELS_FR } from "./labels";
-import { downloadSprites } from "./sprites";
+import { downloadFormSprites, downloadSprites } from "./sprites";
 
 const args = new Set(process.argv.slice(2));
 const options = {
@@ -34,7 +34,7 @@ const CSV_FILES = [
   "versions", "version_names",
   "pokedexes", "pokedex_prose", "pokedex_version_groups", "pokemon_dex_numbers",
   "pokemon_species", "pokemon_species_names",
-  "pokemon", "pokemon_types", "pokemon_types_past", "pokemon_forms", "pokemon_form_names", "pokemon_stats", "stats",
+  "pokemon", "pokemon_types", "pokemon_types_past", "pokemon_forms", "pokemon_form_names", "pokemon_form_types", "pokemon_stats", "stats",
   "pokemon_evolution", "evolution_triggers", "evolution_trigger_prose", "items", "item_names", "move_names",
   "moves", "move_changelog", "pokemon_moves", "pokemon_move_methods",
   "locations", "location_names",
@@ -253,6 +253,44 @@ function transform(csv: Csv) {
     };
   });
 
+  // Variantes d'apparence : les formes non par défaut d'un pokemon (motifs de Prismillon, Zarbi B, Arceus Feu…).
+  const typesByForm = new Map<string, { 1?: number; 2?: number }>();
+  for (const row of csv.pokemon_form_types) {
+    const entry = typesByForm.get(row.pokemon_form_id) ?? {};
+    entry[row.slot === "1" ? 1 : 2] = Number(row.type_id);
+    typesByForm.set(row.pokemon_form_id, entry);
+  }
+  // Sont exclues : les formes seules de leur pokemon (modes de Koraidon : déjà des `Pokemon`), et celles qui ne
+  // changent rien à l'apparence (motif de Prismillon porté par la larve, cape de Papilord).
+  const INVISIBLE_FORMS_SPECIES = new Set(["scatterbug", "spewpa", "mothim"]);
+  const speciesSlugByPokemon = new Map(csv.pokemon.map((p) => [p.id, speciesSlugById.get(p.species_id) ?? ""]));
+  const cosmeticFormRows = csv.pokemon_forms.filter(
+    (f) =>
+      !bool(f.is_default) &&
+      defaultFormByPokemon.has(f.pokemon_id) &&
+      !INVISIBLE_FORMS_SPECIES.has(speciesSlugByPokemon.get(f.pokemon_id) ?? ""),
+  );
+  const cosmeticForms: Rows = cosmeticFormRows.map((f) => {
+    const formTypes = typesByForm.get(f.id);
+    return {
+      id: Number(f.id),
+      pokemonId: Number(f.pokemon_id),
+      slug: f.identifier,
+      nameFr: fullFormNames.frOnly(f.id) ?? null,
+      formNameFr: formNames.fr(f.id, "") || null,
+      isBattleOnly: bool(f.is_battle_only),
+      order: Number(f.form_order),
+      introducedVersionGroupId: int(f.introduced_in_version_group_id),
+      type1Id: formTypes?.[1] ?? null,
+      type2Id: formTypes?.[2] ?? null,
+    };
+  });
+  // Images chez PokeAPI : « 666-icy-snow.png », sauf les femelles rangées à part (« female/668.png »).
+  const cosmeticFormSprites = cosmeticFormRows.map((f) => ({
+    slug: f.identifier,
+    remote: f.form_identifier === "female" ? `female/${f.pokemon_id}` : `${f.pokemon_id}-${f.form_identifier}`,
+  }));
+
   // Types d'avant un changement (Mélofée Normal jusqu'en 5e génération), une ligne par (forme, génération).
   const pastTypes = new Map<string, Record<string, number | null>>();
   for (const row of csv.pokemon_types_past) {
@@ -457,7 +495,7 @@ function transform(csv: Csv) {
 
   return {
     generations, regions, types, typeEfficacy, versionGroups, versionGroupRegions, versions,
-    pokedexes, pokedexVersionGroups, pokedexEntries, species, pokemons, pokemonPastTypes, evolutions,
+    pokedexes, pokedexVersionGroups, pokedexEntries, species, pokemons, cosmeticForms, cosmeticFormSprites, pokemonPastTypes, evolutions,
     moves, movePastValues, pokemonMoves,
     locations, locationAreas, encounterMethods, encounterConditions, encounterConditionValues,
     encounters, encounterConditionLinks, areaRates, versionCoverage,
@@ -506,11 +544,13 @@ async function load(client: pg.PoolClient, data: Data) {
       await client.query(`DELETE FROM "Evolution"`);
       await client.query(`DELETE FROM "TypeEfficacy"`);
       await client.query(`DELETE FROM "PokemonPastType"`);
+      await client.query(`DELETE FROM "CosmeticForm"`);
       await client.query(`DELETE FROM "MovePastValue"`);
       await client.query(`DELETE FROM "PokemonMove"`);
     });
     await step(`TypeEfficacy (${data.typeEfficacy.length})`, () => insertRows(client, "TypeEfficacy", data.typeEfficacy));
     await step(`PokemonPastType (${data.pokemonPastTypes.length})`, () => insertRows(client, "PokemonPastType", data.pokemonPastTypes));
+    await step(`CosmeticForm (${data.cosmeticForms.length})`, () => insertRows(client, "CosmeticForm", data.cosmeticForms));
     await step(`Evolution (${data.evolutions.length})`, () => insertRows(client, "Evolution", data.evolutions));
     await step(`MovePastValue (${data.movePastValues.length})`, () => insertRows(client, "MovePastValue", data.movePastValues));
     await step(`PokemonMove (${data.pokemonMoves.length})`, () => insertRows(client, "PokemonMove", data.pokemonMoves));
@@ -614,6 +654,7 @@ async function main() {
   if (!options.skipSprites) {
     console.log("\nTéléchargement des sprites…");
     await downloadSprites(data.pokemons.map((p) => p.id as number));
+    await downloadFormSprites(data.cosmeticFormSprites);
   }
 
   console.log(`\nTerminé en ${((Date.now() - start) / 1000).toFixed(0)}s.`);

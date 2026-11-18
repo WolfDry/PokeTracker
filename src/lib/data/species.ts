@@ -21,8 +21,12 @@ export type BaseStats = { hp: number; attack: number; defense: number; specialAt
 
 /** Membre de la famille : une espèce (forme par défaut) ou une forme alternative rattachée à son espèce. */
 export type FamilyNode = {
-  /** Id de la forme (unique dans l'arbre). */
+  /** Clé unique dans l'arbre : « p6 » pour une forme, « f10086 » pour une variante d'apparence. */
+  key: string;
+  /** Id de la forme (celui de la forme de rattachement pour une variante d'apparence). */
   id: number;
+  /** Variante d'apparence (« vivillon-icy-snow ») : nom de son image. */
+  spriteForm: string | null;
   speciesId: number;
   /** Image de repli (forme par défaut de l'espèce) quand celle de la forme manque. */
   spriteFallbackId: number;
@@ -32,6 +36,8 @@ export type FamilyNode = {
   genusFr: string | null;
   /** Légende de la carte : « N° 0003 » pour une espèce, « Forme Gigamax » pour une forme. */
   caption: string;
+  /** Nom de la forme par défaut quand elle en a un (« Motif Floraison »), pour une espèce. */
+  formNameFr: string | null;
   /** Comment l'obtenir : « Niv. 16 » sur le trait de l'arbre, « Florizarrite » au-dessus d'une forme. */
   condition: string | null;
   generation: { id: number; nameFr: string };
@@ -64,6 +70,18 @@ const pokemonSelect = {
   speed: true,
   type1: { select: { slug: true, nameFr: true } },
   type2: { select: { slug: true, nameFr: true } },
+  cosmeticForms: {
+    orderBy: { order: "asc" },
+    select: {
+      id: true,
+      slug: true,
+      nameFr: true,
+      formNameFr: true,
+      isBattleOnly: true,
+      type1: { select: { slug: true, nameFr: true } },
+      type2: { select: { slug: true, nameFr: true } },
+    },
+  },
 } as const;
 
 type PokemonRow = {
@@ -83,6 +101,15 @@ type PokemonRow = {
   speed: number | null;
   type1: { slug: string; nameFr: string };
   type2: { slug: string; nameFr: string } | null;
+  cosmeticForms: {
+    id: number;
+    slug: string;
+    nameFr: string | null;
+    formNameFr: string | null;
+    isBattleOnly: boolean;
+    type1: { slug: string; nameFr: string } | null;
+    type2: { slug: string; nameFr: string } | null;
+  }[];
 };
 
 function baseStats(p: PokemonRow): BaseStats | null {
@@ -135,30 +162,60 @@ export async function getEvolutionFamily(speciesId: number): Promise<FamilyNode 
       .filter((s) => s.evolvesFromSpeciesId === species.id)
       .map(build)
       .filter((node): node is FamilyNode => node !== null);
-    const forms = species.pokemons
-      .filter((p) => !p.isDefault)
-      .map((p): FamilyNode => ({
+    const shared = {
+      speciesId: species.id,
+      spriteFallbackId: main.id,
+      nameEn: species.nameEn,
+      genusFr: species.genusFr,
+      formNameFr: null,
+      generation: species.generation,
+      flags: speciesFlags(species),
+      captureRate: species.captureRate,
+      children: [],
+      forms: [],
+    };
+    // Variantes d'apparence d'une forme : mêmes stats, types propres seulement quand ils changent (Arceus Feu).
+    const variants = (p: PokemonRow): FamilyNode[] =>
+      p.cosmeticForms.map((v) => ({
+        ...shared,
+        key: `f${v.id}`,
         id: p.id,
-        speciesId: species.id,
-        spriteFallbackId: main.id,
+        spriteForm: v.slug,
         kind: "form",
-        nameFr: p.nameFr ?? p.formNameFr ?? humanizeSlug(p.slug),
-        nameEn: species.nameEn,
-        genusFr: species.genusFr,
-        caption: p.formNameFr ?? humanizeSlug(p.slug),
-        condition: p.formConditionFr,
-        generation: species.generation,
-        types: [p.type1, p.type2].filter((t) => t !== null),
-        flags: speciesFlags(species),
+        nameFr: v.nameFr ?? `${p.nameFr ?? species.nameFr} (${v.formNameFr ?? humanizeSlug(v.slug)})`,
+        caption: v.formNameFr ?? humanizeSlug(v.slug),
+        condition: v.isBattleOnly ? "En combat" : null,
+        types: v.type1 ? [v.type1, v.type2].filter((t) => t !== null) : [p.type1, p.type2].filter((t) => t !== null),
         height: p.height,
         weight: p.weight,
-        captureRate: species.captureRate,
         stats: baseStats(p),
-        children: [],
-        forms: [],
       }));
+    const forms = [
+      ...variants(main),
+      ...species.pokemons
+        .filter((p) => p !== main)
+        .flatMap((p): FamilyNode[] => [
+          {
+            ...shared,
+            key: `p${p.id}`,
+            id: p.id,
+            spriteForm: null,
+            kind: "form",
+            nameFr: p.nameFr ?? p.formNameFr ?? humanizeSlug(p.slug),
+            caption: p.formNameFr ?? humanizeSlug(p.slug),
+            condition: p.formConditionFr,
+            types: [p.type1, p.type2].filter((t) => t !== null),
+            height: p.height,
+            weight: p.weight,
+            stats: baseStats(p),
+          },
+          ...variants(p),
+        ]),
+    ];
     return {
+      key: `p${main.id}`,
       id: main.id,
+      spriteForm: null,
       speciesId: species.id,
       spriteFallbackId: main.id,
       kind: "species",
@@ -166,6 +223,7 @@ export async function getEvolutionFamily(speciesId: number): Promise<FamilyNode 
       nameEn: species.nameEn,
       genusFr: species.genusFr,
       caption: `N° ${String(species.id).padStart(4, "0")}`,
+      formNameFr: forms.length > 0 ? main.formNameFr : null,
       condition: conditions.length > 0 ? conditions.join(" ou ") : null,
       generation: species.generation,
       types: [main.type1, main.type2].filter((t) => t !== null),

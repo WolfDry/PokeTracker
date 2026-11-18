@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import type { ChecklistEntry } from "@/components/capture-checklist";
-import { ChevronLeftIcon, ChevronRightIcon, CloseIcon } from "@/components/icons";
+import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon } from "@/components/icons";
 import { BOX_SIZE, formatLevel, roundButton, type Wording } from "@/components/living-dex-shared";
 import { DexSprite } from "@/components/living-dex-sprite";
+import { PokemonSprite } from "@/components/pokemon-sprite";
 import { TypeBadge } from "@/components/type-badge";
 import { dexNumber, gameButton, pillButton, textLink } from "@/components/ui";
 import type { ShinyDexMeta } from "@/lib/data/shiny";
+import type { CapturableForm } from "@/lib/forms";
 import { huntHref, newHuntHref } from "@/lib/shiny";
 
 const MAX_LOCATIONS = 3;
@@ -29,6 +31,10 @@ type Props = {
   wording: Wording;
   /** Shiny dex : sprite chromatique (mode spoiler), nombre de shinies obtenus, shasse en cours ou à lancer. */
   shiny?: { gameSlug: string; meta: ShinyDexMeta | undefined };
+  /** Living dex : formes de l'espèce à attraper dans ce jeu, et les formes cochées. */
+  forms?: CapturableForm[];
+  capturedForms?: Set<string>;
+  onToggleForm?: (form: string) => void;
   onToggle: () => void;
   onStep: (delta: number) => void;
   /** Mobile : tiroir ouvert au choix d'un Pokémon. Dès `lg`, le panneau est toujours là, collé à droite. */
@@ -37,7 +43,24 @@ type Props = {
 };
 
 /** Pokémon sélectionné dans la mosaïque ou les boîtes : son écran, de quoi le cocher et où le trouver. */
-export function LivingDexPanel({ entry, index, caught, readOnly, caughtIn, coverageNote, ranks, wording, shiny, onToggle, onStep, open, onClose }: Props) {
+export function LivingDexPanel({
+  entry,
+  index,
+  caught,
+  readOnly,
+  caughtIn,
+  coverageNote,
+  ranks,
+  wording,
+  shiny,
+  forms = [],
+  capturedForms,
+  onToggleForm,
+  onToggle,
+  onStep,
+  open,
+  onClose,
+}: Props) {
   const { species } = entry;
   const rank = (id: number) => ranks.get(id) ?? ranks.size;
   const locations = [...entry.locations].sort((a, b) => rank(a.id) - rank(b.id));
@@ -121,6 +144,10 @@ export function LivingDexPanel({ entry, index, caught, readOnly, caughtIn, cover
           </div>
         )}
 
+        {forms.length > 0 && (
+          <FormsGrid speciesName={species.nameFr} forms={forms} captured={capturedForms ?? new Set()} readOnly={readOnly} onToggle={onToggleForm} />
+        )}
+
         <div className="border-t border-line pt-3.5">
           <p className="mb-1.5 t-caption font-bold">{readOnly ? wording.caughtIn : "Où le trouver"}</p>
           {readOnly ? (
@@ -158,5 +185,83 @@ export function LivingDexPanel({ entry, index, caught, readOnly, caughtIn, cover
         </div>
       </aside>
     </>
+  );
+}
+
+/** « Prismillon Blizzard » → « Blizzard », « Rattata d'Alola » → « d'Alola » : le nom de l'espèce est déjà au-dessus. */
+function shortName(name: string, speciesName: string) {
+  return name.startsWith(`${speciesName} `) ? name.slice(speciesName.length + 1) : name;
+}
+
+/** Formes de l'espèce, une case chacune : cochée en couleurs, manquante estompée. Au National, en lecture seule. */
+function FormsGrid({
+  speciesName,
+  forms,
+  captured,
+  readOnly,
+  onToggle,
+}: {
+  speciesName: string;
+  forms: CapturableForm[];
+  captured: Set<string>;
+  readOnly: boolean;
+  onToggle?: (form: string) => void;
+}) {
+  const count = forms.filter((f) => captured.has(f.key)).length;
+  return (
+    <div className="border-t border-line pt-3.5">
+      <p className="mb-2 flex items-baseline justify-between t-caption font-bold">
+        Formes
+        <span className="font-mono font-medium text-ink-2">
+          {count} / {forms.length}
+        </span>
+      </p>
+      <ul className="grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-1.5">
+        {forms.map((form) => {
+          const caught = captured.has(form.key);
+          const content = (
+            <>
+              {caught && (
+                <span aria-hidden className="absolute top-1 right-1 grid size-3.5 place-items-center rounded-full bg-game text-on-game">
+                  <CheckIcon size={9} strokeWidth={3} />
+                </span>
+              )}
+              <PokemonSprite
+                pokemonId={form.pokemonId}
+                form={form.spriteForm}
+                alt=""
+                size={48}
+                className={`size-11 object-contain transition ${caught ? "" : "opacity-30 grayscale"}`}
+              />
+              <span className="w-full truncate text-center text-[10px] leading-3 text-ink-2">{shortName(form.nameFr, speciesName)}</span>
+            </>
+          );
+          const classes = "relative flex w-full flex-col items-center gap-0.5 rounded-xl border border-line bg-surface px-1 pt-1 pb-1.5";
+          return (
+            <li key={form.key}>
+              {readOnly ? (
+                <div className={classes} title={form.nameFr}>
+                  <span className="sr-only">
+                    {form.nameFr} : {caught ? "attrapé" : "manquant"}
+                  </span>
+                  {content}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onToggle?.(form.key)}
+                  aria-pressed={caught}
+                  aria-label={`${caught ? "Retirer" : "Marquer"} ${form.nameFr} ${caught ? "des captures" : "comme attrapé"}`}
+                  title={form.nameFr}
+                  className={`${classes} transition-colors hover:border-line-strong`}
+                >
+                  {content}
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

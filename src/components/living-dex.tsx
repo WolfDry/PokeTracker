@@ -7,9 +7,10 @@ import { LivingDexBoxes } from "@/components/living-dex-boxes";
 import { LivingDexPanel } from "@/components/living-dex-panel";
 import { LivingDexRoute } from "@/components/living-dex-route";
 import { BOX_SIZE, pickLabel, type RouteLocation, WORDING, type Wording } from "@/components/living-dex-shared";
-import { DexSprite } from "@/components/living-dex-sprite";
+import { DexSprite, FormsBadge } from "@/components/living-dex-sprite";
 import { chip, chipCount, dexNumber } from "@/components/ui";
-import { useCaptures } from "@/components/use-captures";
+import { useCaptures, useFormCaptures } from "@/components/use-captures";
+import type { CapturableForm } from "@/lib/forms";
 import type { ShinyDexMeta } from "@/lib/data/shiny";
 import { toggleShinyAction } from "@/lib/shiny-actions";
 import { type LivingDexView, useLivingDexStore } from "@/store/living-dex-store";
@@ -30,7 +31,12 @@ type Props = {
   route: RouteLocation[];
   /** Shiny dex : sprites chromatiques, coches enregistrées comme shinies, shasses ; pas d'itinéraire. */
   shiny?: { gameSlug: string; meta: Record<number, ShinyDexMeta> };
+  /** Living dex : formes de chaque espèce sorties dans ce jeu, et celles déjà cochées (au National : dans un jeu). */
+  forms?: { bySpecies: Record<number, CapturableForm[]>; captured: string[] };
 };
+
+/** Formes attrapées d'une espèce : `null` si elle n'en a pas. */
+export type FormsProgress = { caught: number; total: number } | null;
 
 type Filter = "all" | "missing" | "caught";
 
@@ -49,10 +55,11 @@ const normalize = (text: string) => text.normalize("NFD").replace(/\p{Diacritic}
  * seulement). La recherche, les coches, la coche rapide, le Pokémon sélectionné et son panneau de détail sont
  * communs aux trois vues.
  */
-export function LivingDex({ versionId, title, entries, captured, coverageNote, caughtIn, route, shiny }: Props) {
+export function LivingDex({ versionId, title, entries, captured, coverageNote, caughtIn, route, shiny, forms }: Props) {
   const readOnly = versionId === null;
   const wording: Wording = shiny ? WORDING.shiny : WORDING.captures;
   const captures = useCaptures(versionId ?? 0, captured, shiny ? toggleShinyAction : undefined);
+  const formCaptures = useFormCaptures(versionId ?? 0, forms?.captured ?? []);
   const spoilers = useSpoilerStore();
   const page = shiny ? "shiny" : "captures";
   const storedView = useLivingDexStore((state) => state.views[page]);
@@ -81,6 +88,11 @@ export function LivingDex({ versionId, title, entries, captured, coverageNote, c
   const selected = entries[selectedIndex];
 
   const isCaught = (entry: ChecklistEntry) => captures.captured.has(entry.species.id);
+  const formsOf = (entry: ChecklistEntry) => forms?.bySpecies[entry.species.id] ?? [];
+  const formsProgress = (entry: ChecklistEntry): FormsProgress => {
+    const list = formsOf(entry);
+    return list.length === 0 ? null : { caught: list.filter((f) => formCaptures.captured.has(f.key)).length, total: list.length };
+  };
   // Shasse en cours sur un shiny manquant : repérée dans la mosaïque et les boîtes.
   const isHunting = (entry: ChecklistEntry) => Boolean(shiny?.meta[entry.species.id]?.hunt) && !isCaught(entry);
   const caughtCount = entries.filter(isCaught).length;
@@ -213,9 +225,9 @@ export function LivingDex({ versionId, title, entries, captured, coverageNote, c
             )}
           </div>
         </div>
-        {captures.error && (
+        {(captures.error ?? formCaptures.error) && (
           <p role="alert" className="t-small text-danger">
-            {captures.error}
+            {captures.error ?? formCaptures.error}
           </p>
         )}
         {coverageNote && <p className="t-small text-ink-2">{coverageNote}</p>}
@@ -228,6 +240,7 @@ export function LivingDex({ versionId, title, entries, captured, coverageNote, c
               entries={entries.filter(matches)}
               isCaught={isCaught}
               isHunting={isHunting}
+              formsProgress={formsProgress}
               selectedId={selected?.species.id}
               quick={quick && !readOnly}
               shiny={Boolean(shiny)}
@@ -242,6 +255,7 @@ export function LivingDex({ versionId, title, entries, captured, coverageNote, c
               captured={captures.captured}
               matches={matches}
               isHunting={isHunting}
+              formsProgress={formsProgress}
               selectedId={selected?.species.id}
               quick={quick && !readOnly}
               shiny={Boolean(shiny)}
@@ -277,6 +291,11 @@ export function LivingDex({ versionId, title, entries, captured, coverageNote, c
             ranks={ranks}
             wording={wording}
             shiny={shiny && { gameSlug: shiny.gameSlug, meta: shiny.meta[selected.species.id] }}
+            forms={formsOf(selected)}
+            capturedForms={formCaptures.captured}
+            onToggleForm={(form) => {
+              if (!readOnly) formCaptures.toggle(selected.species.id, form);
+            }}
             onToggle={() => toggle(selected)}
             onStep={step}
             open={sheetOpen}
@@ -293,6 +312,7 @@ function Mosaic({
   entries,
   isCaught,
   isHunting,
+  formsProgress,
   selectedId,
   quick,
   shiny,
@@ -303,6 +323,7 @@ function Mosaic({
   entries: ChecklistEntry[];
   isCaught: (entry: ChecklistEntry) => boolean;
   isHunting: (entry: ChecklistEntry) => boolean;
+  formsProgress: (entry: ChecklistEntry) => FormsProgress;
   selectedId: number | undefined;
   quick: boolean;
   shiny: boolean;
@@ -318,13 +339,14 @@ function Mosaic({
         const caught = isCaught(entry);
         const hunting = isHunting(entry);
         const selected = entry.species.id === selectedId;
+        const progress = formsProgress(entry);
         return (
           <li key={entry.species.id}>
             <button
               type="button"
               onClick={() => onPick(entry)}
               aria-pressed={quick ? caught : selected}
-              aria-label={pickLabel(entry.species.nameFr, caught, quick, wording, hunting)}
+              aria-label={pickLabel(entry.species.nameFr, caught, quick, wording, hunting, progress)}
               title={entry.species.nameFr}
               className={`relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border bg-surface px-1 pt-1.5 pb-1 transition-colors ${selected ? "border-game ring-1 ring-game ring-inset" : "border-line hover:border-line-strong"
                 }`}
@@ -335,6 +357,7 @@ function Mosaic({
                 </span>
               )}
               {hunting && <StarIcon size={14} className="absolute top-1.5 left-1.5 fill-shiny text-shiny" />}
+              {progress && <FormsBadge {...progress} className="top-1.5 left-1.5" />}
               <DexSprite
                 entry={entry}
                 caught={caught}

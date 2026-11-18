@@ -8,8 +8,11 @@ const SOURCES = ["home", "official-artwork"] as const;
 /** Taille de sortie : les images sont affichées au plus en 96 px, 256 px couvre les écrans 2×. */
 export const SPRITE_SIZE = 256;
 export const SPRITE_DIR = path.resolve("public/sprites/pokemon");
+/** Variantes d'apparence (motifs de Prismillon…), nommées d'après le slug de la forme. */
+export const FORM_SPRITE_DIR = path.join(SPRITE_DIR, "forms");
 
-type Target = { id: number; shiny: boolean; file: string };
+/** `remote` : chemin chez PokeAPI sans extension (« 25 », « 666-icy-snow », « female/668 »). */
+type Target = { remote: string; shiny: boolean; file: string };
 
 async function exists(file: string) {
   try {
@@ -21,9 +24,9 @@ async function exists(file: string) {
 }
 
 /** Récupère la première source disponible pour une forme ; `null` si aucune n'existe chez PokeAPI. */
-async function fetchImage(id: number, shiny: boolean) {
+async function fetchImage(remote: string, shiny: boolean) {
   for (const source of SOURCES) {
-    const url = `${POKEAPI_SPRITES}${source}/${shiny ? "shiny/" : ""}${id}.png`;
+    const url = `${POKEAPI_SPRITES}${source}/${shiny ? "shiny/" : ""}${remote}.png`;
     const response = await fetch(url);
     if (response.status === 404) continue;
     if (!response.ok) throw new Error(`Image ${url} : HTTP ${response.status}`);
@@ -39,13 +42,33 @@ async function fetchImage(id: number, shiny: boolean) {
  * présents sont ignorés ; les formes sans image (404 partout) sont listées.
  */
 export async function downloadSprites(pokemonIds: number[], concurrency = 12) {
-  await mkdir(path.join(SPRITE_DIR, "shiny"), { recursive: true });
+  await download(
+    SPRITE_DIR,
+    pokemonIds.map((id) => ({ remote: String(id), name: String(id) })),
+    concurrency,
+  );
+}
+
+/**
+ * Images des variantes d'apparence dans public/sprites/pokemon/forms/<slug>.webp. Celles qui manquent chez
+ * PokeAPI retombent côté site sur l'image de la forme (voir `PokemonSprite`).
+ */
+export async function downloadFormSprites(forms: { slug: string; remote: string }[], concurrency = 12) {
+  await download(
+    FORM_SPRITE_DIR,
+    forms.map((f) => ({ remote: f.remote, name: f.slug })),
+    concurrency,
+  );
+}
+
+async function download(dir: string, images: { remote: string; name: string }[], concurrency: number) {
+  await mkdir(path.join(dir, "shiny"), { recursive: true });
 
   const targets: Target[] = [];
-  for (const id of pokemonIds) {
+  for (const { remote, name } of images) {
     targets.push(
-      { id, shiny: false, file: path.join(SPRITE_DIR, `${id}.webp`) },
-      { id, shiny: true, file: path.join(SPRITE_DIR, "shiny", `${id}.webp`) },
+      { remote, shiny: false, file: path.join(dir, `${name}.webp`) },
+      { remote, shiny: true, file: path.join(dir, "shiny", `${name}.webp`) },
     );
   }
 
@@ -63,9 +86,9 @@ export async function downloadSprites(pokemonIds: number[], concurrency = 12) {
   async function worker() {
     while (cursor < pending.length) {
       const target = pending[cursor++];
-      const image = await fetchImage(target.id, target.shiny);
+      const image = await fetchImage(target.remote, target.shiny);
       if (!image) {
-        missing.push(path.relative(SPRITE_DIR, target.file));
+        missing.push(path.relative(dir, target.file));
         continue;
       }
       if (image.source === "official-artwork") fromArtwork++;

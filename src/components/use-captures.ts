@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState, useTransition } from "react";
-import { type CaptureActionResult, toggleCaptureAction } from "@/lib/capture-actions";
+import { type CaptureActionResult, toggleCaptureAction, toggleFormCaptureAction } from "@/lib/capture-actions";
 
 /** Server Action qui enregistre une coche : captures (par défaut) ou shiny dex. */
 export type ToggleAction = (versionId: number, speciesId: number, value: boolean, pokemonId?: number) => Promise<CaptureActionResult>;
@@ -48,4 +48,43 @@ export function useCaptures(versionId: number, initial: number[], action: Toggle
   );
 
   return { captured, toggle, error, pending };
+}
+
+/** Formes cochées dans un jeu (« p10091 », « f10086 »), mises à jour de façon optimiste comme `useCaptures`. */
+export function useFormCaptures(versionId: number, initial: string[]) {
+  const [captured, setCaptured] = useState(() => new Set(initial));
+  const [error, setError] = useState<string | null>(null);
+  const [currentVersion, setCurrentVersion] = useState(versionId);
+  if (currentVersion !== versionId) {
+    setCurrentVersion(versionId);
+    setCaptured(new Set(initial));
+    setError(null);
+  }
+  const [, startTransition] = useTransition();
+
+  const setOne = (form: string, value: boolean) =>
+    setCaptured((current) => {
+      const next = new Set(current);
+      if (value) next.add(form);
+      else next.delete(form);
+      return next;
+    });
+
+  const toggle = useCallback(
+    (speciesId: number, form: string) => {
+      const value = !captured.has(form);
+      setOne(form, value);
+      setError(null);
+      startTransition(async () => {
+        const result = await toggleFormCaptureAction(versionId, speciesId, form, value);
+        if (!result.ok) {
+          setOne(form, !value);
+          setError(result.error);
+        }
+      });
+    },
+    [captured, versionId],
+  );
+
+  return { captured, toggle, error };
 }

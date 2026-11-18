@@ -5,10 +5,12 @@ import { Suspense } from "react";
 import { ArrowLeftIcon, ArrowRightIcon, StarIcon } from "@/components/icons";
 import { SectionHeader } from "@/components/page-header";
 import { SpeciesCaptureChips } from "@/components/species-capture-chips";
+import { SpeciesCaptureTable } from "@/components/species-capture-table";
 import { SpeciesFamily } from "@/components/species-family";
 import { StatusBadge } from "@/components/status-badge";
 import { card, dexNumber, ghostButton, secondaryButton, smallButton, textLink } from "@/components/ui";
-import { getSpeciesCaptures } from "@/lib/data/captures";
+import { getSpeciesCaptures, getSpeciesFormCaptures } from "@/lib/data/captures";
+import { getCapturableForms, getVersionFormOrders } from "@/lib/data/forms";
 import { isDlcVersion } from "@/lib/data/filters";
 import { getPokedexHrefs } from "@/lib/data/pokedex-pages";
 import { getShinies, getSpeciesHunts } from "@/lib/data/shiny";
@@ -33,7 +35,14 @@ function formatLevel(min: number, max: number) {
   return min === max ? `Niv. ${min}` : `Niv. ${min}-${max}`;
 }
 
-async function MyCaptures({ speciesId, versions }: { speciesId: number; versions: { id: number; slug: string; nameFr: string }[] }) {
+type MyCapturesProps = {
+  speciesId: number;
+  speciesName: string;
+  base: { pokemonId: number; nameFr: string | null };
+  versions: { id: number; slug: string; nameFr: string }[];
+};
+
+async function MyCaptures({ speciesId, speciesName, base, versions }: MyCapturesProps) {
   const user = await getCurrentUser();
   if (!user) {
     return (
@@ -49,8 +58,27 @@ async function MyCaptures({ speciesId, versions }: { speciesId: number; versions
   // et les extensions sont suivies avec leur jeu de base.
   const unique = [...new Map(versions.filter((v) => !isDlcVersion(v.slug)).map((v) => [v.id, v])).values()];
   if (unique.length === 0) return <p className="t-small text-ink-2">Ce Pokémon n&apos;est dans aucun Pokédex régional.</p>;
-  const captures = await getSpeciesCaptures(user.id, speciesId);
-  return <SpeciesCaptureChips speciesId={speciesId} versions={unique} captured={captures.map((c) => c.id)} />;
+  const [captures, allForms, orders, formCaptures] = await Promise.all([
+    getSpeciesCaptures(user.id, speciesId),
+    getCapturableForms(),
+    getVersionFormOrders(),
+    getSpeciesFormCaptures(user.id, speciesId),
+  ]);
+  // Formes sorties dans au moins un de ces jeux : une ligne par forme, une colonne par jeu.
+  const forms = (allForms[speciesId] ?? []).filter((form) => unique.some((v) => form.introducedOrder <= (orders[v.id] ?? 0)));
+  if (forms.length === 0) return <SpeciesCaptureChips speciesId={speciesId} versions={unique} captured={captures.map((c) => c.id)} />;
+  return (
+    <SpeciesCaptureTable
+      speciesId={speciesId}
+      speciesName={speciesName}
+      base={base}
+      versions={unique}
+      forms={forms}
+      orders={orders}
+      captured={captures.map((c) => c.id)}
+      capturedForms={formCaptures}
+    />
+  );
 }
 
 const numberFr = new Intl.NumberFormat("fr-FR");
@@ -148,7 +176,12 @@ export default async function SpeciesPage({ params }: PageProps<"/pokemon/[id]">
         <SectionHeader title="Mes captures" />
         {/* Dépend de la session : streamé, le reste de la fiche reste en cache. */}
         <Suspense fallback={<div aria-busy className="h-8 w-64 animate-pulse rounded-full bg-surface-2" />}>
-          <MyCaptures speciesId={species.id} versions={pokedexRows.flatMap((p) => p.versions)} />
+          <MyCaptures
+            speciesId={species.id}
+            speciesName={species.nameFr}
+            base={{ pokemonId: species.defaultPokemon.id, nameFr: species.defaultPokemon.formNameFr }}
+            versions={pokedexRows.flatMap((p) => p.versions)}
+          />
         </Suspense>
       </section>
 

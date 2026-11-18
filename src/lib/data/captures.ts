@@ -141,3 +141,35 @@ export async function setCapture(userId: string, versionId: number, speciesId: n
     await prisma.capture.deleteMany({ where: { userId, speciesId, versionId } });
   }
 }
+
+// Formes attrapées (Rattata d'Alola, Prismillon Blizzard) : en complément de l'espèce, une ligne par forme et par jeu.
+
+/** Clés des formes cochées dans un jeu (« p10091 », « f10086 »). */
+export async function getCapturedForms(userId: string, versionId: number): Promise<string[]> {
+  const rows = await prisma.formCapture.findMany({ where: { userId, versionId }, select: { form: true } });
+  return rows.map((r) => r.form);
+}
+
+/** National : formes cochées dans au moins un jeu. */
+export async function getNationalFormCaptures(userId: string): Promise<string[]> {
+  const rows = await prisma.formCapture.findMany({ where: { userId }, distinct: ["form"], select: { form: true } });
+  return rows.map((r) => r.form);
+}
+
+/** Fiche Pokémon : formes de l'espèce cochées, jeu par jeu. */
+export async function getSpeciesFormCaptures(userId: string, speciesId: number): Promise<{ versionId: number; form: string }[]> {
+  return prisma.formCapture.findMany({ where: { userId, speciesId }, select: { versionId: true, form: true } });
+}
+
+/** Coche ou décoche une forme dans un jeu (idempotent). */
+export async function setFormCapture(userId: string, versionId: number, speciesId: number, form: string, captured: boolean) {
+  if (captured) {
+    await prisma.formCapture.upsert({
+      where: { userId_versionId_form: { userId, versionId, form } },
+      create: { userId, versionId, speciesId, form },
+      update: {},
+    });
+  } else {
+    await prisma.formCapture.deleteMany({ where: { userId, versionId, form } });
+  }
+}

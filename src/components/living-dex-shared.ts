@@ -38,9 +38,17 @@ export const toggleLabel = (name: string, caught: boolean, wording: Wording = WO
   `${caught ? "Retirer" : "Marquer"} ${name} ${caught ? wording.unmark : wording.mark}`;
 
 /** Case de la mosaïque ou d'une boîte : elle montre le Pokémon, ou le coche en mode « Coche rapide ». */
-export const pickLabel = (name: string, caught: boolean, quick: boolean, wording: Wording, hunting = false) =>
+export const pickLabel = (
+  name: string,
+  caught: boolean,
+  quick: boolean,
+  wording: Wording,
+  hunting = false,
+  forms: { caught: number; total: number } | null = null,
+) =>
   (quick ? toggleLabel(name, caught, wording) : `Voir ${name} (${caught ? wording.caught.toLowerCase() : "manquant"})`) +
-  (hunting ? ", shasse en cours" : "");
+  (hunting ? ", shasse en cours" : "") +
+  (forms ? `, formes ${forms.caught} sur ${forms.total}` : "");
 
 /** Bouton rond (précédent, suivant, fermer) : 44 px, bordure forte. */
 export const roundButton =

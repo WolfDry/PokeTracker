@@ -8,8 +8,8 @@ import type { FamilyNode } from "@/lib/data/species";
 
 type Props = {
   root: FamilyNode;
-  /** Nœud affiché dans l'en-tête (forme sélectionnée ou espèce de la fiche). */
-  selectedId: number;
+  /** Clé du nœud affiché dans l'en-tête (forme sélectionnée ou espèce de la fiche). */
+  selectedKey: string;
   /** Espèce de la fiche : sa carte revient à elle dans l'en-tête au lieu de recharger la même page. */
   currentSpeciesId: number;
   onSelect: (node: FamilyNode) => void;
@@ -20,21 +20,21 @@ type Props = {
  * condition, et mène à sa fiche. Les formes alternatives n'y figurent pas (voir la ligne « Formes »).
  * Vertical sur mobile, horizontal dès `sm` (voir `.evo-elbow` dans globals.css).
  */
-export function EvolutionTree({ root, selectedId, currentSpeciesId, onSelect }: Props) {
+export function EvolutionTree({ root, selectedKey, currentSpeciesId, onSelect }: Props) {
   return (
     <div className="overflow-x-auto">
-      <TreeNode node={root} selectedId={selectedId} currentSpeciesId={currentSpeciesId} onSelect={onSelect} />
+      <TreeNode node={root} selectedKey={selectedKey} currentSpeciesId={currentSpeciesId} onSelect={onSelect} />
     </div>
   );
 }
 
-function TreeNode({ node, selectedId, currentSpeciesId, onSelect }: { node: FamilyNode } & Omit<Props, "root">) {
+function TreeNode({ node, selectedKey, currentSpeciesId, onSelect }: { node: FamilyNode } & Omit<Props, "root">) {
   const fork = node.children.length > 1;
   return (
     <div className="flex flex-col sm:flex-row sm:items-center">
       <FamilyCard
         node={node}
-        selected={node.id === selectedId}
+        selected={node.key === selectedKey}
         current={node.speciesId === currentSpeciesId}
         onSelect={onSelect}
         className="evo-card"
@@ -46,7 +46,7 @@ function TreeNode({ node, selectedId, currentSpeciesId, onSelect }: { node: Fami
           {/* Dès `sm`, une grille à deux colonnes : les traits d'une même colonne partagent la largeur du plus long libellé. */}
           <ul className="ml-10 flex flex-col sm:ml-0 sm:grid sm:grid-cols-[auto_minmax(0,1fr)] sm:gap-y-4">
             {node.children.map((child, index) => (
-              <li key={child.id} className="flex sm:contents">
+              <li key={child.key} className="flex sm:contents">
                 <span
                   aria-hidden
                   className="evo-elbow"
@@ -63,7 +63,7 @@ function TreeNode({ node, selectedId, currentSpeciesId, onSelect }: { node: Fami
                 <div className="min-w-0 flex-1 pt-4 sm:pt-0">
                   {/* Sur mobile la condition se lit au-dessus de la carte. */}
                   <p className="mb-0.5 h-4 truncate pl-2 t-caption text-ink-3 sm:hidden">{child.condition}</p>
-                  <TreeNode node={child} selectedId={selectedId} currentSpeciesId={currentSpeciesId} onSelect={onSelect} />
+                  <TreeNode node={child} selectedKey={selectedKey} currentSpeciesId={currentSpeciesId} onSelect={onSelect} />
                 </div>
               </li>
             ))}
@@ -96,7 +96,7 @@ export function FamilyCard({ node, selected, current, onSelect, className = "" }
   const content = (
     <>
       <span className={`${spriteBox} size-12 rounded-sm`}>
-        <PokemonSprite pokemonId={node.id} fallbackId={node.spriteFallbackId} alt="" size={40} />
+        <PokemonSprite pokemonId={node.id} form={node.spriteForm} fallbackId={node.spriteFallbackId} alt="" size={40} />
       </span>
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="t-caption leading-4">{node.caption}</span>

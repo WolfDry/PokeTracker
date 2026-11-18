@@ -34,9 +34,9 @@ export function SpeciesFamily({ root, speciesId }: Props) {
   // Une ligne par espèce qui a des formes alternatives, dans l'ordre de l'arbre.
   const withForms = nodes.filter((n) => n.forms.length > 0);
   const initial = nodes.find((n) => n.kind === "species" && n.speciesId === speciesId) ?? root;
-  const [selectedId, setSelectedId] = useState(initial.id);
+  const [selectedKey, setSelectedKey] = useState(initial.key);
   const [shiny, setShiny] = useState(false);
-  const node = nodes.find((n) => n.id === selectedId) ?? initial;
+  const node = nodes.find((n) => n.key === selectedKey) ?? initial;
   const max = useMemo(() => statsMax(nodes.map((n) => n.stats).filter((s) => s !== null)), [nodes]);
 
   const facts = [
@@ -50,7 +50,7 @@ export function SpeciesFamily({ root, speciesId }: Props) {
       <header className="grid gap-6 sm:grid-cols-[224px_minmax(0,1fr)] sm:gap-x-10 lg:grid-cols-[224px_minmax(0,1fr)_300px]">
         <div className="flex flex-col gap-3">
           <span className={`${spriteBox} relative h-56 w-full rounded-lg sm:size-56`}>
-            <PokemonSprite key={node.id} pokemonId={node.id} fallbackId={node.spriteFallbackId} alt={shiny ? `${node.nameFr} chromatique` : node.nameFr} size={192} shiny={shiny} />
+            <PokemonSprite key={node.key} pokemonId={node.id} form={node.spriteForm} fallbackId={node.spriteFallbackId} alt={shiny ? `${node.nameFr} chromatique` : node.nameFr} size={192} shiny={shiny} />
             {shiny && <StarIcon size={16} className="absolute top-3 right-3 text-shiny" />}
           </span>
           <button type="button" onClick={() => setShiny((s) => !s)} aria-pressed={shiny} className={`${ghostButton} ${smallButton} self-start text-shiny hover:text-shiny`}>
@@ -98,7 +98,7 @@ export function SpeciesFamily({ root, speciesId }: Props) {
       {root.children.length > 0 && (
         <section className="space-y-4">
           <SectionHeader title="Ligne évolutive" />
-          <EvolutionTree root={root} selectedId={node.id} currentSpeciesId={speciesId} onSelect={(n) => setSelectedId(n.id)} />
+          <EvolutionTree root={root} selectedKey={node.key} currentSpeciesId={speciesId} onSelect={(n) => setSelectedKey(n.key)} />
         </section>
       )}
 
@@ -108,15 +108,17 @@ export function SpeciesFamily({ root, speciesId }: Props) {
           <div className="space-y-5">
             {withForms.map((species) => (
               // La forme de base ouvre la ligne : on y revient d'un clic après avoir regardé une forme.
-              <ul key={species.id} aria-label={`Formes de ${species.nameFr}`} className="grid gap-3 sm:flex sm:flex-wrap">
+              <ul key={species.key} aria-label={`Formes de ${species.nameFr}`} className="grid gap-3 sm:flex sm:flex-wrap">
                 {[species, ...species.forms].map((member) => (
-                  <li key={member.id} className="min-w-0 sm:w-50">
-                    <p className="mb-0.5 h-4 truncate pl-2 t-caption text-ink-3">{member.kind === "species" ? "Forme de base" : member.condition}</p>
+                  <li key={member.key} className="min-w-0 sm:w-50">
+                    <p className="mb-0.5 h-4 truncate pl-2 t-caption text-ink-3">
+                      {member.kind === "species" ? ["Forme de base", member.formNameFr].filter(Boolean).join(" · ") : member.condition}
+                    </p>
                     <FamilyCard
                       node={member}
-                      selected={member.id === node.id}
+                      selected={member.key === node.key}
                       current={member.kind === "species" && member.speciesId === speciesId}
-                      onSelect={(n) => setSelectedId(n.id)}
+                      onSelect={(n) => setSelectedKey(n.key)}
                     />
                   </li>
                 ))}

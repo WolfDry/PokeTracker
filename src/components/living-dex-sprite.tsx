@@ -14,3 +14,16 @@ export function DexSprite({ entry, caught, shiny, size, className, alt = "" }: P
   const props = { pokemonId: entry.species.pokemonId, fallbackId: entry.species.id, alt, size, className };
   return shiny && !caught ? <SpoilerSprite {...props} /> : <PokemonSprite {...props} shiny={shiny} />;
 }
+
+/** Formes attrapées d'une espèce sur une case de la mosaïque ou d'une boîte : « 3/19 », en couleur une fois complet. */
+export function FormsBadge({ caught, total, className = "" }: { caught: number; total: number; className?: string }) {
+  const complete = caught === total;
+  return (
+    <span
+      aria-hidden
+      className={`absolute rounded-full px-1 font-mono text-[9px] leading-[13px] font-bold ${complete ? "bg-game text-on-game" : "border border-line bg-surface text-ink-2"} ${className}`}
+    >
+      {caught}/{total}
+    </span>
+  );
+}

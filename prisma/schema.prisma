@@ -80,6 +80,7 @@ model Version {
   encounters    Encounter[]
   areaRates     LocationAreaEncounterRate[]
   captures      Capture[]
+  formCaptures  FormCapture[]
   shinyHunts    ShinyHunt[]
   shinyCaptures ShinyCapture[]
   teams         Team[]
@@ -158,6 +159,8 @@ model Type {
   pastSecond  PokemonPastType[] @relation("PastType2")
   moves       Move[]            @relation("MoveType")
   pastMoves   MovePastValue[]   @relation("MovePastType")
+  cosmetic1   CosmeticForm[]    @relation("CosmeticFormType1")
+  cosmetic2   CosmeticForm[]    @relation("CosmeticFormType2")
 }
 
 /// Table des types d'une génération : multiplicateur d'une attaque d'un type sur un Pokémon d'un
@@ -201,6 +204,7 @@ model Species {
   pokemons       Pokemon[]
   pokedexEntries PokedexEntry[]
   captures       Capture[]
+  formCaptures   FormCapture[]
   shinyHunts     ShinyHunt[]
   shinyCaptures  ShinyCapture[]
 
@@ -259,8 +263,35 @@ model Pokemon {
   moves         PokemonMove[]
   shinyHunts    ShinyHunt[]
   shinyCaptures ShinyCapture[]
+  cosmeticForms CosmeticForm[]
 
   @@index([speciesId])
+}
+
+/// Variante d'apparence d'une forme, sans stats propres (motifs de Prismillon, Zarbi B, Arceus Feu…) :
+/// les `pokemon_forms` non par défaut de PokeAPI. Les types ne sont renseignés que s'ils diffèrent (Arceus, Silvallié).
+model CosmeticForm {
+  /// Id de forme PokeAPI (espace distinct des ids de `Pokemon`).
+  id           Int     @id
+  pokemonId    Int
+  /// « vivillon-icy-snow » ; nom du fichier de l'image dans public/sprites/pokemon/forms.
+  slug         String  @unique
+  /// Nom complet (« Prismillon Blizzard »).
+  nameFr       String?
+  /// Nom de la variante (« Motif Blizzard »).
+  formNameFr   String?
+  isBattleOnly Boolean @default(false)
+  order        Int
+  /// Groupe de versions où la variante apparaît (motifs de Prismillon : X et Y).
+  introducedVersionGroupId Int?
+  type1Id      Int?
+  type2Id      Int?
+
+  pokemon Pokemon @relation(fields: [pokemonId], references: [id])
+  type1   Type?   @relation("CosmeticFormType1", fields: [type1Id], references: [id])
+  type2   Type?   @relation("CosmeticFormType2", fields: [type2Id], references: [id])
+
+  @@index([pokemonId])
 }
 
 /// Types d'une forme avant un changement (Mélofée Normal jusqu'à la 5e génération, Magnéti
@@ -482,6 +513,25 @@ model Capture {
   @@index([userId, versionId])
 }
 
+/// Forme non par défaut attrapée dans un jeu (Rattata d'Alola, Prismillon Blizzard), en complément de `Capture`
+/// qui compte l'espèce. Formes de combat (Méga, Gigamax…) exclues : voir `isCapturableForm`.
+model FormCapture {
+  id        String   @id @default(cuid())
+  userId    String
+  speciesId Int
+  versionId Int
+  /// « p10091 » : une forme `Pokemon` ; « f10086 » : une variante `CosmeticForm`.
+  form      String
+  caughtAt  DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  species Species @relation(fields: [speciesId], references: [id])
+  version Version @relation(fields: [versionId], references: [id])
+
+  @@unique([userId, versionId, form])
+  @@index([userId, speciesId])
+}
+
 enum HuntStatus {
   ACTIVE
   COMPLETED
@@ -571,6 +621,7 @@ model User {
   accounts      Account[]
 
   captures      Capture[]
+  formCaptures  FormCapture[]
   shinyHunts    ShinyHunt[]
   shinyCaptures ShinyCapture[]
   teams         Team[]
